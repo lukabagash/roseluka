@@ -47,6 +47,26 @@ typedef struct {
 	device_t	devreg[DEVINTNUM * DEVPERINT];
 } devregarea_t;
 
+typedef struct pcb_t {
+    /* Process queue fields */
+    struct pcb_t *p_next;    /* Pointer to next entry on queue    */
+    struct pcb_t *p_prev;    /* Pointer to previous entry on queue*/
+
+    /* Process tree fields */
+    struct pcb_t *p_prnt;    /* Pointer to parent PCB   */
+    struct pcb_t *p_child;   /* Pointer to first child  */
+    struct pcb_t *p_sib;     /* Pointer to next sibling */
+
+    /* Processor state, CPU time, and semaphore on which proc might be blocked */
+    state_t p_s;             /* Processor state         */
+    cpu_t   p_time;          /* CPU time used by proc   */
+    int     *p_semAdd;       /* Pointer to semaphore    */
+
+    /* Pointer to any support structure (used in later phases) */
+    support_t *p_supportStruct;
+} pcb_t;
+
+
 
 /* Pass Up Vector */
 typedef struct passupvector {
