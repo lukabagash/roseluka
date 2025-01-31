@@ -9,6 +9,14 @@
 
 #include "../h/const.h"
 
+struct support_t;  /* forward-declaration */
+typedef struct support_t support_t;
+
+/* Forward-declare pcb_t and define pcb_PTR */
+struct pcb_t;               
+typedef struct pcb_t pcb_t;
+typedef pcb_t* pcb_PTR;
+
 typedef signed int cpu_t;
 
 
@@ -62,7 +70,7 @@ typedef struct pcb_t {
     cpu_t   p_time;          /* CPU time used by proc   */
     int     *p_semAdd;       /* Pointer to semaphore    */
 
-    /* Pointer to any support structure (used in later phases) */
+    /* Pointer to any support structure (used in later phases)  */
     support_t *p_supportStruct;
 } pcb_t;
 
