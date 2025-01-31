@@ -49,8 +49,8 @@ no previous value persist in a pcb when it gets reallocated. */
      *
      * or assign fields individually if needed.
      */
-    /* Example of zeroing out if it's a simple struct: */
-    // p->p_s = (state_t){0};  
+    /* Example of zeroing out if it's a simple struct: 
+    p->p_s = (state_t){0};  */
 
     return p;
 }
