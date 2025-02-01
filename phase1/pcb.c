@@ -10,7 +10,17 @@ extern void freePcb (pcb_t *p) {
 /* Insert the element pointed to by p onto the pcbFree list. */
     if (p == NULL) return;
 
-    /* Insert at the head of the free list */
+    /* 1. Check if p is already in the free list */
+    pcb_t *cursor = pcbFree_h;
+    while (cursor != NULL) {
+        if (cursor == p) {
+            /* p is already on free list, ignore second free */
+            return; 
+        }
+        cursor = cursor->p_next;
+    }
+
+    /* 2. Otherwise, insert at the head of the free list */
     p->p_next = pcbFree_h;
     pcbFree_h = p;
 }
