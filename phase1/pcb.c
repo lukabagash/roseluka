@@ -61,8 +61,8 @@ extern void initPcbs () {
 static array of MAXPROC pcbs. This method will be called only
 once during data structure initialization. */
     pcbFree_h = NULL;
-
-    for (int i=0; i < MAXPROC; i++) {
+    int i;
+    for (i=0; i < MAXPROC; i++) {
         pcbFreeTable[i].p_next = pcbFree_h;
         pcbFree_h = &pcbFreeTable[i];
     }
