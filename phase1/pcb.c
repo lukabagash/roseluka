@@ -66,7 +66,7 @@ once during data structure initialization. */
         pcbFreeTable[i].p_next = &pcbFreeTable[i+1];
     }
 
-    pcbFreeTable[i].p_next = NULL;
+    pcbFreeTable[MAXPROC-1].p_next = NULL;
 }
 
 extern pcb_PTR mkEmptyProcQ () {
