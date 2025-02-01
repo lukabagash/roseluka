@@ -3,24 +3,13 @@
 #include "../h/types.h"
 #include <stdio.h>
 
-HIDDEN pcb_t pcbFreeTable[MAXPROC];
 HIDDEN pcb_t *pcbFree_h = NULL;
 
 extern void freePcb (pcb_t *p) {
 /* Insert the element pointed to by p onto the pcbFree list. */
     if (p == NULL) return;
 
-    /* 1. Check if p is already in the free list */
-    pcb_t *cursor = pcbFree_h;
-    while (cursor != NULL) {
-        if (cursor == p) {
-            /* p is already on free list, ignore second free */
-            return; 
-        }
-        cursor = cursor->p_next;
-    }
-
-    /* 2. Otherwise, insert at the head of the free list */
+    /* Insert at the head of the free list */
     p->p_next = pcbFree_h;
     pcbFree_h = p;
 }
@@ -59,8 +48,7 @@ no previous value persist in a pcb when it gets reallocated. */
      *    memset(&(p->p_s), 0, sizeof(state_t));
      *
      * or assign fields individually if needed.
-     */
-    /* Example of zeroing out if it's a simple struct: 
+    Example of zeroing out if it's a simple struct: 
     p->p_s = (state_t){0};  */
 
     return p;
@@ -70,12 +58,15 @@ extern void initPcbs () {
 /* Initialize the pcbFree list to contain all the elements of the
 static array of MAXPROC pcbs. This method will be called only
 once during data structure initialization. */
-    pcbFree_h = NULL;
+    static pcb_t pcbFreeTable[MAXPROC];
+    pcbFree_h = &pcbFreeTable[0];
+
     int i;
-    for (i=0; i < MAXPROC; i++) {
-        pcbFreeTable[i].p_next = pcbFree_h;
-        pcbFree_h = &pcbFreeTable[i];
+    for (i=0; i < MAXPROC-1; i++) {
+        pcbFreeTable[i].p_next = &pcbFreeTable[i+1];
     }
+
+    pcbFreeTable[i].p_next = NULL;
 }
 
 extern pcb_PTR mkEmptyProcQ () {
