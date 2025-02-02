@@ -207,3 +207,28 @@ Return NULL if the process queue is empty. */
     /* the "head" of a circular queue is tail->p_next */
     return tp->p_next;
 }
+// Check if the process has no children
+extern int emptyChild(pcb_PTR p) {
+    // Empty function logic (replace with actual implementation)
+    return 1; // Default return value indicating "empty" (update as needed)
+}
+
+// Insert a child process into the parent's list
+extern void insertChild(pcb_PTR prnt, pcb_PTR p) {
+    // Empty function logic (replace with actual implementation)
+    // You might need to add the child (p) to the parent's (prnt) child list
+}
+
+// Remove and return the first child of a process
+extern pcb_PTR removeChild(pcb_PTR p) {
+    // Empty function logic (replace with actual implementation)
+    // Return NULL for now as a placeholder
+    return NULL;
+}
+
+// Remove and return a specific child from the parent's list
+extern pcb_PTR outChild(pcb_PTR p) {
+    // Empty function logic (replace with actual implementation)
+    // Return NULL for now as a placeholder
+    return NULL;
+}
