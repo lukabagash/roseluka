@@ -207,28 +207,45 @@ Return NULL if the process queue is empty. */
     /* the "head" of a circular queue is tail->p_next */
     return tp->p_next;
 }
-// Check if the process has no children
+/**
+ * Check if the process control block (pcb) has no children.
+ *
+ * @param p Pointer to the pcb.
+ * @return 1 if the pcb has no children, 0 otherwise.
+ */
 extern int emptyChild(pcb_PTR p) {
-    // Empty function logic (replace with actual implementation)
-    return 1; // Default return value indicating "empty" (update as needed)
+    /* Placeholder implementation */
+    return 1;
 }
 
-// Insert a child process into the parent's list
+/**
+ * Insert a pcb as a child of another pcb.
+ *
+ * @param prnt Pointer to the parent pcb.
+ * @param p Pointer to the child pcb to be inserted.
+ */
 extern void insertChild(pcb_PTR prnt, pcb_PTR p) {
-    // Empty function logic (replace with actual implementation)
-    // You might need to add the child (p) to the parent's (prnt) child list
+    /* Placeholder implementation */
 }
 
-// Remove and return the first child of a process
+/**
+ * Remove the first child of the given pcb.
+ *
+ * @param p Pointer to the parent pcb.
+ * @return Pointer to the removed child pcb, or NULL if no children exist.
+ */
 extern pcb_PTR removeChild(pcb_PTR p) {
-    // Empty function logic (replace with actual implementation)
-    // Return NULL for now as a placeholder
+    /* Placeholder implementation */
     return NULL;
 }
 
-// Remove and return a specific child from the parent's list
+/**
+ * Remove a specific child pcb from its parent.
+ *
+ * @param p Pointer to the child pcb to be removed.
+ * @return Pointer to the removed child pcb, or NULL if it was not found.
+ */
 extern pcb_PTR outChild(pcb_PTR p) {
-    // Empty function logic (replace with actual implementation)
-    // Return NULL for now as a placeholder
+    /* Placeholder implementation */
     return NULL;
 }
