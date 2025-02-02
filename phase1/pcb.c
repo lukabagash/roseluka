@@ -69,42 +69,33 @@ once during data structure initialization. */
     pcbFreeTable[MAXPROC-1].p_next = NULL;
 }
 
-extern pcb_PTR mkEmptyProcQ () {
-    return NULL;
+extern pcb_t *mkEmptyProcQ() {
+/* This method is used to initialize a variable to be tail pointer to a
+process queue.
+Return a pointer to the tail of an empty process queue; i.e. NULL. */
 }
 
-extern int emptyProcQ (pcb_PTR tp) {
-    return 1; /* Return a value (e.g., 1) to indicate "empty" */
+extern int emptyProcQ(pcb_t *tp) {
+/* Return TRUE if the queue whose tail is pointed to by tp is empty.
+Return FALSE otherwise. */
 }
-
-extern void insertProcQ (pcb_PTR *tp, pcb_PTR p) {
-    /* Empty implementation */
+extern insertProcQ(pcb_t **tp, pcb_t *p) {
+/* Insert the pcb pointed to by p into the process queue whose tailpointer is pointed to by tp. Note the double indirection through tp
+to allow for the possible updating of the tail pointer as well. */
 }
-
-extern pcb_PTR removeProcQ (pcb_PTR *tp) {
-    return NULL;
+extern pcb_t *removeProcQ(pcb_t **tp) {
+/* Remove the first (i.e. head) element from the process queue whose
+tail-pointer is pointed to by tp. Return NULL if the process queue
+was initially empty; otherwise return the pointer to the removed element. Update the process queue’s tail pointer if necessary. */
 }
-
-extern pcb_PTR outProcQ (pcb_PTR *tp, pcb_PTR p) {
-    return NULL;
+extern pcb_t *outProcQ(pcb_t **tp, pcb_t *p) {
+    /* Remove the pcb pointed to by p from the process queue whose tailpointer is pointed to by tp. Update the process queue’s tail pointer if
+necessary. If the desired entry is not in the indicated queue (an error
+condition), return NULL; otherwise, return p. Note that p can point
+to any element of the process queue. */
 }
-
-extern pcb_PTR headProcQ (pcb_PTR tp) {
-    return NULL;
-}
-
-extern int emptyChild (pcb_PTR p) {
-    return 1; /* Return value meaning "no children" */
-}
-
-extern void insertChild (pcb_PTR prnt, pcb_PTR p) {
-    /* Empty implementation */
-}
-
-extern pcb_PTR removeChild (pcb_PTR p) {
-    return NULL;
-}
-
-extern pcb_PTR outChild (pcb_PTR p) {
-    return NULL;
+extern pcb_t *headProcQ(pcb_t *tp) {
+/* Return a pointer to the first pcb from the process queue whose tail
+is pointed to by tp. Do not remove this pcbfrom the process queue.
+Return NULL if the process queue is empty. */
 }
