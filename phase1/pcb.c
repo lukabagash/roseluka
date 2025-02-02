@@ -5,6 +5,7 @@
 
 HIDDEN pcb_t *pcbFree_h = NULL;
 
+
 extern void freePcb (pcb_t *p) {
 /* Insert the element pointed to by p onto the pcbFree list. */
     if (p == NULL) return;
@@ -70,32 +71,140 @@ once during data structure initialization. */
 }
 
 extern pcb_t *mkEmptyProcQ() {
-/* This method is used to initialize a variable to be tail pointer to a
-process queue.
-Return a pointer to the tail of an empty process queue; i.e. NULL. */
+    /* 
+    This method is used to initialize a variable to be tail pointer to a process queue.
+    Return a pointer to the tail of an empty process queue; i.e. NULL. 
+     
+    This method is used to initialize a variable to be the tail pointer of a process queue. 
+    If the queue is empty, the tail pointer is NULL.
+    */
+    return NULL;
 }
 
 extern int emptyProcQ(pcb_t *tp) {
 /* Return TRUE if the queue whose tail is pointed to by tp is empty.
 Return FALSE otherwise. */
+    return (tp == NULL) ? TRUE : FALSE;
 }
 extern insertProcQ(pcb_t **tp, pcb_t *p) {
 /* Insert the pcb pointed to by p into the process queue whose tailpointer is pointed to by tp. Note the double indirection through tp
 to allow for the possible updating of the tail pointer as well. */
+    /* If the queue is empty, initialize it with p as the sole element. */
+    if (*tp == NULL) {
+        p->p_next = p;  /* circular list: next points to itself */
+        p->p_prev = p;  /* circular list: prev points to itself */
+        *tp = p;        /* p becomes the tail */
+    } else {
+        /* The queue is non-empty. Let "tail" = *tp. */
+
+        /* Link p into the circular list:
+         * p->p_next should be old_tail->p_next (the head),
+         * p->p_prev should be old_tail,
+         * fix the old head’s p_prev to point to p,
+         * fix the old tail’s p_next to point to p,
+         * then update the tail pointer to p.
+         */
+        pcb_t *oldTail = *tp;
+        pcb_t *head = oldTail->p_next;  /* first (head) element */
+
+        p->p_next = head;
+        p->p_prev = oldTail;
+        head->p_prev = p;
+        oldTail->p_next = p;
+
+        /* p is the new tail */
+        *tp = p;
+    }
 }
 extern pcb_t *removeProcQ(pcb_t **tp) {
 /* Remove the first (i.e. head) element from the process queue whose
 tail-pointer is pointed to by tp. Return NULL if the process queue
 was initially empty; otherwise return the pointer to the removed element. Update the process queue’s tail pointer if necessary. */
+/* If the queue is empty, return NULL immediately. */
+    if (*tp == NULL) {
+        return NULL;
+    }
+
+    /* The head is the element right after the tail. */
+    pcb_t *tail = *tp;
+    pcb_t *head = tail->p_next;
+
+    /* If there is only one element in the queue (head == tail) */
+    if (head == tail) {
+        *tp = NULL;   /* the queue becomes empty */
+    } else {
+        /*
+         * More than one element. Remove "head" by:
+         * 1. Setting tail->p_next to head->p_next.
+         * 2. Setting head->p_next->p_prev to tail.
+         */
+        tail->p_next = head->p_next;
+        head->p_next->p_prev = tail;
+    }
+
+    /* Clear pointers in the removed PCB (not strictly required, but a good practice). */
+    head->p_next = NULL;
+    head->p_prev = NULL;
+
+    /* Return the pointer to the removed (head) PCB. */
+    return head;
 }
 extern pcb_t *outProcQ(pcb_t **tp, pcb_t *p) {
     /* Remove the pcb pointed to by p from the process queue whose tailpointer is pointed to by tp. Update the process queue’s tail pointer if
 necessary. If the desired entry is not in the indicated queue (an error
 condition), return NULL; otherwise, return p. Note that p can point
 to any element of the process queue. */
+    if (*tp == NULL || p == NULL) {
+        return NULL; /* empty queue or invalid pcb pointer */
+    }
+
+    /* We must verify that p is actually in the queue. Let's search. */
+    pcb_t *tail = *tp;
+    pcb_t *curr = tail;
+    int found = FALSE;
+
+    /* Traverse the circular list starting at tail. */
+    do {
+        if (curr == p) {
+            found = TRUE;
+            break;
+        }
+        curr = curr->p_next;
+    } while (curr != tail);
+
+    if (!found) {
+        /* p is not in this queue */
+        return NULL;
+    }
+
+    /* At this point, curr == p, meaning p is in the queue. */
+    /* If p is the only element in the queue. */
+    if (p->p_next == p && p->p_prev == p) {
+        *tp = NULL;  /* queue becomes empty */
+    } else {
+        /* Remove p by linking its neighbors directly. */
+        p->p_prev->p_next = p->p_next;
+        p->p_next->p_prev = p->p_prev;
+
+        /* If p was the tail, move the tail pointer */
+        if (p == *tp) {
+            *tp = p->p_prev;
+        }
+    }
+
+    /* Clear p’s next/prev pointers. */
+    p->p_next = NULL;
+    p->p_prev = NULL;
+
+    return p;
 }
 extern pcb_t *headProcQ(pcb_t *tp) {
 /* Return a pointer to the first pcb from the process queue whose tail
 is pointed to by tp. Do not remove this pcbfrom the process queue.
 Return NULL if the process queue is empty. */
+    if (tp == NULL) {
+        return NULL;  /* empty queue => no head */
+    }
+    /* the "head" of a circular queue is tail->p_next */
+    return tp->p_next;
 }
