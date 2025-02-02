@@ -85,7 +85,7 @@ extern int emptyProcQ(pcb_t *tp) {
 Return FALSE otherwise. */
     return (tp == NULL) ? TRUE : FALSE;
 }
-extern insertProcQ(pcb_t **tp, pcb_t *p) {
+extern void insertProcQ(pcb_t **tp, pcb_t *p) {
 /* Insert the pcb pointed to by p into the process queue whose tailpointer is pointed to by tp. Note the double indirection through tp
 to allow for the possible updating of the tail pointer as well. */
     /* If the queue is empty, initialize it with p as the sole element. */
