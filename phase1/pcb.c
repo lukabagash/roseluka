@@ -51,7 +51,7 @@ no previous value persist in a pcb when it gets reallocated. */
     Example of zeroing out if it's a simple struct: 
     p->p_s = (state_t){0};  */
 
-    return p;
+    return NULL;
 }
 
 extern void initPcbs () {
