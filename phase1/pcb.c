@@ -244,6 +244,8 @@ extern void insertChild(pcb_PTR prnt, pcb_PTR p) {
     /* Link 'p' into the parent's child list at the front (head). */
     p->p_prnt = prnt;
     p->p_sib  = prnt->p_child;
+    /*if there is child*/
+    if (prnt->p_child != NULL) prnt->p_child->p_prev = p;
     prnt->p_child = p;
 }
 
