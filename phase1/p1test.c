@@ -233,7 +233,7 @@ void main() {
 	addokbuf("Removing...   \n");
 	for (i = 0; i < 7; i++) {
 		if ((q = removeChild(procp[0])) == NULL)
-			adderrbuf("removeChild: unexpected NULL   \n");
+			adderrbuf("removeChild: unexpected NULL   ");
 		
 		addokbuf("removed +1      \n");
 	}
