@@ -207,45 +207,119 @@ Return NULL if the process queue is empty. */
     /* the "head" of a circular queue is tail->p_next */
     return tp->p_next;
 }
-/**
- * Check if the process control block (pcb) has no children.
- *
- * @param p Pointer to the pcb.
- * @return 1 if the pcb has no children, 0 otherwise.
- */
+/* Return TRUE if the pcb pointed to by p has no children. Return
+FALSE otherwise. */
 extern int emptyChild(pcb_PTR p) {
-    /* Placeholder implementation */
-    return 1;
+    /*
+     * Return TRUE if the pcb pointed to by p has no children. Return FALSE otherwise.
+     * A pcb has no children if p->p_child == NULL.
+     */
+
+    /* If p is NULL, treat as having no children (edge case). */
+    if (p == NULL) {
+        return TRUE;
+    }
+
+    /* Return TRUE if p_child is NULL, else FALSE. */
+    return (p->p_child == NULL) ? TRUE : FALSE;
 }
 
-/**
- * Insert a pcb as a child of another pcb.
- *
- * @param prnt Pointer to the parent pcb.
- * @param p Pointer to the child pcb to be inserted.
- */
+
+/* Make the pcb pointed to by p a child of the pcb pointed to by prnt.
+*/
 extern void insertChild(pcb_PTR prnt, pcb_PTR p) {
-    /* Placeholder implementation */
+    /*
+     * Make the pcb pointed to by p a child of the pcb pointed to by prnt.
+     * 
+     * We insert p at the "head" of prnt’s child-list:
+     *  1. p->p_prnt = prnt
+     *  2. p->p_sib  = prnt->p_child
+     *  3. prnt->p_child = p
+     */
+
+    if (prnt == NULL || p == NULL) {
+        return; /* Invalid parameters => do nothing. */
+    }
+
+    /* Link 'p' into the parent's child list at the front (head). */
+    p->p_prnt = prnt;
+    p->p_sib  = prnt->p_child;
+    prnt->p_child = p;
 }
 
-/**
- * Remove the first child of the given pcb.
- *
- * @param p Pointer to the parent pcb.
- * @return Pointer to the removed child pcb, or NULL if no children exist.
- */
+
+/* Make the first child of the pcb pointed to by p no longer a child of
+p. Return NULL if initially there were no children of p. Otherwise,
+return a pointer to this removed first child pcb. */
 extern pcb_PTR removeChild(pcb_PTR p) {
-    /* Placeholder implementation */
-    return NULL;
+    /*
+     * Remove the FIRST child of the pcb pointed to by p.
+     * Return NULL if there were no children.
+     * Otherwise, return the pointer to the removed (former) first child.
+     */
+
+    if (p == NULL || p->p_child == NULL) {
+        return NULL;  /* No parent or no children => cannot remove a child. */
+    }
+
+    /* 'child' is the first child in p's child list. */
+    pcb_PTR child = p->p_child;
+
+    /* Remove 'child' from the front of the list. */
+    p->p_child = child->p_sib;
+
+    /* Clear the removed child's pointers. */
+    child->p_prnt = NULL;
+    child->p_sib  = NULL;
+
+    return child;
 }
 
-/**
- * Remove a specific child pcb from its parent.
- *
- * @param p Pointer to the child pcb to be removed.
- * @return Pointer to the removed child pcb, or NULL if it was not found.
- */
-extern pcb_PTR outChild(pcb_PTR p) {
-    /* Placeholder implementation */
-    return NULL;
+
+/* Make the pcb pointed to by p no longer the child of its parent. If
+the pcb pointed to by p has no parent, return NULL; otherwise, return
+p. Note that the element pointed to by p need not be the first child of
+its parent. */
+extern pcb_t *outChild(pcb_t *p) {
+    /*
+     * Remove the pcb pointed to by p from its parent's child list
+     * in O(1) time, assuming siblings form a doubly linked list
+     * via (p_sib, p_prev).
+     *
+     * Return NULL if p has no parent. Otherwise, return p.
+     */
+
+    /* If there's no pcb or no parent, nothing to remove. */
+    if (p == NULL || p->p_prnt == NULL) {
+        return NULL;
+    }
+
+    pcb_t *parent = p->p_prnt;
+
+    /*
+     * CASE 1: p is the first child of 'parent' 
+     *         => parent's p_child points to p
+     *         => so p->p_prev must be NULL
+     */
+    if (p->p_prev == NULL) {
+        parent->p_child = p->p_sib;       /* Move parent's child pointer forward */
+    } else {
+        /* CASE 2: p has a previous sibling => link that sibling to p->p_sib */
+        p->p_prev->p_sib = p->p_sib;
+    }
+
+    /*
+     * CASE 3: If p has a next sibling, update that sibling's p_prev pointer
+     *         to skip 'p'.
+     */
+    if (p->p_sib != NULL) {
+        p->p_sib->p_prev = p->p_prev;
+    }
+
+    /* Detach p entirely from the tree */
+    p->p_prnt = NULL;
+    p->p_sib  = NULL;
+    p->p_prev = NULL;  /* no “previous sibling” anymore */
+
+    return p;
 }
