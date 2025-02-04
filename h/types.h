@@ -83,7 +83,8 @@ typedef struct pcb_t {
     /* Process tree fields */
     struct pcb_t *p_prnt;    /* Pointer to parent PCB   */
     struct pcb_t *p_child;   /* Pointer to first child  */
-    struct pcb_t *p_sib;     /* Pointer to next sibling */
+    struct pcb_t *p_next_sib;/* Pointer to next sibling */
+	struct pcb_t *p_prev_sib;/* Pointer to previous sibling */
 
     /* Processor state, CPU time, and semaphore on which proc might be blocked */
     state_t p_s;             /* Processor state         */

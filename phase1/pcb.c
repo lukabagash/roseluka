@@ -33,7 +33,7 @@ no previous value persist in a pcb when it gets reallocated. */
     p->p_prev = NULL;
     p->p_prnt = NULL;
     p->p_child = NULL;
-    p->p_sib = NULL;
+    p->p_next_sib = NULL;
 
     /* Reset CPU time, semaphore address, and support structure pointer */
     p->p_time = 0;
@@ -233,7 +233,7 @@ extern void insertChild(pcb_PTR prnt, pcb_PTR p) {
      * 
      * We insert p at the "head" of prnt’s child-list:
      *  1. p->p_prnt = prnt
-     *  2. p->p_sib  = prnt->p_child
+     *  2. p->p_next_sib  = prnt->p_child
      *  3. prnt->p_child = p
      */
 
@@ -243,9 +243,9 @@ extern void insertChild(pcb_PTR prnt, pcb_PTR p) {
 
     /* Link 'p' into the parent's child list at the front (head). */
     p->p_prnt = prnt;
-    p->p_sib  = prnt->p_child;
+    p->p_next_sib  = prnt->p_child;
     /*if there is child*/
-    if (prnt->p_child != NULL) prnt->p_child->p_prev = p;
+    if (prnt->p_child != NULL) prnt->p_child->p_prev_sib = p;
     prnt->p_child = p;
 }
 
@@ -268,11 +268,11 @@ extern pcb_PTR removeChild(pcb_PTR p) {
     pcb_PTR child = p->p_child;
 
     /* Remove 'child' from the front of the list. */
-    p->p_child = child->p_sib;
+    p->p_child = child->p_next_sib;
 
     /* Clear the removed child's pointers. */
     child->p_prnt = NULL;
-    child->p_sib  = NULL;
+    child->p_next_sib  = NULL;
 
     return child;
 }
@@ -286,7 +286,7 @@ extern pcb_t *outChild(pcb_t *p) {
     /*
      * Remove the pcb pointed to by p from its parent's child list
      * in O(1) time, assuming siblings form a doubly linked list
-     * via (p_sib, p_prev).
+     * via (p_next_sib, p_prev_sib).
      *
      * Return NULL if p has no parent. Otherwise, return p.
      */
@@ -301,27 +301,27 @@ extern pcb_t *outChild(pcb_t *p) {
     /*
      * CASE 1: p is the first child of 'parent' 
      *         => parent's p_child points to p
-     *         => so p->p_prev must be NULL
+     *         => so p->p_prev_sib must be NULL
      */
-    if (p->p_prev == NULL) {
-        parent->p_child = p->p_sib;       /* Move parent's child pointer forward */
+    if (p->p_prev_sib == NULL) {
+        parent->p_child = p->p_next_sib;       /* Move parent's child pointer forward */
     } else {
-        /* CASE 2: p has a previous sibling => link that sibling to p->p_sib */
-        p->p_prev->p_sib = p->p_sib;
+        /* CASE 2: p has a previous sibling => link that sibling to p->p_next_sib */
+        p->p_prev_sib->p_next_sib = p->p_next_sib;
     }
 
     /*
-     * CASE 3: If p has a next sibling, update that sibling's p_prev pointer
+     * CASE 3: If p has a next sibling, update that sibling's p_prev_sib pointer
      *         to skip 'p'.
      */
-    if (p->p_sib != NULL) {
-        p->p_sib->p_prev = p->p_prev;
+    if (p->p_next_sib != NULL) {
+        p->p_next_sib->p_prev_sib = p->p_prev_sib;
     }
 
     /* Detach p entirely from the tree */
     p->p_prnt = NULL;
-    p->p_sib  = NULL;
-    p->p_prev = NULL;  /* no “previous sibling” anymore */
+    p->p_next_sib  = NULL;
+    p->p_prev_sib = NULL;  /* no “previous sibling” anymore */
 
     return p;
 }
