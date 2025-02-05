@@ -181,7 +181,7 @@ extern pcb_t *outProcQ(pcb_t **tp, pcb_t *p) {
 
     /* If p is the only element in the queue. */
     if (p->p_next == p && p->p_prev == p) {
-        *tp = NULL; // The queue becomes empty.
+        *tp = NULL;
     } else {
         /* Remove p by linking its neighbors. */
         p->p_prev->p_next = p->p_next;
