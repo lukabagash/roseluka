@@ -75,6 +75,8 @@ typedef struct state_t {
 
 } state_t, *state_PTR;
 
+
+/* process control block type */
 typedef struct pcb_t {
     /* Process queue fields */
     struct pcb_t *p_next;    /* Pointer to next entry on queue    */
@@ -94,6 +96,15 @@ typedef struct pcb_t {
     /* Pointer to any support structure (used in later phases)  */
     support_t *p_supportStruct;
 } pcb_t;
+
+
+/* semaphore descriptor type */
+typedef struct semd_t {
+struct semd_t *s_next; 		/* next element on the ASL */
+int *s_semAdd; 				/* pointer to the semaphore*/
+pcb_t *s_procQ; 			/* tail pointer to a process queue */
+} semd_t;
+
 
 #define	s_at	s_reg[0]
 #define	s_v0	s_reg[1]
