@@ -15,7 +15,7 @@
 
 
 /* head of the free PCB list */
-HIDDEN pcb_t *pcbFree_h = NULL;
+HIDDEN pcb_PTR pcbFree_h = NULL;
 
 
 /* freePcb inserts the PCB pointed to by p at the head of the free PCB list.
@@ -33,7 +33,7 @@ extern void freePcb(pcb_t *p) {
 /* allocPcb removes a PCB from the head of the free list, resets its fields, and returns it.
  * Precondition: The free PCB list (pcbFree_h) has been initialized.
  * Return: Pointer to a PCB if available; otherwise, NULL. */
-extern pcb_t *allocPcb() {
+extern pcb_PTR allocPcb() {
     /* If the free list is empty, return NULL. */
     if (pcbFree_h == NULL) {
         return NULL;
@@ -80,7 +80,7 @@ extern void initPcbs() {
 /* mkEmptyProcQ initializes and returns an empty process queue.
  * Precondition: None.
  * Return: NULL, representing an empty process queue by a NULL tail pointer. */
-extern pcb_t *mkEmptyProcQ() {
+extern pcb_PTR mkEmptyProcQ() {
     return NULL;
 }
 
@@ -124,7 +124,7 @@ extern void insertProcQ(pcb_t **tp, pcb_t *p) {
  * Input: Pointer to the tail pointer of a process queue.
  * Precondition: *tp is either NULL or a valid tail pointer of a circular queue.
  * Return: Pointer to the removed head PCB; if the queue is empty, returns NULL. */
-extern pcb_t *removeProcQ(pcb_t **tp) {
+extern pcb_PTR removeProcQ(pcb_t **tp) {
     /* If the queue is empty, return NULL. */
     if (*tp == NULL) {
         return NULL;
@@ -153,7 +153,7 @@ extern pcb_t *removeProcQ(pcb_t **tp) {
  * Input: Pointer to the tail of a process queue.
  * Precondition: tp is either NULL or a valid tail pointer.
  * Return: Pointer to the head PCB; if the queue is empty, returns NULL. */
-extern pcb_t *headProcQ(pcb_t *tp) {
+extern pcb_PTR headProcQ(pcb_t *tp) {
     /* If the queue is empty, return NULL. */
     if (tp == NULL) {
         return NULL;
@@ -227,7 +227,7 @@ extern pcb_PTR removeChild(pcb_PTR p) {
  * Input: Pointer to a PCB.
  * Precondition: p is a valid PCB pointer and may be a child of some parent.
  * Return: Pointer to p if removal is successful; if p has no parent, returns NULL. */
-extern pcb_t *outChild(pcb_t *p) {
+extern pcb_PTR outChild(pcb_t *p) {
     /* If p is NULL or has no parent, nothing to remove. */
     if (p == NULL || p->p_prnt == NULL) {
         return NULL;
@@ -255,7 +255,7 @@ extern pcb_t *outChild(pcb_t *p) {
     return p;
 }
 
-extern pcb_t *outProcQ(pcb_t **tp, pcb_t *p) {
+extern pcb_PTR outProcQ(pcb_t **tp, pcb_t *p) {
     /* Remove the pcb pointed to by p from the process queue whose tailpointer is pointed to by tp. Update the process queue’s tail pointer if
 necessary. If the desired entry is not in the indicated queue (an error
 condition), return NULL; otherwise, return p. Note that p can point
