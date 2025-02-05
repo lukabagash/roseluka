@@ -44,7 +44,7 @@ extern int insertBlocked (int *semAdd, pcb_t *p) {
    semd_t *prev, *sd;
     
     /* Search the ASL for semAdd */
-    sd = semAdd;
+    sd = *semAdd;
     
     if (sd == NULL) {
         /* No descriptor found; we need to allocate one from semdFree_h */
