@@ -95,7 +95,7 @@ typedef struct pcb_t {
 
     /* Pointer to any support structure (used in later phases)  */
     support_t *p_supportStruct;
-} pcb_t;
+} pcb_t, *pcb_PTR;
 
 
 /* semaphore descriptor type */
