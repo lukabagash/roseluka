@@ -254,3 +254,53 @@ extern pcb_t *outChild(pcb_t *p) {
     p->p_prev_sib = NULL;
     return p;
 }
+
+extern pcb_t *outProcQ(pcb_t **tp, pcb_t *p) {
+    /* Remove the pcb pointed to by p from the process queue whose tailpointer is pointed to by tp. Update the process queue’s tail pointer if
+necessary. If the desired entry is not in the indicated queue (an error
+condition), return NULL; otherwise, return p. Note that p can point
+to any element of the process queue. */
+    if (*tp == NULL || p == NULL) {
+        return NULL; /* empty queue or invalid pcb pointer */
+    }
+
+    /* We must verify that p is actually in the queue. Let's search. */
+    pcb_t *tail = *tp;
+    pcb_t *curr = tail;
+    int found = FALSE;
+
+    /* Traverse the circular list starting at tail. */
+    do {
+        if (curr == p) {
+            found = TRUE;
+            break;
+        }
+        curr = curr->p_next;
+    } while (curr != tail);
+
+    if (!found) {
+        /* p is not in this queue */
+        return NULL;
+    }
+
+    /* At this point, curr == p, meaning p is in the queue. */
+    /* If p is the only element in the queue. */
+    if (p->p_next == p && p->p_prev == p) {
+        *tp = NULL;  /* queue becomes empty */
+    } else {
+        /* Remove p by linking its neighbors directly. */
+        p->p_prev->p_next = p->p_next;
+        p->p_next->p_prev = p->p_prev;
+
+        /* If p was the tail, move the tail pointer */
+        if (p == *tp) {
+            *tp = p->p_prev;
+        }
+    }
+
+    /* Clear p’s next/prev pointers. */
+    p->p_next = NULL;
+    p->p_prev = NULL;
+
+    return p;
+}
