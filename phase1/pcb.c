@@ -212,7 +212,7 @@ extern pcb_PTR removeChild(pcb_PTR p) {
         return NULL;
     }
 
-    pcb_PTR child = p->p_child;  // First child.
+    pcb_PTR child = p->p_child;  /* First child. *
     /* Remove the child from the parent's child list. */
     p->p_child = child->p_next_sib;
 
