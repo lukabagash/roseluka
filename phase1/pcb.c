@@ -97,7 +97,7 @@ extern int emptyProcQ(pcb_t *tp) {
 /* insertProcQ inserts the PCB pointed to by p into the process queue.
  * Input: 
  *    tp - Pointer to the tail pointer of a process queue.
- *    p - Pointer to a PCB to be inserted.
+ *    p  - Pointer to a PCB to be inserted.
  * Precondition: If the queue is non-empty, *tp points to a valid tail in a circular queue. */
 extern void insertProcQ(pcb_t **tp, pcb_t *p) {
     /* If the queue is empty, initialize circular list with a single element. */
@@ -152,7 +152,7 @@ extern pcb_PTR removeProcQ(pcb_t **tp) {
 /* outProcQ removes the specified PCB from the process queue.
  * Input:
  *    tp - Pointer to the tail pointer of a process queue (pcb_t **tp)
- *    p - Pointer to a PCB (pcb_t *p) that should be removed.
+ *    p  - Pointer to a PCB (pcb_t *p) that should be removed.
  * Precondition: If the queue is non-empty, *tp points to a valid tail of a circular queue.
  * Return: Pointer to the PCB if removal is successful; otherwise, returns NULL. */
 extern pcb_t *outProcQ(pcb_t **tp, pcb_t *p) {
@@ -231,7 +231,7 @@ extern int emptyChild(pcb_PTR p) {
 /* insertChild makes the PCB pointed to by p a child of the PCB pointed to by prnt.
  * Input:
  *    prnt - Pointer to the parent PCB.
- *    p - Pointer to the child PCB.
+ *    p    - Pointer to the child PCB.
  * Precondition: Both prnt and p are valid PCB pointers.
  * Return: None. */
 extern void insertChild(pcb_PTR prnt, pcb_PTR p) {

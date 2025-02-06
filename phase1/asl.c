@@ -40,8 +40,7 @@ static semd_t *search_semd (int *semAdd, semd_t **prev) {
     return NULL;
 }
 
-/*
- * insertBlocked inserts a PCB into the blocked queue for a semaphore.
+/* insertBlocked inserts a PCB into the blocked queue for a semaphore.
  * Input:
  *    semAdd - Pointer to the semaphore's physical address.
  *    p      - Pointer to the PCB to insert.
@@ -49,8 +48,7 @@ static semd_t *search_semd (int *semAdd, semd_t **prev) {
  *    p is a valid PCB.
  * Return:
  *    TRUE if a new semaphore descriptor was needed but none was available;
- *    FALSE otherwise.
- */
+ *    FALSE otherwise. */
 extern int insertBlocked (int *semAdd, pcb_t *p) {
     semd_t *prev, *sd;
     
@@ -85,15 +83,13 @@ extern int insertBlocked (int *semAdd, pcb_t *p) {
     return FALSE;
 }
 
-/*
- * removeBlocked removes the head PCB from a semaphore's blocked queue.
+/* removeBlocked removes the head PCB from a semaphore's blocked queue.
  * Input:
  *    semAdd - Pointer to the semaphore's physical address.
  * Precondition:
  *    semAdd is valid; however, the ASL may not contain its descriptor.
  * Return:
- *    Pointer to the removed PCB if successful; otherwise, NULL.
- */
+ *    Pointer to the removed PCB if successful; otherwise, NULL. */
 extern pcb_PTR removeBlocked (int *semAdd) {
     semd_t *prev, *sd;
     pcb_t *p;
@@ -123,15 +119,13 @@ extern pcb_PTR removeBlocked (int *semAdd) {
     return p;
 }
 
-/*
- * outBlocked removes a specific PCB from its semaphore's blocked queue.
+/* outBlocked removes a specific PCB from its semaphore's blocked queue.
  * Input:
  *    p - Pointer to the PCB to remove.
  * Precondition:
  *    p is valid and its p_semAdd field is non-NULL.
  * Return:
- *    Pointer to the removed PCB if found; otherwise, NULL.
- */
+ *    Pointer to the removed PCB if found; otherwise, NULL. */
 extern pcb_PTR outBlocked (pcb_PTR p) {
     semd_t *prev, *sd;
     pcb_t *removed;
@@ -165,15 +159,13 @@ extern pcb_PTR outBlocked (pcb_PTR p) {
     return p;
 }
 
-/*
- * headBlocked retrieves the head PCB from a semaphore's blocked queue without removal.
+/* headBlocked retrieves the head PCB from a semaphore's blocked queue without removal.
  * Input:
  *    semAdd - Pointer to the semaphore's physical address.
  * Precondition:
  *    The ASL may or may not contain the descriptor for semAdd.
  * Return:
- *    Pointer to the head PCB if it exists; otherwise, NULL.
- */
+ *    Pointer to the head PCB if it exists; otherwise, NULL. */
 extern pcb_PTR headBlocked (int *semAdd) {
     semd_t *prev, *sd;
     
@@ -186,13 +178,11 @@ extern pcb_PTR headBlocked (int *semAdd) {
 }
 
 
-/*
- * initASL initializes the ASL and free semaphore descriptor list.
+/* initASL initializes the ASL and free semaphore descriptor list.
  * Precondition:
  *    None.
  * Return:
- *    None.
- */
+ *    None. */
 extern void initASL () {
     static semd_t semdTable[MAXPROC];   /* A static array of semaphore descriptors. */
 
