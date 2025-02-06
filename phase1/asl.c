@@ -41,56 +41,39 @@ static semd_t *search_semd (int *semAdd, semd_t **prev) {
 }
 
 /*
- * insertBlocked
- *
- * Inserts the PCB pointed to by p into the process queue associated with the
- * semaphore whose physical address is semAdd.
- *
+ * insertBlocked inserts a PCB into the blocked queue for a semaphore.
  * Input:
  *    semAdd - Pointer to the semaphore's physical address.
- *    p      - Pointer to the PCB to be inserted.
- *
+ *    p      - Pointer to the PCB to insert.
  * Precondition:
- *    p is a valid PCB pointer.
- *
- * Behavior:
- *    - If the semaphore descriptor for semAdd does not exist in the ASL, a new descriptor
- *      is allocated from the semdFree list.
- *    - The new descriptor is initialized (fields s_semAdd, s_procQ, and s_next) and inserted
- *      into the ASL in its proper sorted position.
- *    - The PCB is then inserted at the tail of the process queue for the semaphore,
- *      and its p_semAdd field is set to semAdd.
- *
+ *    p is a valid PCB.
  * Return:
- *    TRUE if a new semaphore descriptor was needed but none was available (error condition),
+ *    TRUE if a new semaphore descriptor was needed but none was available;
  *    FALSE otherwise.
  */
 extern int insertBlocked (int *semAdd, pcb_t *p) {
     semd_t *prev, *sd;
     
-    /* Search the ASL for an existing semaphore descriptor with semAdd */
+    /* Look for an existing descriptor in the ASL */
     sd = search_semd(semAdd, &prev);
     
     if (sd == NULL) {
-        /* No descriptor found; allocate one from the free list */
+        /* Allocate a new descriptor from the free list if available */
         if (semdFree_h == NULL) {
-            return TRUE;  /* Error: no free semaphore descriptor available */
+            return TRUE;
         }
         sd = semdFree_h;
         semdFree_h = semdFree_h->s_next;  /* Remove descriptor from free list */
         
-        /* Initialize the new semaphore descriptor */
         sd->s_semAdd = semAdd;
-        sd->s_procQ = mkEmptyProcQ();  /* Creates an empty process queue (should return NULL) */
+        sd->s_procQ = mkEmptyProcQ();
         sd->s_next = NULL;
         
         /* Insert the new descriptor into the ASL in sorted order */
         if (prev == NULL) {
-            /* Insertion at the head of the ASL */
             sd->s_next = semd_h;
             semd_h = sd;
         } else {
-            /* Insertion after the descriptor pointed to by prev */
             sd->s_next = prev->s_next;
             prev->s_next = sd;
         }
@@ -103,51 +86,36 @@ extern int insertBlocked (int *semAdd, pcb_t *p) {
 }
 
 /*
- * removeBlocked
- *
- * Removes the first (head) PCB from the process queue associated with the semaphore
- * whose physical address is semAdd.
- *
+ * removeBlocked removes the head PCB from a semaphore's blocked queue.
  * Input:
  *    semAdd - Pointer to the semaphore's physical address.
- *
  * Precondition:
- *    semAdd is a valid semaphore address; however, the ASL may not contain a descriptor
- *    for it.
- *
- * Behavior:
- *    - Searches for the semaphore descriptor in the ASL.
- *    - If found, removes the head PCB from its process queue and sets that PCB's p_semAdd field to NULL.
- *    - If the process queue becomes empty after removal, the semaphore descriptor is removed from the ASL
- *      and returned to the semdFree list.
- *
+ *    semAdd is valid; however, the ASL may not contain its descriptor.
  * Return:
- *    Pointer to the removed PCB if successful; otherwise, returns NULL.
+ *    Pointer to the removed PCB if successful; otherwise, NULL.
  */
 extern pcb_PTR removeBlocked (int *semAdd) {
     semd_t *prev, *sd;
     pcb_t *p;
     
-    /* Locate the semaphore descriptor in the ASL */
+    /* Find the descriptor for semAdd */
     sd = search_semd(semAdd, &prev);
     if (sd == NULL) {
         return NULL;
     }
     
-    /* Remove the head PCB from the process queue */
     p = removeProcQ(&(sd->s_procQ));
     if (p != NULL) {
         p->p_semAdd = NULL;
     }
     
-    /* If the process queue is now empty, remove the semaphore descriptor from the ASL */
+    /* If the queue becomes empty, remove the descriptor from the ASL */
     if (emptyProcQ(sd->s_procQ)) {
         if (prev == NULL) {
             semd_h = sd->s_next;
         } else {
             prev->s_next = sd->s_next;
         }
-        /* Return the descriptor to the free list */
         sd->s_next = semdFree_h;
         semdFree_h = sd;
     }
@@ -156,32 +124,18 @@ extern pcb_PTR removeBlocked (int *semAdd) {
 }
 
 /*
- * outBlocked
- *
- * Removes a specific PCB from the process queue associated with its semaphore.
- *
+ * outBlocked removes a specific PCB from its semaphore's blocked queue.
  * Input:
- *    p - Pointer to the PCB to be removed.
- *
+ *    p - Pointer to the PCB to remove.
  * Precondition:
- *    p is a valid PCB pointer and its p_semAdd field is non-NULL.
- *
- * Behavior:
- *    - Locates the semaphore descriptor corresponding to p->p_semAdd in the ASL.
- *    - Removes the PCB p from the associated process queue.
- *    - If p is not found within that queue, returns NULL.
- *    - If the process queue becomes empty after removal, the semaphore descriptor is removed
- *      from the ASL and returned to the semdFree list.
- *    - Unlike removeBlocked, p->p_semAdd is NOT reset.
- *
+ *    p is valid and its p_semAdd field is non-NULL.
  * Return:
- *    Pointer to the PCB if removal is successful; otherwise, returns NULL.
+ *    Pointer to the removed PCB if found; otherwise, NULL.
  */
 extern pcb_PTR outBlocked (pcb_PTR p) {
     semd_t *prev, *sd;
     pcb_t *removed;
     
-    /* Validate input PCB and its semaphore address */
     if (p == NULL || p->p_semAdd == NULL) {
         return NULL;
     }
@@ -192,13 +146,12 @@ extern pcb_PTR outBlocked (pcb_PTR p) {
         return NULL;
     }
     
-    /* Remove PCB p from the process queue */
     removed = outProcQ(&(sd->s_procQ), p);
     if (removed == NULL) {
         return NULL;
     }
     
-    /* If the process queue is now empty, remove the semaphore descriptor from the ASL */
+    /* Remove the descriptor from the ASL if its queue is now empty */
     if (emptyProcQ(sd->s_procQ)) {
         if (prev == NULL) {
             semd_h = sd->s_next;
@@ -209,34 +162,21 @@ extern pcb_PTR outBlocked (pcb_PTR p) {
         semdFree_h = sd;
     }
     
-    /* Do NOT reset p->p_semAdd */
     return p;
 }
 
 /*
- * headBlocked
- *
- * Returns a pointer to the head PCB of the process queue associated with the
- * semaphore whose physical address is semAdd, without removing it.
- *
+ * headBlocked retrieves the head PCB from a semaphore's blocked queue without removal.
  * Input:
  *    semAdd - Pointer to the semaphore's physical address.
- *
  * Precondition:
- *    The ASL may or may not contain a descriptor for semAdd.
- *
- * Behavior:
- *    - Searches for the semaphore descriptor in the ASL.
- *    - If found, returns the head of its process queue.
- *    - If the descriptor is not found or the process queue is empty, returns NULL.
- *
+ *    The ASL may or may not contain the descriptor for semAdd.
  * Return:
- *    Pointer to the head PCB if available; otherwise, NULL.
+ *    Pointer to the head PCB if it exists; otherwise, NULL.
  */
 extern pcb_PTR headBlocked (int *semAdd) {
     semd_t *prev, *sd;
     
-    /* Locate the semaphore descriptor in the ASL */
     sd = search_semd(semAdd, &prev);
     if (sd == NULL) {
         return NULL;
@@ -245,19 +185,11 @@ extern pcb_PTR headBlocked (int *semAdd) {
     return headProcQ(sd->s_procQ);
 }
 
+
 /*
- * initASL
- *
- * Initializes the Active Semaphore List (ASL) data structures.
- *
- * Behavior:
- *    - Initializes the semdFree list to include all elements of the static semdTable array.
- *    - Sets the s_semAdd and s_procQ fields of each descriptor in semdTable to NULL.
- *    - This function is called once during system initialization.
- *
+ * initASL initializes the ASL and free semaphore descriptor list.
  * Precondition:
  *    None.
- *
  * Return:
  *    None.
  */
