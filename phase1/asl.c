@@ -34,6 +34,7 @@ static semd_t *search_semd (int *semAdd, semd_t **prev) {
         *prev = curr;
         curr = curr->s_next;
     }
+    /*Check if the current descriptor matches the semaphore address*/
     if (curr != NULL && curr->s_semAdd == semAdd) {
         return curr;
     }
@@ -55,6 +56,7 @@ extern int insertBlocked (int *semAdd, pcb_t *p) {
     /* Look for an existing descriptor in the ASL */
     sd = search_semd(semAdd, &prev);
     
+    /*If no descriptor exists for the semaphore*/
     if (sd == NULL) {
         /* Allocate a new descriptor from the free list if available */
         if (semdFree_h == NULL) {
@@ -94,19 +96,23 @@ extern pcb_PTR removeBlocked (int *semAdd) {
     semd_t *prev, *sd;
     pcb_t *p;
     
-    /* Find the descriptor for semAdd */
     sd = search_semd(semAdd, &prev);
+
+    /*If no descriptor exists for the semaphore*/
     if (sd == NULL) {
         return NULL;
     }
     
     p = removeProcQ(&(sd->s_procQ));
+
+    /* Clear the PCB's semaphore field */
     if (p != NULL) {
         p->p_semAdd = NULL;
     }
     
     /* If the queue becomes empty, remove the descriptor from the ASL */
     if (emptyProcQ(sd->s_procQ)) {
+        /* If the descriptor is at the head of the ASL */
         if (prev == NULL) {
             semd_h = sd->s_next;
         } else {
@@ -130,6 +136,7 @@ extern pcb_PTR outBlocked (pcb_PTR p) {
     semd_t *prev, *sd;
     pcb_t *removed;
     
+    /*No descriptor exists for the semaphore*/
     if (p == NULL || p->p_semAdd == NULL) {
         return NULL;
     }
@@ -141,12 +148,14 @@ extern pcb_PTR outBlocked (pcb_PTR p) {
     }
     
     removed = outProcQ(&(sd->s_procQ), p);
+    /*PCB was not found in the queue*/
     if (removed == NULL) {
         return NULL;
     }
     
     /* Remove the descriptor from the ASL if its queue is now empty */
     if (emptyProcQ(sd->s_procQ)) {
+        /*Descriptor is at the head of the ASL*/
         if (prev == NULL) {
             semd_h = sd->s_next;
         } else {
@@ -170,6 +179,7 @@ extern pcb_PTR headBlocked (int *semAdd) {
     semd_t *prev, *sd;
     
     sd = search_semd(semAdd, &prev);
+    /*No descriptor exists for the semaphore*/
     if (sd == NULL) {
         return NULL;
     }
