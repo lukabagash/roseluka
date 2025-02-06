@@ -10,47 +10,23 @@
 */
 
 #include "../h/asl.h"
-#include "../h/pcb.h"    /* If pcb_PTR is defined here or in types.h, include as appropriate */
-#include "../h/const.h"  /* For MAXPROC and other constants */
-#include "../h/types.h"  /* For type definitions */
+#include "../h/pcb.h"    
+#include "../h/const.h"  
+#include "../h/types.h"  
 
-/* 
- * Global Variables:
- *
- * semd_h: Head of the Active Semaphore List (ASL). This list holds the semaphore
- *         descriptors for active semaphores.
- *
- * semdFree_h: Head of the free list for semaphore descriptors. This list is used
- *             to allocate new semaphore descriptors when a blocked process requires
- *             one.
- */
-HIDDEN semd_t *semd_h = NULL;
-HIDDEN semd_t *semdFree_h = NULL;
 
-/*
- * semdTable: A static array of semaphore descriptors.
- *           The free list is initialized to contain all the elements in this table.
- */
-static semd_t semdTable[MAXPROC];
+HIDDEN semd_t *semd_h = NULL;   /* Head of ASL which holds semaphore descriptors for active semaphores. */
+HIDDEN semd_t *semdFree_h = NULL;   /* Head of the free list for semaphore descriptors. */
 
-/*
- * search_semd
- *
- * Searches for a semaphore descriptor in the ASL based on the semaphore's physical address.
- *
+
+/* search_semd searches for a semaphore descriptor in the ASL based on the semaphore's physical address.
  * Input:
  *    semAdd - Pointer to the semaphore's physical address.
  *    prev   - Address of a pointer variable that will be set to point to the descriptor
  *             immediately preceding the found descriptor, or remain NULL if the found
  *             descriptor is at the head (or if the ASL is empty).
- *
- * Precondition:
- *    The ASL is maintained in sorted order based on the s_semAdd field.
- *
- * Return:
- *    Pointer to the semaphore descriptor with s_semAdd equal to semAdd if found;
- *    otherwise, returns NULL.
- */
+ * Precondition: The ASL is maintained in sorted order based on the s_semAdd field.
+ * Return: Pointer to the semaphore descriptor with s_semAdd equal to semAdd if found; otherwise, returns NULL. */
 static semd_t *search_semd (int *semAdd, semd_t **prev) {
     semd_t *curr = semd_h;
     *prev = NULL;
@@ -286,8 +262,9 @@ extern pcb_PTR headBlocked (int *semAdd) {
  *    None.
  */
 extern void initASL () {
+    static semd_t semdTable[MAXPROC];   /* A static array of semaphore descriptors. */
+
     int i;
-    
     /* Initialize the semdTable entries and link them into the free list */
     for (i = 0; i < MAXPROC - 1; i++) {
         semdTable[i].s_next = &semdTable[i + 1];
