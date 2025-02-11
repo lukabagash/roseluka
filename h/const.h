@@ -12,6 +12,27 @@
 #define WORDLEN			  4				  /* word size in bytes	*/
 #define MAXPROC           20
 
+/* Maximum number of external (sub)devices in UMPS3, plus one additional semaphore to support
+the Pseudo-clock */
+#define MAXDEVICECNT	49
+#define GETEXCEPCODE	0x0000007C	/* constant for setting all bits to 0 in the Cause register except for the ExcCode field */
+#define CAUSESHIFT		2			/* number of bits needed to shift the ExcCode field over to the right so that we can read the ExcCode directly */
+#define INTCONST		0			/* exception code signaling an interrupt occurred */
+#define TLBCONST		3			/* upper bound on the exception codes that signal a TLB exception occurred */
+#define SYSCONST		8			/* exception code signaling a SYSCALL occurred */
+#define	INITIALPROCCNT		0			/* the initial value of procCnt */
+#define	INITIALSFTBLKCNT	0			/* the initial value of softBlockCnt */
+#define	INITIALDEVSEMA4		0			/* the initial value of the device semaphores */
+/* Address for initializing Process 0's Pass Up Vector's fields for the address of handling general exceptions and TLB-Refill events */
+#define PROC0STACKPTR	0x20001000
+/* Value that the system-wide Interval Timer is initialized to 100ms (100,000 microseconds) */
+#define INITIALINTTIMER	100000
+/* Processor State--Status register constants */
+#define ALLOFF			0x0     	/* every bit in the Status register is set to 0; this will prove helpful for bitwise-OR operations */
+#define IEPON			0x00000004	/* constant for enabling interrupts after LDST (i.e., IEp (bit 2) = 1) */
+#define PLTON			0x08000000	/* constant for enabling PLT (i.e., TE (bit 27) = 1) */
+#define IMON			0x0000FF00	/* constant for setting the Interrupt Mask bits to on so interrupts are fully enabled */
+
 /* timer, timescale, TOD-LO and other bus regs */
 #define RAMBASEADDR		0x10000000
 #define RAMBASESIZE		0x10000004
