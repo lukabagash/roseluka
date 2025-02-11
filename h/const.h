@@ -89,6 +89,30 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 /* Value that the processor's Local Timer (PLT) is intialized to 5 milliseconds (5,000 microseconds) */
 #define INITIALPLT		5000
 
+#define INITIALACCTIME	  0     /* Value to set the accumulated time field for a process that is instantiated */
+/* Constants for returning values in v0 to the caller */
+#define ERRORCONST		-1			/* constant denoting an error occurred in the caller's request */
+#define SUCCESSCONST	0			/* constant denoting that the caller's request completed successfully */
+
+/* Constants signifying the first index of the deviceSemaphores array (We can get the last index of the array by saying MAXDEVICECNT - 1.) */
+#define	FIRSTDEVINDEX	0
+/* Constant representing the lower bound on which we unblock semaphores and remove them from the ASL */
+#define	SEMA4THRESH		0
+#define USERPON			0x00000008	/* constant for setting the user-mode on after LDST (i.e., KUp (bit 3) = 1) */
+/* Cause register constant for setting all bits to 1 in the Cause register except for the ExcCode field, which is set to 10 for the RI code */
+#define	RESINSTRCODE	0xFFFFFF28
+/* Constants representing the Syscall Numbers in Pandos */
+#define	SYS1NUM			1		
+#define	SYS2NUM			2
+#define	SYS3NUM			3
+#define	SYS4NUM			4
+#define	SYS5NUM			5
+#define	SYS6NUM			6
+#define	SYS7NUM			7
+#define	SYS8NUM			8
+
+
+
 /* timer, timescale, TOD-LO and other bus regs */
 #define RAMBASEADDR		0x10000000
 #define RAMBASESIZE		0x10000004
