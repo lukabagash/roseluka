@@ -29,9 +29,11 @@ the Pseudo-clock */
 #define INITIALINTTIMER	100000
 /* Processor State--Status register constants */
 #define ALLOFF			0x0     	/* every bit in the Status register is set to 0; this will prove helpful for bitwise-OR operations */
+#define IECON			0x00000001	/* constant for enabling the global interrupt bit (i.e., IEc (bit 0) = 1) */
 #define IEPON			0x00000004	/* constant for enabling interrupts after LDST (i.e., IEp (bit 2) = 1) */
 #define PLTON			0x08000000	/* constant for enabling PLT (i.e., TE (bit 27) = 1) */
 #define IMON			0x0000FF00	/* constant for setting the Interrupt Mask bits to on so interrupts are fully enabled */
+#define IECON			0x00000001	/* constant for enabling the global interrupt bit (i.e., IEc (bit 0) = 1) */
 /* Constant to help determine the index in deviceSemaphores/devSemaphores and in the Interrupt Devices Bitmap that a particular device is located at. 
 This constant is subtracted from the line number (or 4, in the case of backing store management), since interrupt lines 3-7 are used for peripheral devices  */
 #define	OFFSET			3
@@ -84,15 +86,8 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define	DEV6INT			0x00000040		/* constant for setting all bits in the Interrupting Devices Bit Map to 0, except for bit 6, which is tied to device 6 interrupts */
 #define	DEV7INT			0x00000080		/* constant for setting all bits in the Interrupting Devices Bit Map to 0, except for bit 7, which is tied to device 7 interrupts */
 
-/* Constants for the different device numbers an interrupt may occur on */
-#define	DEV0			0				/* constant representing device 0 */
-#define	DEV1			1				/* constant representing device 1 */
-#define	DEV2			2				/* constant representing device 2 */
-#define	DEV3			3				/* constant representing device 3 */
-#define	DEV4			4				/* constant representing device 4 */
-#define	DEV5			5				/* constant representing device 5 */
-#define	DEV6			6				/* constant representing device 6 */
-#define	DEV7			7				/* constant representing device 7 */
+/* Value that the processor's Local Timer (PLT) is intialized to 5 milliseconds (5,000 microseconds) */
+#define INITIALPLT		5000
 
 /* timer, timescale, TOD-LO and other bus regs */
 #define RAMBASEADDR		0x10000000
