@@ -32,6 +32,48 @@ the Pseudo-clock */
 #define IEPON			0x00000004	/* constant for enabling interrupts after LDST (i.e., IEp (bit 2) = 1) */
 #define PLTON			0x08000000	/* constant for enabling PLT (i.e., TE (bit 27) = 1) */
 #define IMON			0x0000FF00	/* constant for setting the Interrupt Mask bits to on so interrupts are fully enabled */
+/* Constant to help determine the index in deviceSemaphores/devSemaphores and in the Interrupt Devices Bitmap that a particular device is located at. 
+This constant is subtracted from the line number (or 4, in the case of backing store management), since interrupt lines 3-7 are used for peripheral devices  */
+#define	OFFSET			3
+/* Constants to help determine which device the highest-priority interrupt occurred on */
+#define	DEV0INT			0x00000001		/* constant for setting all bits in the Interrupting Devices Bit Map to 0, except for bit 0, which is tied to device 0 interrupts */
+/* Constants for the different device numbers an interrupt may occur on */
+#define	DEV0			0				/* constant representing device 0 */
+#define	DEV1			1				/* constant representing device 1 */
+#define	DEV2			2				/* constant representing device 2 */
+#define	DEV3			3				/* constant representing device 3 */
+#define	DEV4			4				/* constant representing device 4 */
+#define	DEV5			5				/* constant representing device 5 */
+#define	DEV6			6				/* constant representing device 6 */
+#define	DEV7			7				/* constant representing device 7 */
+/* Constant defining a large value to load the PLT with in switchProcess() when the Process Count and Soft Block Count are both greater than zero */
+#define NEVER			0xFFFFFFFF
+/* Value to */
+#define PCLOCKIDX       (MAXDEVICECNT - 1)
+/* Constant representing the initial value of the Pseudo-clock semaphore */
+#define	INITIALPCSEM	0
+/* Cause register constants to help determine which line the highest-priority interrupt is located at */
+#define	LINE1INT		0x00000200		/* constant for setting all bits to 0 in the Cause register except for bit 9, which is tied to line 1 interrupts */
+#define	LINE2INT		0x00000400		/* constant for setting all bits to 0 in the Cause register except for bit 10, which is tied to line 2 interrupts */
+#define	LINE3INT		0x00000800		/* constant for setting all bits to 0 in the Cause register except for bit 11, which is tied to line 3 interrupts */
+#define	LINE4INT		0x00001000		/* constant for setting all bits to 0 in the Cause register except for bit 12, which is tied to line 4 interrupts */
+#define	LINE5INT		0x00002000		/* constant for setting all bits to 0 in the Cause register except for bit 13, which is tied to line 5 interrupts */
+#define	LINE6INT		0x00004000		/* constant for setting all bits to 0 in the Cause register except for bit 14, which is tied to line 6 interrupts */
+#define	LINE7INT		0x00008000		/* constant for setting all bits to 0 in the Cause register except for bit 15, which is tied to line 7 interrupts */
+
+/* Constants for the different line numbers an interrupt may occur on */
+#define	LINE1			1				/* constant representing line 1 */
+#define	LINE2			2				/* constant representing line 2 */
+#define	LINE3			3				/* constant representing line 3 */
+#define	LINE4			4				/* constant representing line 4 */
+#define	LINE5			5				/* constant representing line 5 */
+#define	LINE6			6				/* constant representing line 6 */
+#define	LINE7			7				/* constant representing line 7 */
+/* Constant to help determine the index in deviceSemaphores/devSemaphores and in the Interrupt Devices Bitmap that a particular device is located at. 
+This constant is subtracted from the line number (or 4, in the case of backing store management), since interrupt lines 3-7 are used for peripheral devices  */
+#define	OFFSET			3
+/* Constant that represents when the first four bits in a terminal device's device register's status field are turned on */
+#define	STATUSON		0x0F
 
 /* timer, timescale, TOD-LO and other bus regs */
 #define RAMBASEADDR		0x10000000
