@@ -74,6 +74,25 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define	OFFSET			3
 /* Constant that represents when the first four bits in a terminal device's device register's status field are turned on */
 #define	STATUSON		0x0F
+/* Constants to help determine which device the highest-priority interrupt occurred on */
+#define	DEV0INT			0x00000001		/* constant for setting all bits in the Interrupting Devices Bit Map to 0, except for bit 0, which is tied to device 0 interrupts */
+#define	DEV1INT			0x00000002		/* constant for setting all bits in the Interrupting Devices Bit Map to 0, except for bit 1, which is tied to device 1 interrupts */
+#define	DEV2INT			0x00000004		/* constant for setting all bits in the Interrupting Devices Bit Map to 0, except for bit 2, which is tied to device 2 interrupts */
+#define	DEV3INT			0x00000008		/* constant for setting all bits in the Interrupting Devices Bit Map to 0, except for bit 3, which is tied to device 3 interrupts */
+#define	DEV4INT			0x00000010		/* constant for setting all bits in the Interrupting Devices Bit Map to 0, except for bit 4, which is tied to device 4 interrupts */
+#define	DEV5INT			0x00000020		/* constant for setting all bits in the Interrupting Devices Bit Map to 0, except for bit 5, which is tied to device 5 interrupts */
+#define	DEV6INT			0x00000040		/* constant for setting all bits in the Interrupting Devices Bit Map to 0, except for bit 6, which is tied to device 6 interrupts */
+#define	DEV7INT			0x00000080		/* constant for setting all bits in the Interrupting Devices Bit Map to 0, except for bit 7, which is tied to device 7 interrupts */
+
+/* Constants for the different device numbers an interrupt may occur on */
+#define	DEV0			0				/* constant representing device 0 */
+#define	DEV1			1				/* constant representing device 1 */
+#define	DEV2			2				/* constant representing device 2 */
+#define	DEV3			3				/* constant representing device 3 */
+#define	DEV4			4				/* constant representing device 4 */
+#define	DEV5			5				/* constant representing device 5 */
+#define	DEV6			6				/* constant representing device 6 */
+#define	DEV7			7				/* constant representing device 7 */
 
 /* timer, timescale, TOD-LO and other bus regs */
 #define RAMBASEADDR		0x10000000
