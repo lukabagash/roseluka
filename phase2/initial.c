@@ -16,7 +16,7 @@
  * and it passes the handling of all exceptions to the appropriate function
  * in the exceptions.c module to handle the particular type of exception.
  * 
- * Written by: Kollen Gruizenga and Jake Heyser
+ * Written by Luka Bagashvili, Rosalie Lee
  ****************************************************************************/
 
 #include "../h/asl.h"

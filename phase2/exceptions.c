@@ -25,7 +25,7 @@
  * used in this module, as the Current Process, after all, was the process that
  * requested that part of its quantum (and CPU time) be spent handling the SYSCALL request.
  *  
- * Written by: Kollen Gruizenga and Jake Heyser
+ * Written by Luka Bagashvili, Rosalie Lee
  ****************************************************************************/
 
 #include "../h/asl.h"

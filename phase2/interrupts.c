@@ -33,7 +33,7 @@
  * time spent in this module will charged to the responsible process. 
  * 
  * 
- * Written by: Kollen Gruizenga and Jake Heyser
+ * Written by Luka Bagashvili, Rosalie Lee
  ****************************************************************************/
 
 #include "../h/asl.h"

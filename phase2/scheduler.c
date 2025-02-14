@@ -20,7 +20,7 @@
  * a processor state in another location, and switchContext(), which performs
  * a LDST on the Current Process' processor state.
  * 
- * Written by: Kollen Gruizenga and Jake Heyser
+ * Written by Luka Bagashvili, Rosalie Lee
  ****************************************************************************/
 
 #include "../h/asl.h"
