@@ -60,20 +60,20 @@ extern pcb_PTR allocPcb() {
 
 
 /* initPcbs initializes the free PCB list with a static array of PCBs.
- * Precondition: Called once during system initialization. */
+ * Precondition: Called once during system initialization.
+ * Modification: Uses freePcb() to link each PCB in the array.
+ */
 extern void initPcbs() {
-    static pcb_t pcbFreeTable[MAXPROC]; /* A static array of PCBs. */
-
-    /* Set the head of the free list to the first element of the array. */
-    pcbFree_h = &pcbFreeTable[0];
-
+    static pcb_t pcbFreeTable[MAXPROC];
     int i;
-    /* Link each PCB to the next one in the array. */
-    for (i = 0; i < MAXPROC - 1; i++) {
-        pcbFreeTable[i].p_next = &pcbFreeTable[i + 1];
+
+    /* Start with an empty free list. */
+    pcbFree_h = NULL;
+
+    /* Link each PCB in the array by calling freePcb(). */
+    for (i = 0; i < MAXPROC; i++) {
+        freePcb(&pcbFreeTable[i]);
     }
-    /* The last PCB's next pointer is set to NULL. */
-    pcbFreeTable[MAXPROC - 1].p_next = NULL;
 }
 
 
@@ -90,7 +90,7 @@ extern pcb_PTR mkEmptyProcQ() {
  * Precondition: tp is either NULL (empty queue) or a valid tail pointer.
  * Return: TRUE if the queue is empty; otherwise, FALSE. */
 extern int emptyProcQ(pcb_t *tp) {
-    return (tp == NULL) ? TRUE : FALSE;
+    return tp == NULL;
 }
 
 
@@ -101,7 +101,7 @@ extern int emptyProcQ(pcb_t *tp) {
  * Precondition: If the queue is non-empty, *tp points to a valid tail in a circular queue. */
 extern void insertProcQ(pcb_t **tp, pcb_t *p) {
     /* If the queue is empty, initialize circular list with a single element. */
-    if (*tp == NULL) {
+    if (emptyProcQ(*tp)) {
         p->p_next = p; 
         p->p_prev = p;  
         *tp = p;        
@@ -126,7 +126,7 @@ extern void insertProcQ(pcb_t **tp, pcb_t *p) {
  * Return: Pointer to the removed head PCB; if the queue is empty, returns NULL. */
 extern pcb_PTR removeProcQ(pcb_t **tp) {
     /* If the queue is empty, return NULL. */
-    if (*tp == NULL) {
+    if (emptyProcQ(*tp)) {
         return NULL;
     }
 
@@ -151,52 +151,46 @@ extern pcb_PTR removeProcQ(pcb_t **tp) {
 
 /* outProcQ removes the specified PCB from the process queue.
  * Input:
- *    tp - Pointer to the tail pointer of a process queue (pcb_t **tp)
- *    p  - Pointer to a PCB (pcb_t *p) that should be removed.
+ *    tp - Pointer to the tail pointer of a process queue.
+ *    p  - Pointer to a PCB that should be removed.
  * Precondition: If the queue is non-empty, *tp points to a valid tail of a circular queue.
- * Return: Pointer to the PCB if removal is successful; otherwise, returns NULL. */
+ * Return: Pointer to the PCB if removal is successful; otherwise, returns NULL.
+ * Modification: If p is the head of the queue, use removeProcQ().
+ */
 extern pcb_t *outProcQ(pcb_t **tp, pcb_t *p) {
-    /* If the queue is empty or p is invalid, return NULL. */
-    if (*tp == NULL || p == NULL) {
+    if (emptyProcQ(*tp) || p == NULL) {
         return NULL;
     }
 
-    pcb_t *tail = *tp;
-    pcb_t *curr = tail;
-    int found = FALSE;
+    pcb_PTR head = headProcQ(*tp);
+    if (p == head) {
+        return removeProcQ(tp);
+    }
 
-    /* Traverse the circular queue to verify that p is present. */
-    do {
-        if (curr == p) {
-            found = TRUE;
-            break;
-        }
+    pcb_t *curr = head->p_next;
+    /* Loop until we either circle back to head or find p */
+    while (curr != head && curr != p) {
         curr = curr->p_next;
-    } while (curr != tail);
-
-    /* If p is not found in the queue, return NULL. */
-    if (!found) {
-        return NULL;
     }
 
-    /* If p is the only element in the queue. */
-    if (p->p_next == p && p->p_prev == p) {
-        *tp = NULL;
-    } else {
-        /* Remove p by linking its neighbors. */
+    if (curr == p) {
+        /* Remove p by updating its neighbors */
         p->p_prev->p_next = p->p_next;
         p->p_next->p_prev = p->p_prev;
 
-        /* If p is the tail, update the tail pointer. */
+        /* Update tail pointer if necessary */
         if (p == *tp) {
             *tp = p->p_prev;
         }
+
+        /* Clear p's links */
+        p->p_next = NULL;
+        p->p_prev = NULL;
+
+        return p;
     }
 
-    /* Clear p's pointers. */
-    p->p_next = NULL;
-    p->p_prev = NULL;
-    return p;
+    return NULL;
 }
 
 
@@ -206,7 +200,7 @@ extern pcb_t *outProcQ(pcb_t **tp, pcb_t *p) {
  * Return: Pointer to the head PCB; if the queue is empty, returns NULL. */
 extern pcb_PTR headProcQ(pcb_t *tp) {
     /* If the queue is empty, return NULL. */
-    if (tp == NULL) {
+    if (emptyProcQ(tp)) {
         return NULL;
     }
 
@@ -224,7 +218,7 @@ extern int emptyChild(pcb_PTR p) {
         return TRUE;
     }
     /* Return TRUE if p->p_child is NULL. */
-    return (p->p_child == NULL) ? TRUE : FALSE;
+    return p->p_child == NULL;
 }
 
 
@@ -277,31 +271,28 @@ extern pcb_PTR removeChild(pcb_PTR p) {
 /* outChild removes the PCB from its parent's child list.
  * Input: p - Pointer to a PCB.
  * Precondition: p is a valid PCB pointer and may be a child of some parent.
- * Return: Pointer to p if removal is successful; if p has no parent, returns NULL. */
+ * Return: Pointer to p if removal is successful; if p has no parent, returns NULL.
+ * Modification: If p is the first child, use removeChild().
+ */
 extern pcb_PTR outChild(pcb_t *p) {
-    /* If p is NULL or has no parent, nothing to remove. */
     if (p == NULL || p->p_prnt == NULL) {
         return NULL;
     }
 
     pcb_t *parent = p->p_prnt;
 
-    /* If p is the first child, update parent's child pointer to the next sibling. */
-    if (p->p_prev_sib == NULL) {
-        parent->p_child = p->p_next_sib;
+    if (parent->p_child == p) {
+        return removeChild(parent);
     } else {
-        /* If p is not the first child, link p's previous sibling to p's next sibling. */
-        p->p_prev_sib->p_next_sib = p->p_next_sib;
+        if (p->p_prev_sib != NULL) {
+            p->p_prev_sib->p_next_sib = p->p_next_sib;
+        }
+        if (p->p_next_sib != NULL) {
+            p->p_next_sib->p_prev_sib = p->p_prev_sib;
+        }
+        p->p_prnt     = NULL;
+        p->p_next_sib = NULL;
+        p->p_prev_sib = NULL;
+        return p;
     }
-
-    /* If there is a next sibling, link p's next sibling to p's previous sibling. */
-    if (p->p_next_sib != NULL) {
-        p->p_next_sib->p_prev_sib = p->p_prev_sib;
-    }
-
-    /* Clear the p's pointers. */
-    p->p_prnt = NULL;
-    p->p_next_sib = NULL;
-    p->p_prev_sib = NULL;
-    return p;
 }
