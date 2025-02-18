@@ -18,6 +18,9 @@
 HIDDEN semd_t *semd_h = NULL;   /* Head of ASL which holds semaphore descriptors for active semaphores. */
 HIDDEN semd_t *semdFree_h = NULL;   /* Head of the free list for semaphore descriptors. */
 
+static semd_t headSentinel;  /* Head sentinel: minimal semaphore address */
+static semd_t tailSentinel;  /* Tail sentinel: maximal semaphore address */
+
 
 /* search_semd searches for a semaphore descriptor in the ASL based on the semaphore's physical address.
  * Input:
@@ -182,8 +185,7 @@ extern pcb_PTR headBlocked (int *semAdd) {
  *    None. */
 extern void initASL () {
     static semd_t semdTable[MAXPROC];   /* A static array of semaphore descriptors. */
-    semd_t head;   /* Head of the ASL. */
-    semd_t tail;   /* Tail of the free list. */
+
     int i;
     /* Initialize the semdTable entries and link them into the free list */
     for (i = 0; i < MAXPROC - 1; i++) {
@@ -191,15 +193,22 @@ extern void initASL () {
         semdTable[i].s_semAdd = NULL;
         semdTable[i].s_procQ = NULL;
     }
-    semdTable[MAXPROC - 1].s_next = &tail;
+    semdTable[MAXPROC - 1].s_next = &tailSentinel;
     semdTable[MAXPROC - 1].s_semAdd = NULL;
     semdTable[MAXPROC - 1].s_procQ = NULL;
 
-    head.s_next = &semdTable[0];
-    head.s_semAdd = 0;
-    tail.s_semAdd = MAXINT;
+    /* Initialize the permanent sentinel nodes for the ASL */
+    headSentinel.s_semAdd = (int *)0;       /* Minimal value */
+    headSentinel.s_procQ = mkEmptyProcQ();    /* Not used */
+    headSentinel.s_next = semdTable[0];
+
+    tailSentinel.s_semAdd = (int *)MAXINT;    /* Maximal value */
+    tailSentinel.s_procQ = mkEmptyProcQ();      /* Not used */
+    tailSentinel.s_next = NULL;
     
-    /* Set the free list head to the beginning of semdTable and clear the ASL */
+    /* Set the ASL head to the permanent head sentinel */
+    semd_h = &headSentinel;
+    
+    /* Set the free list head to the beginning of semdTable */
     semdFree_h = semdTable;
-    semd_h = NULL;
 }
