@@ -18,9 +18,6 @@
 HIDDEN semd_t *semd_h = NULL;   /* Head of ASL which holds semaphore descriptors for active semaphores. */
 HIDDEN semd_t *semdFree_h = NULL;   /* Head of the free list for semaphore descriptors. */
 
-static semd_t headSentinel;  /* Head sentinel: minimal semaphore address */
-static semd_t tailSentinel;  /* Tail sentinel: maximal semaphore address */
-
 
 /* search_semd searches for a semaphore descriptor in the ASL based on the semaphore's physical address.
  * Input:
@@ -33,12 +30,12 @@ static semd_t tailSentinel;  /* Tail sentinel: maximal semaphore address */
 static semd_t *search_semd (int *semAdd, semd_t **prev) {
     semd_t *curr = semd_h;
     *prev = NULL;
-    while (curr->s_semAdd < semAdd) {
+    while (curr != NULL && curr->s_semAdd < semAdd) {
         *prev = curr;
         curr = curr->s_next;
     }
     /*Check if the current descriptor matches the semaphore address*/
-    if (curr->s_semAdd == semAdd) {
+    if (curr != NULL && curr->s_semAdd == semAdd) {
         return curr;
     }
     return NULL;
@@ -73,8 +70,13 @@ extern int insertBlocked (int *semAdd, pcb_t *p) {
         sd->s_next = NULL;
         
         /* Insert the new descriptor into the ASL in sorted order */
-        sd->s_next = prev->s_next;
-        prev->s_next = sd;
+        if (prev == NULL) {
+            sd->s_next = semd_h;
+            semd_h = sd;
+        } else {
+            sd->s_next = prev->s_next;
+            prev->s_next = sd;
+        }
     }
     
     /* Insert the PCB into the process queue for this semaphore */
@@ -111,7 +113,11 @@ extern pcb_PTR removeBlocked (int *semAdd) {
     /* If the queue becomes empty, remove the descriptor from the ASL */
     if (emptyProcQ(sd->s_procQ)) {
         /* If the descriptor is at the head of the ASL */
-        prev->s_next = sd->s_next;
+        if (prev == NULL) {
+            semd_h = sd->s_next;
+        } else {
+            prev->s_next = sd->s_next;
+        }
         sd->s_next = semdFree_h;
         semdFree_h = sd;
     }
@@ -150,7 +156,11 @@ extern pcb_PTR outBlocked (pcb_PTR p) {
     /* Remove the descriptor from the ASL if its queue is now empty */
     if (emptyProcQ(sd->s_procQ)) {
         /*Descriptor is at the head of the ASL*/
-        prev->s_next = sd->s_next;
+        if (prev == NULL) {
+            semd_h = sd->s_next;
+        } else {
+            prev->s_next = sd->s_next;
+        }
         sd->s_next = semdFree_h;
         semdFree_h = sd;
     }
@@ -184,10 +194,10 @@ extern pcb_PTR headBlocked (int *semAdd) {
  * Return:
  *    None. */
 extern void initASL () {
-    int i;
     static semd_t semdTable[MAXPROC];   /* A static array of semaphore descriptors. */
 
-    /* Initialize the free list (semdTable) */
+    int i;
+    /* Initialize the semdTable entries and link them into the free list */
     for (i = 0; i < MAXPROC - 1; i++) {
         semdTable[i].s_next = &semdTable[i + 1];
         semdTable[i].s_semAdd = NULL;
@@ -196,19 +206,8 @@ extern void initASL () {
     semdTable[MAXPROC - 1].s_next = NULL;
     semdTable[MAXPROC - 1].s_semAdd = NULL;
     semdTable[MAXPROC - 1].s_procQ = NULL;
-
-    /* Initialize the permanent sentinel nodes for the ASL */
-    headSentinel.s_semAdd = (int *)0;       /* Minimal value */
-    headSentinel.s_procQ = mkEmptyProcQ();    /* Not used */
-    headSentinel.s_next = &tailSentinel;
-
-    tailSentinel.s_semAdd = (int *)MAXINT;    /* Maximal value */
-    tailSentinel.s_procQ = mkEmptyProcQ();      /* Not used */
-    tailSentinel.s_next = NULL;
     
-    /* Set the ASL head to the permanent head sentinel */
-    semd_h = &headSentinel;
-    
-    /* Set the free list head to the beginning of semdTable */
+    /* Set the free list head to the beginning of semdTable and clear the ASL */
     semdFree_h = semdTable;
+    semd_h = NULL;
 }
