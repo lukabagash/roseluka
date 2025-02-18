@@ -200,7 +200,7 @@ extern void initASL () {
     /* Initialize the permanent sentinel nodes for the ASL */
     headSentinel.s_semAdd = (int *)0;       /* Minimal value */
     headSentinel.s_procQ = mkEmptyProcQ();    /* Not used */
-    headSentinel.s_next = semdTable[0];
+    headSentinel.s_next = &semdTable[0];
 
     tailSentinel.s_semAdd = (int *)MAXINT;    /* Maximal value */
     tailSentinel.s_procQ = mkEmptyProcQ();      /* Not used */
