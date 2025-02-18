@@ -30,12 +30,12 @@ HIDDEN semd_t *semdFree_h = NULL;   /* Head of the free list for semaphore descr
 static semd_t *search_semd (int *semAdd, semd_t **prev) {
     semd_t *curr = semd_h;
     *prev = NULL;
-    while (curr != NULL && curr->s_semAdd < semAdd) {
+    while (curr->s_semAdd < semAdd) {
         *prev = curr;
         curr = curr->s_next;
     }
     /*Check if the current descriptor matches the semaphore address*/
-    if (curr != NULL && curr->s_semAdd == semAdd) {
+    if (curr->s_semAdd == semAdd) {
         return curr;
     }
     return NULL;
@@ -70,13 +70,8 @@ extern int insertBlocked (int *semAdd, pcb_t *p) {
         sd->s_next = NULL;
         
         /* Insert the new descriptor into the ASL in sorted order */
-        if (prev == NULL) {
-            sd->s_next = semd_h;
-            semd_h = sd;
-        } else {
-            sd->s_next = prev->s_next;
-            prev->s_next = sd;
-        }
+        sd->s_next = prev->s_next;
+        prev->s_next = sd;
     }
     
     /* Insert the PCB into the process queue for this semaphore */
@@ -113,11 +108,7 @@ extern pcb_PTR removeBlocked (int *semAdd) {
     /* If the queue becomes empty, remove the descriptor from the ASL */
     if (emptyProcQ(sd->s_procQ)) {
         /* If the descriptor is at the head of the ASL */
-        if (prev == NULL) {
-            semd_h = sd->s_next;
-        } else {
-            prev->s_next = sd->s_next;
-        }
+        prev->s_next = sd->s_next;
         sd->s_next = semdFree_h;
         semdFree_h = sd;
     }
@@ -156,11 +147,7 @@ extern pcb_PTR outBlocked (pcb_PTR p) {
     /* Remove the descriptor from the ASL if its queue is now empty */
     if (emptyProcQ(sd->s_procQ)) {
         /*Descriptor is at the head of the ASL*/
-        if (prev == NULL) {
-            semd_h = sd->s_next;
-        } else {
-            prev->s_next = sd->s_next;
-        }
+        prev->s_next = sd->s_next;
         sd->s_next = semdFree_h;
         semdFree_h = sd;
     }
@@ -195,7 +182,8 @@ extern pcb_PTR headBlocked (int *semAdd) {
  *    None. */
 extern void initASL () {
     static semd_t semdTable[MAXPROC];   /* A static array of semaphore descriptors. */
-
+    semd_t head;   /* Head of the ASL. */
+    semd_t tail;   /* Tail of the free list. */
     int i;
     /* Initialize the semdTable entries and link them into the free list */
     for (i = 0; i < MAXPROC - 1; i++) {
@@ -203,9 +191,13 @@ extern void initASL () {
         semdTable[i].s_semAdd = NULL;
         semdTable[i].s_procQ = NULL;
     }
-    semdTable[MAXPROC - 1].s_next = NULL;
+    semdTable[MAXPROC - 1].s_next = &tail;
     semdTable[MAXPROC - 1].s_semAdd = NULL;
     semdTable[MAXPROC - 1].s_procQ = NULL;
+
+    head.s_next = &semdTable[0];
+    head.s_semAdd = 0;
+    tail.s_semAdd = MAXINT;
     
     /* Set the free list head to the beginning of semdTable and clear the ASL */
     semdFree_h = semdTable;

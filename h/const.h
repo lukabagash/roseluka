@@ -11,6 +11,7 @@
 #define PAGESIZE		  4096			/* page size in bytes	*/
 #define WORDLEN			  4				  /* word size in bytes	*/
 #define MAXPROC           20
+#define	MAXINT            214483647	/* 2^31-1: maximum value of a signed 32-bit integer */
 
 /* Maximum number of external (sub)devices in UMPS3, plus one additional semaphore to support
 the Pseudo-clock */
