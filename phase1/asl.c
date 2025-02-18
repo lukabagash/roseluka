@@ -184,23 +184,23 @@ extern pcb_PTR headBlocked (int *semAdd) {
  * Return:
  *    None. */
 extern void initASL () {
+    int i;
     static semd_t semdTable[MAXPROC];   /* A static array of semaphore descriptors. */
 
-    int i;
-    /* Initialize the semdTable entries and link them into the free list */
+    /* Initialize the free list (semdTable) */
     for (i = 0; i < MAXPROC - 1; i++) {
         semdTable[i].s_next = &semdTable[i + 1];
         semdTable[i].s_semAdd = NULL;
         semdTable[i].s_procQ = NULL;
     }
-    semdTable[MAXPROC - 1].s_next = &tailSentinel;
+    semdTable[MAXPROC - 1].s_next = NULL;
     semdTable[MAXPROC - 1].s_semAdd = NULL;
     semdTable[MAXPROC - 1].s_procQ = NULL;
 
     /* Initialize the permanent sentinel nodes for the ASL */
     headSentinel.s_semAdd = (int *)0;       /* Minimal value */
     headSentinel.s_procQ = mkEmptyProcQ();    /* Not used */
-    headSentinel.s_next = &semdTable[0];
+    headSentinel.s_next = &tailSentinel;
 
     tailSentinel.s_semAdd = (int *)MAXINT;    /* Maximal value */
     tailSentinel.s_procQ = mkEmptyProcQ();      /* Not used */
