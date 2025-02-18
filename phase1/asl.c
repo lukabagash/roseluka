@@ -64,19 +64,13 @@ extern int insertBlocked (int *semAdd, pcb_t *p) {
         }
         sd = semdFree_h;
         semdFree_h = semdFree_h->s_next;  /* Remove descriptor from free list */
-        
+
         sd->s_semAdd = semAdd;
         sd->s_procQ = mkEmptyProcQ();
-        sd->s_next = NULL;
-        
-        /* Insert the new descriptor into the ASL in sorted order */
-        if (prev == NULL) {
-            sd->s_next = semd_h;
-            semd_h = sd;
-        } else {
-            sd->s_next = prev->s_next;
-            prev->s_next = sd;
-        }
+
+        /* Insert the new descriptor between prev and prev->s_next (i.e. curr) */
+        sd->s_next = prev->s_next;
+        prev->s_next = sd;
     }
     
     /* Insert the PCB into the process queue for this semaphore */
@@ -112,12 +106,7 @@ extern pcb_PTR removeBlocked (int *semAdd) {
     
     /* If the queue becomes empty, remove the descriptor from the ASL */
     if (emptyProcQ(sd->s_procQ)) {
-        /* If the descriptor is at the head of the ASL */
-        if (prev == NULL) {
-            semd_h = sd->s_next;
-        } else {
-            prev->s_next = sd->s_next;
-        }
+        prev->s_next = sd->s_next;
         sd->s_next = semdFree_h;
         semdFree_h = sd;
     }
@@ -155,12 +144,7 @@ extern pcb_PTR outBlocked (pcb_PTR p) {
     
     /* Remove the descriptor from the ASL if its queue is now empty */
     if (emptyProcQ(sd->s_procQ)) {
-        /*Descriptor is at the head of the ASL*/
-        if (prev == NULL) {
-            semd_h = sd->s_next;
-        } else {
-            prev->s_next = sd->s_next;
-        }
+        prev->s_next = sd->s_next;
         sd->s_next = semdFree_h;
         semdFree_h = sd;
     }
@@ -194,20 +178,33 @@ extern pcb_PTR headBlocked (int *semAdd) {
  * Return:
  *    None. */
 extern void initASL () {
-    static semd_t semdTable[MAXPROC];   /* A static array of semaphore descriptors. */
-
+    /* The array now has two extra nodes for the sentinels */
+    static semd_t semdTable[MAXPROC + 2];
     int i;
-    /* Initialize the semdTable entries and link them into the free list */
-    for (i = 0; i < MAXPROC - 1; i++) {
-        semdTable[i].s_next = &semdTable[i + 1];
+
+    /* Set up the head sentinel at index 0 */
+    semdTable[0].s_semAdd = 0;  /* head sentinel */
+    semdTable[0].s_procQ = mkEmptyProcQ();  /* always empty */
+    semdTable[0].s_next = &semdTable[MAXPROC + 1];  /* initially points directly to tail sentinel */
+
+    /* Set up the tail sentinel at index MAXPROC+1 */
+    semdTable[MAXPROC + 1].s_semAdd = (int *) MAXINT;  /* tail sentinel */
+    semdTable[MAXPROC + 1].s_procQ = mkEmptyProcQ();
+    semdTable[MAXPROC + 1].s_next = NULL;
+
+    /* Link free list nodes from index 1 to MAXPROC */
+    for (i = 1; i < MAXPROC; i++) {
         semdTable[i].s_semAdd = NULL;
         semdTable[i].s_procQ = NULL;
+        semdTable[i].s_next = &semdTable[i + 1];
     }
-    semdTable[MAXPROC - 1].s_next = NULL;
-    semdTable[MAXPROC - 1].s_semAdd = NULL;
-    semdTable[MAXPROC - 1].s_procQ = NULL;
-    
-    /* Set the free list head to the beginning of semdTable and clear the ASL */
-    semdFree_h = semdTable;
-    semd_h = NULL;
+    semdTable[MAXPROC].s_semAdd = NULL;
+    semdTable[MAXPROC].s_procQ = NULL;
+    semdTable[MAXPROC].s_next = NULL;
+
+    /* The free list head starts at index 1 */
+    semdFree_h = &semdTable[1];
+
+    /* The ASL always starts with the head sentinel at index 0 */
+    semd_h = &semdTable[0];
 }
