@@ -51,7 +51,7 @@ extern pcb_PTR allocPcb() {
     p->p_next_sib = NULL;
 
     /* Reset CPU time, semaphore address, support structure pointer. */
-        p->p_time = 0;           
+    p->p_time = 0;           
     p->p_semAdd = NULL;      
     p->p_supportStruct = NULL; 
 
@@ -105,7 +105,8 @@ extern void insertProcQ(pcb_t **tp, pcb_t *p) {
         p->p_next = p; 
         p->p_prev = p;  
         *tp = p;        
-    } else {        /* Insert p between current tail (oldTail) and head. */
+    } else {
+        /* Insert p between current tail (oldTail) and head. */
         pcb_t *oldTail = *tp;     
         pcb_t *head = oldTail->p_next; 
 
@@ -165,6 +166,7 @@ extern pcb_t *outProcQ(pcb_t **tp, pcb_t *p) {
     if (p == head) {
         return removeProcQ(tp);
     }
+
     pcb_t *curr = head->p_next;
     /* Loop until we either circle back to head or find p */
     while (curr != head && curr != p) {
@@ -224,7 +226,7 @@ extern int emptyChild(pcb_PTR p) {
  * Input:
  *    prnt - Pointer to the parent PCB.
  *    p    - Pointer to the child PCB.
-  * Precondition: Both prnt and p are valid PCB pointers.
+ * Precondition: Both prnt and p are valid PCB pointers.
  * Return: None. */
 extern void insertChild(pcb_PTR prnt, pcb_PTR p) {
     /* If either parent or child is invalid, do nothing. */
@@ -278,6 +280,7 @@ extern pcb_PTR outChild(pcb_t *p) {
     }
 
     pcb_t *parent = p->p_prnt;
+
     if (parent->p_child == p) {
         return removeChild(parent);
     } else {
