@@ -17,7 +17,7 @@
  * service/instruction to handle deadlock. The module also includes several
  * other functions pertaining to process scheduling, such as moveState(),
  * which copies the contents of a processor state in one location to
- * a processor state in another location, and switchContext(), which performs
+ * a processor state in another location, and loadProcessorState(), which performs
  * a LDST on the Current Process' processor state.
  * 
  * Written by Luka Bagashvili, Rosalie Lee
@@ -32,7 +32,7 @@
 #include "../h/initial.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
-/* Function to copy the processor state pointed to by source into the processor state pointed to by dest. This 
+/* Not included in PandOS Function to copy the processor state pointed to by source into the processor state pointed to by dest. This 
 function will prove particularly useful when handling non-blocking SYSCALL exceptions and interrupts that need to
 copy the saved exception state into the Current Process' processor state so that the Current Process can continue
 executing once the exception or interrupt is handled. */
@@ -53,7 +53,7 @@ void moveState(state_PTR source, state_PTR dest){
 /* Function that sets the Current Process to the parameter curr_proc and then stores the current value on the Time of Day clock. This value
 represents the time that the process begins executing at, as the function then performs a LDST on the Current Process' processor
 state so that it can begin (or perhaps resume) execution. */
-void switchContext(pcb_PTR curr_proc){
+void loadProcessorState(pcb_PTR curr_proc){
 	currentProc = curr_proc; /* setting the Current Process to curr_proc */
 	STCK(start_tod); /* updating start_tod with the value on the Time of Day Clock, as this is the time that the process will begin executing at */
 	LDST(&(curr_proc->p_s)); /* loading the processor state for the processor state stored in pcb of the Current Process */
@@ -62,7 +62,7 @@ void switchContext(pcb_PTR curr_proc){
 /* Function that includes the implementation of the scheduling algorithm that we will use in this operating system. The function
 implements a simple preemptive round-robin scheduling algorithm with a time slice of five milliseconds. The function  begins by
 removing the pcb at the head of the Ready Queue. If such a pcb exists, the function loads five milliseconds on the PLT and then
-calls switchContext() (which then performs a LDST on the processor state stored in pcb of the Current Process). If the Ready Queue
+calls loadProcessorState() (which then performs a LDST on the processor state stored in pcb of the Current Process). If the Ready Queue
 was empty, then it checks to see if the Process Count is zero. If so, the function invokes the HALT BIOS instruction. 
 If the Process Count is greater than zero and Soft-block Count is greater than zero, the function enters a Wait State.
 And if the Process Count is greater than zero and the Soft-block Count is zero, the function invokes the PANIC BIOS instruction. */
@@ -70,7 +70,7 @@ void switchProcess(){
 	currentProc = removeProcQ(&ReadyQueue); /* removing the pcb from the head of the ReadyQueue and storing its pointer in currentProc */
 	if (currentProc != NULL){ /* if the Ready Queue is not empty */
 		setTIMER(INITIALPLT); /* loading five milliseconds on the processor's Local Timer (PLT) */
-		switchContext(currentProc); /* invoking the internal function that will perform the LDST on the Current Process' processor state */
+		loadProcessorState(currentProc); /* invoking the internal function that will perform the LDST on the Current Process' processor state */
 	}
 
 	/* We know the ReadyQueue is empty. */

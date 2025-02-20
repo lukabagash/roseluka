@@ -31,7 +31,7 @@
 /* function declarations */
 extern void test(); /* function declaration for test(), which will be defined in the test file for this module */
 extern void uTLB_RefillHandler(); /* function declaration for uTLB_RefillHandler(), which will be defined in exceptions.c */
-HIDDEN void generalExceptionHandler(); /* function declaration for the internal function that is responsible for handling general exceptions */
+HIDDEN void fooBar(); /* general exception handler function declaration for the internal function that is responsible for handling general exceptions */
 
 /* declaring global variables */
 pcb_PTR ReadyQueue; /* pointer to the tail of a queue of pcbs that are in the "ready" state */
@@ -48,25 +48,27 @@ state_PTR savedExceptState; /* a pointer to the saved exception state */
 the device interrupt handler. For TLB exceptions, processing is passed along to the TLB exception handler, and for
 program traps, processing is passed along to the Program Trap exception handler. Finally, for exception code 8
 (SYSCALL) events, processing is passed along to the SYSCALL exception handler. */
-void generalExceptionHandler(){
+void fooBar(){
 	/* declaring local variables */
 	state_t *oldState; /* the saved exception state for Processor 0 */
-	int exceptionReason; /* the exception code */
+	int causeStatusCode; /* the exception code */
 
 	/* initializing local variables */
 	oldState = (state_t *) BIOSDATAPAGE; /* getting the saved exception state at the start of the BIOS Data Page */
-	exceptionReason = ((oldState->s_cause) & GETEXCEPCODE) >> CAUSESHIFT; /* initializing the exception code so that it matches the exception code stored in the .ExcCode field in the Cause register */
+	causeStatusCode = ((oldState->s_cause) & GETEXCEPCODE) >> CAUSESHIFT; /* initializing the exception code so that it matches the exception code stored in the .ExcCode field in the Cause register */
 
-	if (exceptionReason == INTCONST){ /* if the exception code is 0 */
+	if (causeStatusCode == INTCONST){ /* if the exception code is 0 */
 		intTrapH(); /* calling the Nucleus' device interrupt handler function */
 	}
-	if (exceptionReason <= TLBCONST){ /* if the exception code is between 1 and 3 (inclusive) */
+	elif (causeStatusCode <= TLBCONST){ /* if the exception code is between 1 and 3 (inclusive) */
 		tlbTrapH(); /* calling the Nucleus' TLB exception handler function */
 	}
-	if (exceptionReason == SYSCONST){ /* if the exception code is 8 */
+	elif (causeStatusCode == SYSCONST){ /* if the exception code is 8 */
 		sysTrapH(); /* calling the Nucleus' SYSCALL exception handler function */
 	}
-	pgmTrapH(); /* calling the Nucleus' Program Trap exception handler function because the exception code is not 0-3 or 8 */
+	else{
+		pgmTrapH(); /* calling the Nucleus' Program Trap exception handler function because the exception code is not 0-3 or 8 */
+	}
 }
 
 /* Function that represents the entry point of our program. It initializes the phase 1 data
@@ -82,30 +84,30 @@ int main(){
 	passupvector_t *procVec; /* a pointer to the Process 0 Pass Up Vector that we will initialize in this function */
 	memaddr ramtop; /* the address of the last RAM frame */
 	devregarea_t *temp; /* device register area that we can we use to determine the last RAM frame */
-	
-	/* initializing global variables, except for start_tod, curr_tod, and savedExceptState, which will be initialized later. */
-	ReadyQueue = mkEmptyProcQ(); /* initializng the ReadyQueue's tail pointer to be NULL */
-	currentProc = NULL; /* setting the pointer to the pcb that is in the "running" state to NULL */
-	procCnt = INITIALPROCCNT; /* setting the number of started, but not yet terminated, processes to 0 */
-	softBlockCnt = INITIALSFTBLKCNT; /* setting the number of started, but not yet terminated, processes that're in the "blocked" state to 0 */
 
-	int i;
-	for (i = 0; i < MAXDEVICECNT; i++){
-		/* initializing the device semaphores */
-		deviceSemaphores[i] = INITIALDEVSEMA4;
-	}
+	/* initializing the Processor 0 Pass Up Vector */
+	procVec = (passupvector_t *) PASSUPVECTOR; /* initializing procVec to be a pointer to the address of the Process 0 Pass Up Vector */
+	procVec->tlb_refll_handler = (memaddr) uTLB_RefillHandler; /* initializing the address for handling TLB-Refill events */
+	procVec->tlb_refll_stackPtr = PROC0STACKPTR; /* initializing the stack pointer for handling Nucleus TLB-Refill events */
+	procVec->exception_handler = (memaddr) fooBar; /* initializing the address for handling general exceptions */
+	procVec->exception_stackPtr = PROC0STACKPTR; /* initializing the stack pointer for handling general exceptions */
 
 	/* initializing the free list of semaphore descriptors (along with the dummy nodes for the ASL) 
 	and the pcbFree list */
 	initPcbs(); /* initializing the pcbFree list */
 	initASL(); /* initializing the semdFree list and the ASL's dummy nodes */
 
-	/* initializing the Processor 0 Pass Up Vector */
-	procVec = (passupvector_t *) PASSUPVECTOR; /* initializing procVec to be a pointer to the address of the Process 0 Pass Up Vector */
-	procVec->tlb_refll_handler = (memaddr) uTLB_RefillHandler; /* initializing the address for handling TLB-Refill events */
-	procVec->tlb_refll_stackPtr = PROC0STACKPTR; /* initializing the stack pointer for handling Nucleus TLB-Refill events */
-	procVec->exception_handler = (memaddr) generalExceptionHandler; /* initializing the address for handling general exceptions */
-	procVec->exception_stackPtr = PROC0STACKPTR; /* initializing the stack pointer for handling general exceptions */
+	/* initializing global variables, except for start_tod, curr_tod, and savedExceptState, which will be initialized later. */
+	procCnt = INITIALPROCCNT; /* setting the number of started, but not yet terminated, processes to 0 */
+	softBlockCnt = INITIALSFTBLKCNT; /* setting the number of started, but not yet terminated, processes that're in the "blocked" state to 0 */
+	ReadyQueue = mkEmptyProcQ(); /* initializng the ReadyQueue's tail pointer to be NULL */
+	currentProc = NULL; /* setting the pointer to the pcb that is in the "running" state to NULL */
+
+	int i;
+	for (i = 0; i < MAXDEVICECNT; i++){
+		/* initializing the device semaphores */
+		deviceSemaphores[i] = INITIALDEVSEMA4;
+	}
 
 	/* loading the system-wide interval timer with 100 (INITIALINTTIMER) milliseconds, before a Pseudo-Clock tick occurs. */
 	LDIT(INITIALINTTIMER); /* invoking the macro function that handles setting the system-wide interval timer with a given value */
@@ -120,10 +122,10 @@ int main(){
 		ramtop = temp->rambase + temp->ramsize; /* initializing ramtop to the address of the top of RAM */
 
 		/* initializing the Processor State that is a part of p */
+		p->p_s.s_status = ALLOFF | IEPON | PLTON | IMON; /* enabling interrupts, setting kernel-mode to on and enabling PLT */
 		p->p_s.s_sp = ramtop; /* setting p's stack pointer to the address of the last RAM frame */
 		p->p_s.s_pc = (memaddr) test; /* assigning the PC to the address of test */
 		p->p_s.s_t9 = (memaddr) test; /* assigning the address of test to register t9 */
-		p->p_s.s_status = ALLOFF | IEPON | PLTON | IMON; /* enabling interrupts, setting kernel-mode to on and enabling PLT */
 
 		/* placing p into the Ready Queue and incrementing the Process Count */
 		insertProcQ(&ReadyQueue, p); /* inserting p into the Ready Queue */
