@@ -5,7 +5,7 @@
  *
  * The externals declaration file for the TLB-Refill exception handler module
  * 
- * Written by: Kollen Gruizenga and Jake Heyser
+ * Written by: Luka Bagashvili, Rosalie Lee
  * 
  ****************************************************************************/
 

@@ -65,13 +65,13 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define	LINE7INT		0x00008000		/* constant for setting all bits to 0 in the Cause register except for bit 15, which is tied to line 7 interrupts */
 
 /* Constants for the different line numbers an interrupt may occur on */
-#define	LINE1			1				/* constant representing line 1 */
-#define	LINE2			2				/* constant representing line 2 */
-#define	LINE3			3				/* constant representing line 3 */
-#define	LINE4			4				/* constant representing line 4 */
-#define	LINE5			5				/* constant representing line 5 */
-#define	LINE6			6				/* constant representing line 6 */
-#define	LINE7			7				/* constant representing line 7 */
+#define	LINE1			1				/* constant representing line 1 (Processor Local Timer)*/
+#define	LINE2			2				/* constant representing line 2 (Interval Timer (Bus))*/
+#define	LINE3			3				/* constant representing line 3 (Disk devices)*/
+#define	LINE4			4				/* constant representing line 4 (Flash Devices)*/
+#define	LINE5			5				/* constant representing line 5 (Network (Ethernet) Devices)*/
+#define	LINE6			6				/* constant representing line 6 (Printer devices)*/
+#define	LINE7			7				/* constant representing line 7 (Terminal devices)*/
 /* Constant to help determine the index in deviceSemaphores/devSemaphores and in the Interrupt Devices Bitmap that a particular device is located at. 
 This constant is subtracted from the line number (or 4, in the case of backing store management), since interrupt lines 3-7 are used for peripheral devices  */
 #define	OFFSET			3

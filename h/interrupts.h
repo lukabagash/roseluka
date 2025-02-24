@@ -5,7 +5,7 @@
  *
  * The declaration header file for the device intterupt exception handler 
  * 
- * Written by: Kollen Gruizenga and Jake Heyser
+ * Written by: Luka Bagashvili, Rosalie Lee
  * 
  ****************************************************************************/
 #include "../h/types.h"

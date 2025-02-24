@@ -42,8 +42,8 @@
 HIDDEN void blockCurr(int *sem);
 HIDDEN void createProcess(state_PTR stateSYS, support_t *suppStruct);
 HIDDEN void terminateProcess(pcb_PTR proc);
-HIDDEN void waitOp(int *sem);
-HIDDEN void signalOp(int *sem);
+HIDDEN void passEren(int *sem);
+HIDDEN void verhogen(int *sem);
 HIDDEN void waitForIO(int lineNum, int deviceNum, int readBool);
 HIDDEN void getCPUTime();
 HIDDEN void waitForPClock();
@@ -84,12 +84,12 @@ void createProcess(state_PTR stateSYS, support_t *suppStruct){
 		/* initializing the fields of newPcb */
 		moveState(stateSYS, &(newPcb->p_s)); /* initializing newPcb's processor state to that which currently lies in a1 */
 		newPcb->p_supportStruct = suppStruct; /* initializing newPcb's supportStruct field based on the parameter currently in register a2 */
+		insertProcQ(&ReadyQueue, newPcb); /* inserting newPcb onto the Ready Queue */
+		insertChild(currentProc, newPcb); /* initializing newPcb's process tree fields by making it a child of the Current Process */
 		newPcb->p_time = INITIALACCTIME; /* initializing newPcb's p_time field to 0, since it has not yet accumualted any CPU time */
 		newPcb->p_semAdd = NULL; /* initializing the pointer to newPcb's semaphore, which is set to NULL because newPcb is not in the "blocked" state */
-		insertChild(currentProc, newPcb); /* initializing newPcb's process tree fields by making it a child of the Current Process */
-		insertProcQ(&ReadyQueue, newPcb); /* inserting newPcb onto the Ready Queue */
-		currentProc->p_s.s_v0 = SUCCESSCONST; /* placing the value 0 in the caller's v0 because the allocation was completed successfully */
 		procCnt++; /* incrementing the number of started, but not yet terminated, processes by one */
+		currentProc->p_s.s_v0 = SUCCESSCONST; /* placing the value 0 in the caller's v0 because the allocation was completed successfully */
 	}
 
 	else{ /* there are no more free pcbs */
@@ -98,8 +98,7 @@ void createProcess(state_PTR stateSYS, support_t *suppStruct){
 
 	STCK(curr_tod); /* storing the current value on the Time of Day clock into curr_tod */
 	currentProc->p_time = currentProc->p_time + (curr_tod - start_tod); /* updating the accumulated CPU time for the Current Process */
-	switchContext(currentProc); /* returning control to the Current Process by loading its (updated) processor state */
-	
+	loadProcessorState(currentProc); /* returning control to the Current Process by loading its (updated) processor state */
 }
 
 /* Function that handles SYS2 events and the "Die" portion of "Pass Up or Die." In other words, this internal function terminates the
@@ -131,7 +130,7 @@ void terminateProcess(pcb_PTR proc){
 	else if (procSem != NULL){ /* if proc is blocked (and is on the ASL) */
 		outBlocked(proc); /* removing proc from the ASL */
 		if (!(procSem >= &deviceSemaphores[FIRSTDEVINDEX] && procSem <= &deviceSemaphores[PCLOCKIDX])){ /* if proc is not blocked on a device semaphore */
-			(*(procSem))++; /* incrementing the val of sema4*/
+			(*(procSem))++; /* incrementing the val of sema4 (allows another process waiting on this semaphore to proceed)*/
 		}
 		else{
 			softBlockCnt--; /* decrementing the number of started, but not yet terminated, processes that are in the "blocked" state */
@@ -149,7 +148,7 @@ void terminateProcess(pcb_PTR proc){
 Based on value of the semaphore, will either: 
 - Block the Current Process & call the Scheduler so that the CPU can begin executing the next process
 - Return to the Current Process & continue executing */
-void waitOp(int *sem){
+void passEren(int *sem){
 	(*sem)--; /* decrement the semaphore's value by 1 */
 	if(*sem < SEMA4THRESH){ /* if value of semaphore is less than 0, means process must be blocked. */
 		blockCurr(sem); /* block the Current Process on the ASL */
@@ -159,14 +158,14 @@ void waitOp(int *sem){
 	/* else, return to Current Process */
 	STCK(curr_tod); /* storing the current value on the Time of Day clock into curr_tod */
 	currentProc->p_time = currentProc->p_time + (curr_tod - start_tod); /* updating the accumulated CPU time for the Current Process */
-	switchContext(currentProc); /* returning control to the Current Process by loading its (updated) processor state */
+	loadProcessorState(currentProc); /* returning control to the Current Process by loading its (updated) processor state */
 }
 
 /* Function that handles a SYS4 event.
 This function essentially requests the Nucleus to perform a V op on a semaphore.
 Using the physical address of the semaphore in the 'sem' pointer, which will then be V'ed.
 If the value of the semaphore indicates no blocking processes, then return to the Current Process (to be resumed). */
-void signalOp(int *sem){
+void verhogen(int *sem){
 	(*sem)++; /* increment the semaphore's value by 1 */
 	if(*sem <= SEMA4THRESH){ /* if value of semaphore indicates a blocking process */ 
 		pcb_PTR temp = removeBlocked(sem); /* make semaphore not blocking, ie: make it not blocking on the ASL */
@@ -176,7 +175,7 @@ void signalOp(int *sem){
 	/* returning to the Current Process */
 	STCK(curr_tod); /* storing the current value on the Time of Day clock into curr_tod */
 	currentProc->p_time = currentProc->p_time + (curr_tod - start_tod); /* updating the accumulated CPU time for the Current Process */
-	switchContext(currentProc); /* returning control to the Current Process by loading its (updated) processor state */
+	loadProcessorState(currentProc); /* returning control to the Current Process by loading its (updated) processor state */
 }
 
 /* Internal function that handles SYS5 events. The function handles requests for I/O. The primary tasks accomplished in the
@@ -190,7 +189,7 @@ void waitForIO(int lineNum, int deviceNum, int readBool){
 	
 	/* initializing the index in deviceSemaphores associated with the device requesting I/O. Note that if the device is a terminal device,
 	the next line initializes index to the semaphore associated with a read operation for that device */
-	index = ((lineNum - OFFSET) * DEVPERINT) + deviceNum; 
+	index = ((lineNum - OFFSET) * DEVPERINT) + deviceNum; /*the device number in a2[0..7] each interrupt line # in a1[3...7] and shift the line number to start at 0 and find exact index in deviceSemaphores[]*/
 	if (lineNum == LINE7 && readBool != TRUE){ /* if the device is a terminal device and the device is waiting for a write operation */
 		index += DEVPERINT; /* adding 8 to index, since the semaphore associated with a read operation comes 8 indices before that associated with a write operation for a given device */
 	}
@@ -208,13 +207,13 @@ void getCPUTime(){
 	STCK(curr_tod); /* storing the current value on the Time of Day clock into curr_tod */
 	currentProc->p_s.s_v0 = currentProc->p_time + (curr_tod - start_tod); /* placing the accumulated processor time used by the requesting process in v0 */
 	currentProc->p_time = currentProc->p_time + (curr_tod - start_tod); /* updating the accumulated CPU time for the Current Process */
-	switchContext(currentProc); /* returning control to the Current Process by loading its (updated) processor state */
+	loadProcessorState(currentProc); /* returning control to the Current Process by loading its (updated) processor state */
 }
 
 /* Function that handles SYS7 events. This is always a blocking syscall, since the Pseudo-clock semaphore (which is located at
 the last index of the deviceSemaphores array, identified by constant PCLOCKIDX) is a synchronization semaphore. 
 SYS7 is used to transition the Current Process from the running state to a blocked state, and then calls the Scheduler 
-so that the CPU can begin executing the next process. More specifically, this function performs a P (waitOp) on the
+so that the CPU can begin executing the next process. More specifically, this function performs a P (passEren) on the
 Nucleus Psuedo-clock semaphore, which is V'ed every INITIALINTTIMER (100 milliseconds) by the Nucleus. */
 void waitForPClock(){
 	(deviceSemaphores[PCLOCKIDX])--; /* decrement the semaphore's value by 1 */
@@ -232,7 +231,7 @@ void getSupportData(){
 	currentProc->p_s.s_v0 = (int)(currentProc->p_supportStruct); /* place Current Process' supportStruct in v0 */
 	STCK(curr_tod); /* storing the current value on the Time of Day clock into curr_tod */
 	currentProc->p_time = currentProc->p_time + (curr_tod - start_tod); /* updating the accumulated CPU time for the Current Process */
-	switchContext(currentProc); /* returning control to the Current Process (resume execution) */
+	loadProcessorState(currentProc); /* returning control to the Current Process (resume execution) */
 }
 
 /* Function that performs a standard Pass Up or Die operation using the provided index value. If the Current Process' p_supportStruct is
@@ -295,11 +294,11 @@ void sysTrapH(){
 		
 		case SYS3NUM: /* if the sysNum indicates a SYS3 event */
 			/* a1 should contain the addr of semaphore to be P'ed */
-			waitOp((int *) (currentProc->p_s.s_a1)); /* invoking the internal function that handles SYS3 events */
+			passEren((int *) (currentProc->p_s.s_a1)); /* invoking the internal function that handles SYS3 events */
 		
 		case SYS4NUM: /* if the sysNum indicates a SYS4 event */
 			/* a1 should contain the addr of semaphore to be V'ed */
-			signalOp((int *) (currentProc->p_s.s_a1)); /* invoking the internal function that handles SYS4 events */
+			verhogen((int *) (currentProc->p_s.s_a1)); /* invoking the internal function that handles SYS4 events */
 
 		case SYS5NUM: /* if the sysNum indicates a SYS5 event */
 			/* a1 should contain the interrupt line number of the interrupt at the time of the SYSCALL */ 

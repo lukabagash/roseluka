@@ -5,7 +5,7 @@
  *
  * The externals declaration file for the Initial.c Global Variables
  * 
- * Written by: Kollen Gruizenga and Jake Heyser
+ * Written by: Luka Bagashvili, Rosalie Lee
  * 
  ****************************************************************************/
 #include "../h/const.h"

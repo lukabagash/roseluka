@@ -32,7 +32,7 @@
 #include "../h/initial.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
-/* Not included in PandOS Function to copy the processor state pointed to by source into the processor state pointed to by dest. This 
+/* For deep copy:Not included in PandOS Function to copy the processor state pointed to by source into the processor state pointed to by dest. This 
 function will prove particularly useful when handling non-blocking SYSCALL exceptions and interrupts that need to
 copy the saved exception state into the Current Process' processor state so that the Current Process can continue
 executing once the exception or interrupt is handled. */
