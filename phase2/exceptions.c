@@ -241,7 +241,7 @@ this case, the saved exception state from the BIOS Data Page is copied to the co
 a LDCXT is performed using the fields from the proper sup_exceptContext field of the Current Process. */
 void passUpOrDie(int exceptionCode){ 
 	if (currentProc->p_supportStruct != NULL){
-		moveState(savedExceptState, &(currentProc->p_supportStruct->sup_exceptState[exceptionCode])); /* copying the saved exception state from the BIOS Data Page directly to the correct sup_exceptState field of the Current Process */
+		moveState(savedExceptState, &(currentProc->p_supportStruct->sup_exceptState[exceptionCode])); /* copying the saved exception state from the BIOS Data Page directly to the correct sup_exceptState field of the Current Process (accessible to the Support Level) */
 		STCK(curr_tod); /* storing the current value on the Time of Day clock into curr_tod */
 		currentProc->p_time = currentProc->p_time + (curr_tod - start_tod); /* updating the accumulated CPU time for the Current Process */
 		LDCXT(currentProc->p_supportStruct->sup_exceptContext[exceptionCode].c_stackPtr, currentProc->p_supportStruct->sup_exceptContext[exceptionCode].c_status,
@@ -276,7 +276,7 @@ void sysTrapH(){
 	
 	if ((sysNum<SYS1NUM) || (sysNum > SYS8NUM)){ /* check if the SYSCALL number was not 1-8 (we'll punt & avoid uniquely handling it) */
 		pgmTrapH(); /* invoking the internal function that handles program trap events */
-	} 
+	}
 	
 	updateCurrPcb(currentProc); /* copying the saved processor state into the Current Process' pcb  */
 	
@@ -318,14 +318,14 @@ void sysTrapH(){
 	}
 }
 
-/* Function that handles TLB exceptions. The function invokes the internal helper function that performs a standard Pass Up or Die
-operation using the PGFAULTEXCEPT index value. */
-void tlbTrapH(){
-	passUpOrDie(PGFAULTEXCEPT); /* performing a standard Pass Up or Die operation using the PGFAULTEXCEPT index value */
-}
-
 /* Function that handles Program Trap exceptions. The function invokes the internal helper function that performs a standard Pass Up or Die
 operation using the GENERALEXCEPT index value. */
 void pgmTrapH(){
 	passUpOrDie(GENERALEXCEPT); /* performing a standard Pass Up or Die operation using the GENERALEXCEPT index value */
+}
+
+/* Function that handles TLB exceptions. The function invokes the internal helper function that performs a standard Pass Up or Die
+operation using the PGFAULTEXCEPT index value. */
+void tlbTrapH(){
+	passUpOrDie(PGFAULTEXCEPT); /* performing a standard Pass Up or Die operation using the PGFAULTEXCEPT index value */
 }
