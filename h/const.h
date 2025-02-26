@@ -16,24 +16,26 @@
 /* Maximum number of external (sub)devices in UMPS3, plus one additional semaphore to support
 the Pseudo-clock */
 #define MAXDEVICECNT	49
-#define GETEXCEPCODE	0x0000007C	/* constant for setting all bits to 0 in the Cause register except for the ExcCode field */
-#define CAUSESHIFT		2			/* number of bits needed to shift the ExcCode field over to the right so that we can read the ExcCode directly */
-#define INTCONST		0			/* exception code signaling an interrupt occurred */
-#define TLBCONST		3			/* upper bound on the exception codes that signal a TLB exception occurred */
-#define SYSCONST		8			/* exception code signaling a SYSCALL occurred */
-#define	INITIALPROCCNT		0			/* the initial value of procCnt */
-#define	INITIALSFTBLKCNT	0			/* the initial value of softBlockCnt */
-#define	INITIALDEVSEMA4		0			/* the initial value of the device semaphores */
-/* Address for initializing Process 0's Pass Up Vector's fields for the address of handling general exceptions and TLB-Refill events */
-#define PROC0STACKPTR	0x20001000
-/* Value that the system-wide Interval Timer is initialized to 100ms (100,000 microseconds) */
-#define INITIALINTTIMER	100000
+#define CAUSEMASK       0x0000007C  /* Extracts the ExcCode bits in the Cause reg */
+#define EXCCODESHIFT    2           /* Shift right by 2 to isolate ExcCode */
+#define INTEXCPT        0           /* Interrupt exception code */
+#define TLBEXCPT        3           /* Upper bound for TLB exceptions */
+#define SYSCALLEXCPT    8           /* SYSCALL exception code */
+
+#define INITPROCCOUNT   0  /* Initial value for processCount */
+#define INITSOFTBLKCOUNT 0 /* Initial value for softBlockedCount */
+#define DEVSEMINIT      0  /* Initial value for each device semaphore */
+
+/* Stack pointer for Nucleus (used in Pass Up Vector) */
+#define NUCLEUSSTACK    0x20001000
+
+/* Interval timer set to 100 ms (100,000 microseconds) */
+#define CLOCKINTERVAL   100000
 /* Processor State--Status register constants */
 #define ALLOFF			0x0     	/* every bit in the Status register is set to 0; this will prove helpful for bitwise-OR operations */
-#define IECON			0x00000001	/* constant for enabling the global interrupt bit (i.e., IEc (bit 0) = 1) */
-#define IEPON			0x00000004	/* constant for enabling interrupts after LDST (i.e., IEp (bit 2) = 1) */
-#define PLTON			0x08000000	/* constant for enabling PLT (i.e., TE (bit 27) = 1) */
-#define IMON			0x0000FF00	/* constant for setting the Interrupt Mask bits to on so interrupts are fully enabled */
+#define IEPBITON        0x00000004  /* Enable interrupts after LDST (IEp) */
+#define TEBITON         0x08000000  /* Enable processor Local Timer (PLT) */
+#define CAUSEINTMASK    0x0000FF00  /* Full interrupt mask bits on (like IMON) */
 #define IECON			0x00000001	/* constant for enabling the global interrupt bit (i.e., IEc (bit 0) = 1) */
 /* Constant to help determine the index in deviceSemaphores/devSemaphores and in the Interrupt Devices Bitmap that a particular device is located at. 
 This constant is subtracted from the line number (or 4, in the case of backing store management), since interrupt lines 3-7 are used for peripheral devices  */
