@@ -120,8 +120,8 @@ int main() {
         deviceRegArea = (devregarea_t *) RAMBASEADDR;
         ramTop = deviceRegArea->rambase + deviceRegArea->ramsize;
 
-        /* Initialize p's processor state */
-        p->p_s.s_status = ALLOFF | IEPBITON | TEBITON | CAUSEINTMASK;
+        /* Initialize p's processor state */ 
+        p->p_s.s_status = ALLOFF | IEPBITON | TEBITON | CAUSEINTMASK;   /* Enabling interrupts and PLT, and setting kernel-mode to on */
         p->p_s.s_sp = ramTop;
         p->p_s.s_pc = (memaddr) test;
         p->p_s.s_t9 = (memaddr) test;
