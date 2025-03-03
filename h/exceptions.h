@@ -16,7 +16,7 @@
  */
 
 /* Update the Current Process’s PCB with the CPU state from the BIOS Data Page */
-extern void updateCurrentProcessState()(void);
+extern void updateCurrentProcessState(void);
 
 /* Entry points for handling exceptions: */
 extern void syscallExceptionHandler(void);  /* SYSCALL exceptions */
