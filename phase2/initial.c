@@ -53,7 +53,7 @@ HIDDEN void genExceptionHandler() {
     oldState = (state_t *) BIOSDATAPAGE;
 
     /* Extract the exception code */
-    exCode = ((oldState->s_cause) & CAUSEMASK) >> EXCCODESHIFT;
+    exCode = ((oldState->s_cause) & PANDOS_CAUSEMASK) >> EXCCODESHIFT;
 
     if (exCode == INTEXCPT) {
         /* Handle device/timer interrupts */
@@ -111,7 +111,7 @@ int main() {
     }
 
     /* Load system-wide Interval Timer (100 ms) */
-    LDIT(CLOCKINTERVAL);
+    LDIT(PANDOS_CLOCKINTERVAL);
 
     /* Create a single process to start the scheduler */
     p = allocPcb();
@@ -121,7 +121,7 @@ int main() {
         ramTop = deviceRegArea->rambase + deviceRegArea->ramsize;
 
         /* Initialize p's processor state */ 
-        p->p_s.s_status = ALLOFF | IEPBITON | TEBITON | CAUSEINTMASK;   /* Enabling interrupts and PLT, and setting kernel-mode to on */
+        p->p_s.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | PANDOS_CAUSEINTMASK;   /* Enabling interrupts and PLT, and setting kernel-mode to on */
         p->p_s.s_sp = ramTop;
         p->p_s.s_pc = (memaddr) test;
         p->p_s.s_t9 = (memaddr) test;

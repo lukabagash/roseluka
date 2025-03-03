@@ -16,7 +16,7 @@
 /* Maximum number of external (sub)devices in UMPS3, plus one additional semaphore to support
 the Pseudo-clock */
 #define MAXDEVICECNT	    49
-#define CAUSEMASK           0x0000007C  /* Extracts the ExcCode bits in the Cause reg */
+#define PANDOS_CAUSEMASK           0x0000007C  /* Extracts the ExcCode bits in the Cause reg */
 #define EXCCODESHIFT        2           /* Shift right by 2 to isolate ExcCode */
 #define INTEXCPT            0           /* Interrupt exception code */
 #define TLBEXCPT            3           /* Upper bound for TLB exceptions */
@@ -30,12 +30,12 @@ the Pseudo-clock */
 #define NUCLEUSSTACK        0x20001000
 
 /* Interval timer set to 100 ms (100,000 microseconds) */
-#define CLOCKINTERVAL       100000
+#define PANDOS_CLOCKINTERVAL       100000UL
 /* Processor State--Status register constants */
 #define ALLOFF			    0x0     	/* every bit in the Status register is set to 0; for bitwise-OR operations */
-#define IEPBITON            0x00000004  /* Enable interrupts after LDST (IEp) */
+#define PANDOS_IEPBITON            0x00000004  /* Enable interrupts after LDST (IEp) */
 #define TEBITON             0x08000000  /* Enable processor Local Timer (PLT) */
-#define CAUSEINTMASK        0x0000FF00  /* Full interrupt mask bits on (like IMON) */
+#define PANDOS_CAUSEINTMASK        0x0000FF00  /* Full interrupt mask bits on (like IMON) */
 #define IECON			    0x00000001	/* Enable the global interrupt bit (i.e., IEc (bit 0) = 1) */
 /* Constant to help determine the index in deviceSemaphores/devSemaphores and in the Interrupt Devices Bitmap that a particular device is located at. 
 This constant is subtracted from the line number (or 4, in the case of backing store management), since interrupt lines 3-7 are used for peripheral devices  */
