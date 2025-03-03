@@ -16,12 +16,12 @@
  */
 
 /* Update the Current Process’s PCB with the CPU state from the BIOS Data Page */
-extern void updateCurrPcb(void);
+extern void updateCurrentProcessState()(void);
 
 /* Entry points for handling exceptions: */
-extern void sysTrapH(void);  /* SYSCALL exceptions */
-extern void tlbTrapH(void);  /* TLB exceptions */
-extern void pgmTrapH(void);  /* Program Trap exceptions */
+extern void syscallExceptionHandler(void);  /* SYSCALL exceptions */
+extern void tlbExceptionHandler(void);  /* TLB exceptions */
+extern void programTrapHandler(void);  /* Program Trap exceptions */
 
 /* Optional TLB-refill handler placeholder (if still used in initial.c) */
 extern void uTLB_RefillHandler(void);
