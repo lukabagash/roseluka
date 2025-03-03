@@ -31,7 +31,11 @@
  #include "../h/exceptions.h"
  #include "../h/initial.h"
  #include "/usr/include/umps3/umps/libumps.h"
- 
+
+/* Global Variables (from this module’s perspective) */
+cpu_t interruptTOD; /* the value on the Time of Day clock when the Interrupt Handler module is first entered */
+cpu_t remainingTime; /* the amount of time left on the Current Process' quantum when the interrupt was generated */
+
  /************************************************************************
   * findDeviceNum - Identifies the device number for the highest-priority 
   *                 pending interrupt on a given interrupt line.
@@ -90,7 +94,7 @@
   *     responsible for generating the I/O request if that process exists.
   ************************************************************************/
  HIDDEN void IOInt() {
-	 cpu_t curr_tod;
+	 cpu_t currentTOD;
 	 int lineNum;			/* the line number that the highest-priority interrupt occurred on */
 	 int devNum;				/* the device number that the highest-priority interrupt occurred on */
 	 int index;				/* the index in device register of the device associated with the highest-priority interrupt */
@@ -137,8 +141,8 @@
 	 if (unblockedPcb == NULL){ /* if the supposedly unblocked pcb is NULL, we want to return control to the Current Process */
 		 if (currentProcess != NULL){ /* if there is a Current Process to return control to */
 			 updateCurrentProcessState(); /* Update the Current Process' processor state before resuming process' execution */
-			 currentProcess->p_time = currentProcess->p_time + (interrupt_tod - startTOD); /* Update the accumulated processor time used by the Current Process */
-			 setTIMER(remaining_time); /* Set the PLT to the remaining time left on the Current Process' quantum when the interrupt handler was first entered */
+			 currentProcess->p_time = currentProcess->p_time + (interruptTOD - startTOD); /* Update the accumulated processor time used by the Current Process */
+			 setTIMER(remainingTime); /* Set the PLT to the remaining time left on the Current Process' quantum when the interrupt handler was first entered */
 			 loadProcessorState(currentProcess); /* Return control to the Current Process */
 		 }
 		 switchProcess(); /* Execute the next process on the Ready Queue if there is no Current Process */
@@ -151,10 +155,10 @@
 	 /* if there is a Current Process to return control to */
 	 if (currentProcess != NULL){ 
 		 updateCurrentProcessState(); /* Update the Current Process' processor state before resuming process' execution */
-		 setTIMER(remaining_time); /* Set the PLT to the remaining time left on the Current Process' quantum when the interrupt handler was first entered */
-		 currentProcess->p_time = currentProcess->p_time + (interrupt_tod - startTOD); /* Update the accumulated processor time used by the Current Process */
-		 STCK(curr_tod); /* Store the current value on the Time of Day clock into curr_tod */
-		 unblockedPcb->p_time = unblockedPcb->p_time + (curr_tod - interrupt_tod); /* Charge the process associated with the I/O interrupt with the CPU time needed */
+		 setTIMER(remainingTime); /* Set the PLT to the remaining time left on the Current Process' quantum when the interrupt handler was first entered */
+		 currentProcess->p_time = currentProcess->p_time + (interruptTOD - startTOD); /* Update the accumulated processor time used by the Current Process */
+		 STCK(currentTOD); /* Store the current value on the Time of Day clock into currentTOD */
+		 unblockedPcb->p_time = unblockedPcb->p_time + (currentTOD - interruptTOD); /* Charge the process associated with the I/O interrupt with the CPU time needed */
 		 loadProcessorState(currentProcess); /* Return control to the Current Process */
 	 }
 	 switchProcess(); /* Execute the next process on the Ready Queue if there is no Current Process */
@@ -172,14 +176,14 @@
   *   - If there is no Current Process, the system triggers a PANIC.
   ************************************************************************/
  HIDDEN void pltTimerInt() {
-	 cpu_t curr_tod;
+	 cpu_t currentTOD;
  
 	 /* if there was a running process when the interrupt was generated */
 	 if (currentProcess != NULL) {
 		 setTIMER(NEVER);	/* PLT will generate an interrupt on interrupt line 1, so it doesn't call PLT again */
 		 updateCurrentProcessState();	/* Move the updated exception state from the BIOS Data Page into the Current Process' processor state */
-		 STCK(curr_tod);		/* Store the current value on the Time of Day clock into curr_tod */
-		 currentProcess->p_time += (curr_tod - startTOD);	/* Update the accumulated processor time */
+		 STCK(currentTOD);		/* Store the current value on the Time of Day clock into currentTOD */
+		 currentProcess->p_time += (currentTOD - startTOD);	/* Update the accumulated processor time */
 		 insertProcQ(&readyQueue, currentProcess);	/* Place back the Current Process on the Ready Queue */
 		 currentProcess = NULL;	/* No process currently executing */
 		 switchProcess();	/* Call scheduler */
@@ -190,7 +194,7 @@
  /************************************************************************
   * intTimerInt - Handles the System-wide Interval Timer (line 2).
   *
-  *   - Reloads the Interval Timer with 100ms (INITIALINTTIMER).
+  *   - Reloads the Interval Timer with 100ms (CLOCKINTERVAL).
   *   - Performs a V operation on the pseudo-clock semaphore, unblocking 
   *     all processes waiting on it.
   *   - Resets the pseudo-clock semaphore to 0.
@@ -201,7 +205,7 @@
  HIDDEN void intTimerInt() {
 	 pcb_PTR temp; /* Pointer to a pcb in the Pseudo-Clock semaphore's process queue that we want to unblock and insert into the Ready Queue */
 	 
-	 LDIT(INITIALINTTIMER); /* Place 100 milliseconds back on the Interval Timer for the next Pseudo-clock tick */
+	 LDIT(PANDOS_CLOCKINTERVAL); /* Place 100 milliseconds back on the Interval Timer for the next Pseudo-clock tick */
 	 
 	 /* unblocking all pcbs blocked on the Pseudo-Clock semaphore */
 	 while (headBlocked(&devSemaphore[PCLOCKIDX]) != NULL){ 
@@ -212,9 +216,9 @@
 	 devSemaphore[PCLOCKIDX] = INITIALPCSEM; /* Reset the Pseudo-clock semaphore */
 	 /* if there is a Current Process to return control to */
 	 if (currentProcess != NULL){ 
-		 setTIMER(remaining_time); /* The remaining time left on the Current Process' quantum */
+		 setTIMER(remainingTime); /* The remaining time left on the Current Process' quantum */
 		 updateCurrentProcessState(); /* Update before resuming process' execution */
-		 currentProcess->p_time = currentProcess->p_time + (interrupt_tod - startTOD); /* Update the accumulated processor time used by the Current Process */
+		 currentProcess->p_time = currentProcess->p_time + (interruptTOD - startTOD); /* Update the accumulated processor time used by the Current Process */
 		 loadProcessorState(currentProcess); /* Return control to the Current Process */
 	 }
 	 switchProcess(); /* call scheduler if there is no Current Process to return control to */
@@ -224,7 +228,7 @@
  /************************************************************************
   * intTrapH - Entry point for the Nucleus interrupt handler.
   *
-  *   - Initializes module-level globals: interrupt_tod, remaining_time, 
+  *   - Initializes module-level globals: interruptTOD, remainingTime, 
   *     and savedExceptState.
   *   - Determines which interrupt line has the highest priority pending 
   *     interrupt.
@@ -234,8 +238,8 @@
   *       * IOInt() for lines 3-7
   ************************************************************************/
  void intTrapH(){
-	 STCK(interrupt_tod); /* Store when the Interrupt Handler module is first entered into interrupt_tod */
-	 remaining_time = getTIMER(); /* Store the remaining time left on the Current Process' quantum */
+	 STCK(interruptTOD); /* Store when the Interrupt Handler module is first entered into interruptTOD */
+	 remainingTime = getTIMER(); /* Store the remaining time left on the Current Process' quantum */
 	 savedExceptState = (state_PTR) BIOSDATAPAGE; /* Initialize to the state stored at the start of the BIOS Data Page */
  
 	 /* calling the interrupt handler function based on interrupt type that has the highest priority (i.e., an interrupt occurred on lines 1-2)*/
