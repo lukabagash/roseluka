@@ -80,13 +80,13 @@ currentProcess = removeProcQ(&readyQueue);
 	}
 
 	/* Ready Queue is empty */
-	if (processCount == INITIALPROCCNT) {
+	if (processCount == INITPROCCOUNT) {
 		HALT();  /* Halt system if no active processes */
 	}
 
 	/* The processor is not executing instructions, but waiting for a device interrupt to occur */
-	if ((processCount > INITIALPROCCNT) && (softBlockedCount > INITIALSFTBLKCNT)) {
-		setSTATUS(ALLOFF | IMON | IECON); /* Enable interrupts for the Status register so we can execute the WAIT instruction */
+	if ((processCount > INITPROCCOUNT) && (softBlockedCount > INITSOFTBLKCOUNT)) {
+		setSTATUS(ALLOFF | PANDOS_CAUSEINTMASK | IECON); /* Enable interrupts for the Status register so we can execute the WAIT instruction */
 		setTIMER(NEVER);  /* Set a high timer value to wait for device interrupt */
 		WAIT();  /* Enter wait state */
 	}
