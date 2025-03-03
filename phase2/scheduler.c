@@ -37,13 +37,15 @@
  *   - Useful for handling non-blocking SYSCALL exceptions and interrupts.
  ************************************************************************/
 void moveState(state_PTR source, state_PTR dest) {
+	int i;
+
 	dest->s_entryHI = source->s_entryHI;
 	dest->s_cause = source->s_cause;
 	dest->s_status = source->s_status;
 	dest->s_pc = source->s_pc;
 
 	/* Copy all general-purpose registers */
-	for (int i = 0; i < STATEREGNUM; i++) {
+	for (i = 0; i < STATEREGNUM; i++) {
 		dest->s_reg[i] = source->s_reg[i];
 	}
 }
