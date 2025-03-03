@@ -3,23 +3,30 @@
 
 /**************************************************************************** 
  *
- * The externals declaration file for the Initial.c Global Variables
- * 
+ * The externals declaration file for the Initial.c global variables.
+ *
  * Written by: Luka Bagashvili, Rosalie Lee
- * 
+ *
  ****************************************************************************/
 #include "../h/const.h"
 #include "../h/types.h"
 
+/* 
+ * Phase 2 Globals (as actually used in initial.c):
+ *   - The ‘processCount’ and ‘softBlockedCount’ track active processes.
+ *   - ‘currentProcess’ is the PCB of the process currently running.
+ *   - ‘readyQueue’ is the tail pointer to the ready queue of PCBs.
+ *   - ‘startTOD’ stores the Time of Day at which the Current Process started.
+ *   - ‘devSemaphore[]’ holds one semaphore per external device + 1 pseudo-clock.
+ *   - ‘savedExceptState’ stores the CPU state at the time of an exception.
+ */
 
-extern int procCnt; /* integer indicating the number of started, but not yet terminated, processes */
-extern int softBlockCnt; /* integer indicating the number of started, but not yet terminated, processes that're in the "blocked" state" */
-extern pcb_PTR currentProc; /* pointer to the pcb that is in the "running" state */
-extern pcb_PTR ReadyQueue; /* pointer to the tail of a queue of pcbs that are in the "ready" state */
-extern cpu_t start_tod; /* the value on the time of day clock that the Current Process begins executing at */
-extern int deviceSemaphores[MAXDEVICECNT]; /* array of integer semaphores that correspond to each external (sub) device, plus one semd for the Pseudo-clock, located 
-									at the last index of the array (PCLOCKIDX). Note that this array will be implemented so that terminal device semaphores are last and terminal device semaphores
-									associated with a read operation in the array come before those associated with a write operation. */
-extern state_PTR savedExceptState; /* a pointer to the saved exception state */
+extern int       processCount;
+extern int       softBlockedCount;
+extern pcb_PTR   currentProcess;
+extern pcb_PTR   readyQueue;
+extern cpu_t     startTOD;
+extern int       devSemaphore[MAXDEVICECNT];
+extern state_PTR savedExceptState;
 
 #endif

@@ -1,32 +1,35 @@
-/**************************************************************************** 
+/******************************** exceptions.c **********************************
  *
- * This module serves as the exception handler module to define exception-handling functions that are called
- * by the General Exception Handler. Namely, this module defines a function for handling program trap events-- pgmTrapH(), 
- * for TLB trap events-- tlbTrapH(), and for SYSCALL exception events-- sysTrapH()...in addition to all of the 
- * specific helper functions for various SYSCALL numbers. This module is also responsible for handling
- * Pass Up or Die events.
- * 
- * While the General Exception Handler can directly call pgmTrapH(), tlbTrapH(), and sysTrapH(), 
- * most of the functions within this module pertain to SYSCALL exceptions, and thus the
- * sysTrapH() function is the most developed entry point to this module. It first performs a few
- * checks, such as ensuring the requesting process was not in user mode when the SYSCALL was made
- * and confirming the requested SYSCALL will be uniquely handled (only SYS1-8). It then
- * passes control to the appropriate internal SYSCALL handler function.
- * 
- * 
- * Note that for the purposes of this phase of development, the CPU time used by the 
- * Current Process to handle the SYSCALL request is charged to the Current Process.
- * This is true regardless of whether the Current Process continues executing after the SYSCALL
- * request is handled, because once we return control to the Current Process, the start_tod variable (the 
- * value that the process started executing at) is reset.
- * 
- * We decided on this timing policy as we believe charging such CPU
- * time to the requesting process is the most logical way to account for the CPU time
- * used in this module, as the Current Process, after all, was the process that
- * requested that part of its quantum (and CPU time) be spent handling the SYSCALL request.
- *  
- * Written by Luka Bagashvili, Rosalie Lee
- ****************************************************************************/
+ * This module implements the Nucleus exception handling for Pandos. It directly
+ * handles SYSCALL (1–8) requests, while all other exceptions (TLB, Program Trap,
+ * or SYSCALL ≥ 9) are “passed up” to the Support Level if a Support Structure is 
+ * defined, or the offending process (and its progeny) is terminated otherwise.
+ *
+ * In particular, this module:
+ *   - Defines an entry point for SYSCALL exceptions (`syscallExceptionHandler`),
+ *     which dispatches to specific handlers for SYS1–SYS8.
+ *   - Defines handlers for Program Trap (`programTrapHandler`) and TLB exceptions
+ *     (`tlbExceptionHandler`).
+ *   - Provides the Pass Up or Die mechanism (`passUpOrDie`) for Program Trap,
+ *     TLB, and illegal SYSCALL requests.
+ *   - Supplies internal helper functions to manage new process creation, 
+ *     process termination, Passeren/Verhogen, I/O waits, retrieving CPU time,
+ *     waiting for the pseudo-clock, and retrieving a process’s Support Structure.
+ *
+ * Execution Flow:
+ *   - The General Exception Handler (from `initial.c`) decodes `Cause.ExcCode` 
+ *     and calls into one of the three entry points here: `syscallExceptionHandler`, 
+ *     `programTrapHandler`, or `tlbExceptionHandler`.
+ *   - If the exception was a valid SYSCALL [1..8], the appropriate routine is 
+ *     invoked (e.g., createProcess). Otherwise, or if the calling process was 
+ *     in user-mode, the request is handled as a Program Trap exception (illegal).
+ *   - Certain SYSCALLs (SYS3, SYS5, SYS7) may block the calling process, after 
+ *     which the Scheduler is invoked.
+ *   - At the end of any non-blocking SYSCALL handling, this module updates CPU 
+ *     usage for the Current Process and resumes it via LDST.
+ *
+ * Written by: Luka Bagashvili, Rosalie Lee
+ ******************************************************************************/
 
 #include "../h/asl.h"
 #include "../h/types.h"
@@ -38,294 +41,371 @@
 #include "../h/initial.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
-/* function declarations */
-HIDDEN void blockCurr(int *sem);
-HIDDEN void createProcess(state_PTR stateSYS, support_t *suppStruct);
-HIDDEN void terminateProcess(pcb_PTR proc);
-HIDDEN void passEren(int *sem);
-HIDDEN void verhogen(int *sem);
-HIDDEN void waitForIO(int lineNum, int deviceNum, int readBool);
-HIDDEN void getCPUTime();
-HIDDEN void waitForPClock();
-HIDDEN void getSupportData();
+/* Function Prototypes (local to this module) */
+HIDDEN void blockCurrentProcess(int *semAddr);
+HIDDEN void createNewProcess(state_PTR stateSys, support_t *supportPtr);
+HIDDEN void terminateProcessAndProgeny(pcb_PTR proc);
+HIDDEN void passerenSyscall(int *semAddr);
+HIDDEN void verhogenSyscall(int *semAddr);
+HIDDEN void waitIODevice(int lineNum, int devNum, int isReadOperation);
+HIDDEN void getCpuTimeSyscall();
+HIDDEN void waitForClockSyscall();
+HIDDEN void getSupportDataSyscall();
 
-/* declaring variables that are global to this module */
-int sysNum; /* the number of the SYSCALL that we are addressing */
-cpu_t curr_tod; /* variable to hold the current TOD clock value */
+/* Global Variables (from this module’s perspective) */
+int   syscallNumber;   /* Holds the system call code (a0) from the saved state */
+cpu_t currentTOD;      /* Used to track CPU usage for the Current Process */
 
-/* Function that copies the saved exception located at the start of the BIOS Data Page to the Current Process' pcb so that
-it contains the updated processor state after an exception (or interrupt) is handled */
-void updateCurrPcb(){
-	moveState(savedExceptState, &(currentProc->p_s)); /* invoking the function that copies the saved processor state into the Current Process' pcb by calling moveState() */	
+
+/************************************************************************
+ * updateCurrentProcessState
+ * 
+ * Copies the saved CPU state (from the BIOS Data Page) into the Current 
+ * Process’s PCB. This is typically used after an exception is raised, so 
+ * that the Current Process has an up-to-date processor state in its PCB.
+ ************************************************************************/
+void updateCurrentProcessState() {
+    moveState(savedExceptState, &(currentProcess->p_s));
 }
 
-/* Function that handles the steps needed for blocking a process. The function updates the accumulated CPU time 
-for the Current Process, and blocks the Current Process on the ASL. */
-void blockCurr(int *sem){
-	STCK(curr_tod); /* storing the current value on the Time of Day clock into curr_tod */
-	currentProc->p_time = currentProc->p_time + (curr_tod - start_tod); /* updating the accumulated CPU time for the Current Process */
-	insertBlocked(sem, currentProc); /* blocking the Current Process on the ASL */
-	currentProc = NULL; /* setting currentProc to NULL because the old process is now blocked */ 
+
+/************************************************************************
+ * blockCurrentProcess
+ *
+ * Blocks the Current Process on the given semaphore. Updates the 
+ * accumulated CPU time for the Current Process, inserts the process in 
+ * the ASL, and clears `currentProcess` so the Scheduler may find a new job.
+ ************************************************************************/
+HIDDEN void blockCurrentProcess(int *semAddr) {
+    STCK(currentTOD);
+    currentProcess->p_time += (currentTOD - startTOD);
+
+    insertBlocked(semAddr, currentProcess);
+    currentProcess = NULL; 
 }
 
-/* Function that handles SYS1 events. In other words, this internal function creates a new process. The function
-allocates a new pcb and, if allocPcb() returns NULL (i.e., there are no more free pcbs), an error code of -1
-is placed/returned in the caller's v0. Otherwise, the function initializes the fields of the new pcb appropriately
-before placing/returning the value 0 in the caller's v0. Finally, it calls the function to load the Current State's
-(updated) processor state into the CPU so it can continue executing. */
-void createProcess(state_PTR stateSYS, support_t *suppStruct){
-	/* declaring local variables */
-	pcb_PTR newPcb; /* a pointer to the pcb that we will allocate and, if it is not initialized to NULL, place on the Ready Queue */
 
-	/* initialing local variables */
-	newPcb = allocPcb(); /* calling allocPcb() in order to allocate a newPcb that we can return to the caller */
+/************************************************************************
+ * createNewProcess (SYS1 - CREATEPROCESS)
+ *
+ * Creates a new process by allocating a PCB, initializing its state from 
+ * the state pointer provided in a1, and optionally assigning it a Support
+ * Structure (a2). The new process is placed on the Ready Queue and made 
+ * a child of the Current Process. If no PCB is available, returns -1 in 
+ * v0; otherwise returns 0.
+ ************************************************************************/
+HIDDEN void createNewProcess(state_PTR stateSys, support_t *supportPtr) {
+    pcb_PTR newPcb = allocPcb();
+    if (newPcb != NULL) {
+        /* Populate fields of the new PCB */
+        moveState(stateSys, &(newPcb->p_s));
+        newPcb->p_supportStruct = supportPtr;
+        insertProcQ(&readyQueue, newPcb);
+        insertChild(currentProcess, newPcb);
 
-	if (newPcb != NULL){ /* if the newly allocated pcb is not NULL, meaing there are enough resources to create a new process */
-		/* initializing the fields of newPcb */
-		moveState(stateSYS, &(newPcb->p_s)); /* initializing newPcb's processor state to that which currently lies in a1 */
-		newPcb->p_supportStruct = suppStruct; /* initializing newPcb's supportStruct field based on the parameter currently in register a2 */
-		insertProcQ(&ReadyQueue, newPcb); /* inserting newPcb onto the Ready Queue */
-		insertChild(currentProc, newPcb); /* initializing newPcb's process tree fields by making it a child of the Current Process */
-		newPcb->p_time = INITIALACCTIME; /* initializing newPcb's p_time field to 0, since it has not yet accumualted any CPU time */
-		newPcb->p_semAdd = NULL; /* initializing the pointer to newPcb's semaphore, which is set to NULL because newPcb is not in the "blocked" state */
-		procCnt++; /* incrementing the number of started, but not yet terminated, processes by one */
-		currentProc->p_s.s_v0 = SUCCESSCONST; /* placing the value 0 in the caller's v0 because the allocation was completed successfully */
-	}
+        newPcb->p_time   = INITIALACCTIME;
+        newPcb->p_semAdd = NULL;
 
-	else{ /* there are no more free pcbs */
-		currentProc->p_s.s_v0 = ERRORCONST; /* placing an error code of -1 in the caller's v0 */
-	}
+        processCount++;
+        currentProcess->p_s.s_v0 = OK;  /* success */
+    } else {
+        currentProcess->p_s.s_v0 = FAIL; /* error (no more PCBs) */
+    }
 
-	STCK(curr_tod); /* storing the current value on the Time of Day clock into curr_tod */
-	currentProc->p_time = currentProc->p_time + (curr_tod - start_tod); /* updating the accumulated CPU time for the Current Process */
-	loadProcessorState(currentProc); /* returning control to the Current Process by loading its (updated) processor state */
+    /* Charge the time spent handling this SYSCALL to the Current Process */
+    STCK(currentTOD);
+    currentProcess->p_time += (currentTOD - startTOD);
+
+    /* Resume execution of the Current Process */
+    loadProcessorState(currentProcess);
 }
 
-/* Function that handles SYS2 events and the "Die" portion of "Pass Up or Die." In other words, this internal function terminates the
-executing process and causes it to cease to exist. In addition, all progeny of this process are terminated as well. To accomplish
-this latter task, we will utilize head recursion, removing the children of the parameter proc one at a time, starting with proc's first
-child and ending with proc's last child. The function also determines if proc is blocked on the ASL, in the Ready Queue or is
-CurrentProc. Once it does so, it removes proc from the ASL/ReadyQueue or detaches it from its parent (in the case that proc = CurrentProc).
-Finally, the function calls freePcb(proc) to officially destroy the process before decrementing the Process Count. The Scheduler is then invoked
-in the entry point for this module, sysTrapH() in order to refrain from calling the Scheduler in this function many times in the event
-that proc has at least one child. */
-void terminateProcess(pcb_PTR proc){ 
-	/* declaring local variables */
-	int *procSem; /* a pointer to the semaphore associated with the Current Process */
 
-	/* initializing local variables */
-	procSem = proc->p_semAdd; /* initializing procSem to the process' pointer to its semaphore */
+/************************************************************************
+ * terminateProcessAndProgeny (SYS2 - TERMINATEPROCESS or “Die”)
+ *
+ * Recursively terminates the specified process and all of its offspring. 
+ * Removes the process from either the Ready Queue or ASL (if blocked), 
+ * releases its PCB, and decrements the process count. If the process was 
+ * blocked on a non-device semaphore, increments that semaphore.
+ ************************************************************************/
+HIDDEN void terminateProcessAndProgeny(pcb_PTR proc) {
+    int *semAddr = proc->p_semAdd;
+    
+    /* Recursively kill all children */
+    while (!emptyChild(proc)) {
+        terminateProcessAndProgeny(removeChild(proc));
+    }
 
-	/* terminating all progeny of the Current Process by utilizing head recursion */
-	while (!(emptyChild(proc))){ /* while the process that will be terminated still has children */
-		terminateProcess(removeChild(proc)); /* making the recursive call to continue removing the requesting process' children from it */
-	}
+    /* Now remove this process itself */
+    if (proc == currentProcess) {
+        outChild(proc);
+    } 
+    else if (semAddr != NULL) {
+        outBlocked(proc);
+        /* If it wasn’t a device semaphore, increment it. Otherwise, 
+           device semaphores get incremented by the eventual device interrupt. */
+        if (!(semAddr >= &devSemaphore[FIRSTDEVINDEX] && 
+              semAddr <= &devSemaphore[PCLOCKIDX])) {
+            (*semAddr)++;
+        } else {
+            softBlockedCount--;
+        }
+    } else {
+        /* Must be on the Ready Queue */
+        outProcQ(&readyQueue, proc);
+    }
 
-	/* The requesting process now has no children. We now need to determine if the requesting process is the running process, sitting on
-	the Ready Queue or is blocked. */
-	
-	if (proc == currentProc){ /* if proc is the running process */
-		outChild(proc); /* detaching the Current Process from its parent */
-	}
-	else if (procSem != NULL){ /* if proc is blocked (and is on the ASL) */
-		outBlocked(proc); /* removing proc from the ASL */
-		if (!(procSem >= &deviceSemaphores[FIRSTDEVINDEX] && procSem <= &deviceSemaphores[PCLOCKIDX])){ /* if proc is not blocked on a device semaphore */
-			(*(procSem))++; /* incrementing the val of sema4 (allows another process waiting on this semaphore to proceed)*/
-		}
-		else{
-			softBlockCnt--; /* decrementing the number of started, but not yet terminated, processes that are in the "blocked" state */
-		}
-	} 
-	else{ /* proc is on the Ready Queue */
-		outProcQ(&ReadyQueue, proc); /* removing proc from the Ready Queue */
-	}
-	freePcb(proc); /* returning proc onto the pcbFree list (and, therefore, destroying it) */
-	procCnt--; /* decrementing the number of started, but not yet terminated, processes */
-	proc = NULL; /* setting the process pointer to NULL, since it has been destroyed */
+    freePcb(proc);
+    processCount--;
 }
 
-/* Function that handles a SYS3 event. This is a (sometimes) blocking syscall.
-Based on value of the semaphore, will either: 
-- Block the Current Process & call the Scheduler so that the CPU can begin executing the next process
-- Return to the Current Process & continue executing */
-void passEren(int *sem){
-	(*sem)--; /* decrement the semaphore's value by 1 */
-	if(*sem < SEMA4THRESH){ /* if value of semaphore is less than 0, means process must be blocked. */
-		blockCurr(sem); /* block the Current Process on the ASL */
-		switchProcess(); /* calling the Scheduler to begin executing the next process */
-	}
 
-	/* else, return to Current Process */
-	STCK(curr_tod); /* storing the current value on the Time of Day clock into curr_tod */
-	currentProc->p_time = currentProc->p_time + (curr_tod - start_tod); /* updating the accumulated CPU time for the Current Process */
-	loadProcessorState(currentProc); /* returning control to the Current Process by loading its (updated) processor state */
+/************************************************************************
+ * passerenSyscall (SYS3 - PASSEREN)
+ *
+ * Performs a P operation on the semaphore pointed to by a1. If the 
+ * semaphore is negative after decrement, the Current Process becomes 
+ * blocked and the Scheduler is invoked. Otherwise, control resumes.
+ ************************************************************************/
+HIDDEN void passerenSyscall(int *semAddr) {
+    (*semAddr)--;
+    if ((*semAddr) < SEMA4THRESH) {
+        blockCurrentProcess(semAddr);
+        switchProcess();
+    }
+
+    /* Non-blocking: charge CPU time and resume */
+    STCK(currentTOD);
+    currentProcess->p_time += (currentTOD - startTOD);
+    loadProcessorState(currentProcess);
 }
 
-/* Function that handles a SYS4 event.
-This function essentially requests the Nucleus to perform a V op on a semaphore.
-Using the physical address of the semaphore in the 'sem' pointer, which will then be V'ed.
-If the value of the semaphore indicates no blocking processes, then return to the Current Process (to be resumed). */
-void verhogen(int *sem){
-	(*sem)++; /* increment the semaphore's value by 1 */
-	if(*sem <= SEMA4THRESH){ /* if value of semaphore indicates a blocking process */ 
-		pcb_PTR temp = removeBlocked(sem); /* make semaphore not blocking, ie: make it not blocking on the ASL */
-		insertProcQ(&ReadyQueue, temp); /* add process' PCB to the ReadyQueue */
-	}
 
-	/* returning to the Current Process */
-	STCK(curr_tod); /* storing the current value on the Time of Day clock into curr_tod */
-	currentProc->p_time = currentProc->p_time + (curr_tod - start_tod); /* updating the accumulated CPU time for the Current Process */
-	loadProcessorState(currentProc); /* returning control to the Current Process by loading its (updated) processor state */
+/************************************************************************
+ * verhogenSyscall (SYS4 - VERHOGEN)
+ *
+ * Performs a V operation on the semaphore pointed to by a1. If this V 
+ * unblocks a waiting process, that process is moved from the ASL to the 
+ * Ready Queue. Control resumes with the Current Process.
+ ************************************************************************/
+HIDDEN void verhogenSyscall(int *semAddr) {
+    (*semAddr)++;
+    if ((*semAddr) <= SEMA4THRESH) {
+        pcb_PTR unblocked = removeBlocked(semAddr);
+        if (unblocked != NULL) {
+            insertProcQ(&readyQueue, unblocked);
+        }
+    }
+
+    /* Charge CPU time and resume */
+    STCK(currentTOD);
+    currentProcess->p_time += (currentTOD - startTOD);
+    loadProcessorState(currentProcess);
 }
 
-/* Internal function that handles SYS5 events. The function handles requests for I/O. The primary tasks accomplished in the
-function include locating the index of the semaphore associated with the device requesting I/O in deviceSemaphores[] and performing a 
-P operation on that semaphore so that the Current Process is blocked on the ASL. Note that, as mentioned in the initial.c module,
-the deviceSemaphores[] array is initialized so that terminal device semaphores are last and terminal device semaphores associated
-with a read operation in the array come before those associated with a write operation. */
-void waitForIO(int lineNum, int deviceNum, int readBool){
-	/* Declaring local variables */
-	int index; /* the index in deviceSemaphores associated with the device requesting I/O */
-	
-	/* initializing the index in deviceSemaphores associated with the device requesting I/O. Note that if the device is a terminal device,
-	the next line initializes index to the semaphore associated with a read operation for that device */
-	index = ((lineNum - OFFSET) * DEVPERINT) + deviceNum; /*the device number in a2[0..7] each interrupt line # in a1[3...7] and shift the line number to start at 0 and find exact index in deviceSemaphores[]*/
-	if (lineNum == LINE7 && readBool != TRUE){ /* if the device is a terminal device and the device is waiting for a write operation */
-		index += DEVPERINT; /* adding 8 to index, since the semaphore associated with a read operation comes 8 indices before that associated with a write operation for a given device */
-	}
 
-	softBlockCnt++; /* incrementing the soft block count, since a new process has been placed in the "blocked" state */
-	(deviceSemaphores[index])--; /* decrement the semaphore's value by 1 */
-	blockCurr(&deviceSemaphores[index]); /* block the Current Process on the ASL */
-	switchProcess(); /* calling the Scheduler to begin executing the next process */
+/************************************************************************
+ * waitIODevice (SYS5 - WAITIO)
+ *
+ * Requests synchronous I/O on the specified device line (a1), device 
+ * number (a2), and sub-device type (a3 indicates TRUE if it is a terminal
+ * read). This call always blocks the Current Process. The device’s status 
+ * is later placed in the unblocked process’s v0 register by the interrupt
+ * handler.
+ ************************************************************************/
+HIDDEN void waitIODevice(int lineNum, int devNum, int isReadOperation) {
+    int devIndex = (lineNum - OFFSET) * DEVPERINT + devNum;
+
+    if (lineNum == LINE7 && (isReadOperation == FALSE)) {
+        /* Terminal write sub-device is offset by DEVPERINT from read sub-device */
+        devIndex += DEVPERINT;
+    }
+
+    softBlockedCount++;
+    devSemaphore[devIndex]--;
+    blockCurrentProcess(&devSemaphore[devIndex]);
+    switchProcess();  /* Never returns here */
 }
 
-/* Internal function that handles SYS6 events. The function places the accumulated processor time used by the requesting process 
-in the caller's v0 register. Afterward, the function calls the function to load the Current State's (updated) processor 
-state into the CPU so it can continue executing. */
-void getCPUTime(){
-	STCK(curr_tod); /* storing the current value on the Time of Day clock into curr_tod */
-	currentProc->p_s.s_v0 = currentProc->p_time + (curr_tod - start_tod); /* placing the accumulated processor time used by the requesting process in v0 */
-	currentProc->p_time = currentProc->p_time + (curr_tod - start_tod); /* updating the accumulated CPU time for the Current Process */
-	loadProcessorState(currentProc); /* returning control to the Current Process by loading its (updated) processor state */
+
+/************************************************************************
+ * getCpuTimeSyscall (SYS6 - GETCPUTIME)
+ *
+ * Places the accumulated CPU time of the Current Process (including time 
+ * since last dispatch) into v0. Then resumes execution.
+ ************************************************************************/
+HIDDEN void getCpuTimeSyscall() {
+    STCK(currentTOD);
+    currentProcess->p_s.s_v0 = currentProcess->p_time + (currentTOD - startTOD);
+    currentProcess->p_time += (currentTOD - startTOD);
+
+    loadProcessorState(currentProcess);
 }
 
-/* Function that handles SYS7 events. This is always a blocking syscall, since the Pseudo-clock semaphore (which is located at
-the last index of the deviceSemaphores array, identified by constant PCLOCKIDX) is a synchronization semaphore. 
-SYS7 is used to transition the Current Process from the running state to a blocked state, and then calls the Scheduler 
-so that the CPU can begin executing the next process. More specifically, this function performs a P (passEren) on the
-Nucleus Psuedo-clock semaphore, which is V'ed every INITIALINTTIMER (100 milliseconds) by the Nucleus. */
-void waitForPClock(){
-	(deviceSemaphores[PCLOCKIDX])--; /* decrement the semaphore's value by 1 */
-	blockCurr(&deviceSemaphores[PCLOCKIDX]); /* should always block the Current Process on the ASL */
-	softBlockCnt++; /* incrementing the number of started, but not yet terminated, processes that are in a "blocked" state */
-	switchProcess(); /* calling the Scheduler to begin executing the next process */
+
+/************************************************************************
+ * waitForClockSyscall (SYS7 - WAITCLOCK)
+ *
+ * Performs a P operation on the pseudo-clock semaphore. This always 
+ * blocks, since the pseudo-clock semaphore is used for “sleeping” until 
+ * a 100ms interrupt. The Current Process transitions to the blocked state,
+ * then the Scheduler is invoked.
+ ************************************************************************/
+HIDDEN void waitForClockSyscall() {
+    devSemaphore[PCLOCKIDX]--;
+    blockCurrentProcess(&devSemaphore[PCLOCKIDX]);
+    softBlockedCount++;
+    switchProcess();  /* Never returns here */
 }
 
-/* Function that handles SYS8 events. This returns a pointer to Current Process' support_t structure by loading it 
-into the calling process' v0 register. This may be NULL if the Current Process' support_t structure
-was not initialized during process creation. Once it places the pointer to the Current Process' support_t structure in v0,
-it returns control back to the Current Process so that it can continue executing (after charging the
-Current Process with the CPU time needed to handle the SYSCALL request). */
-void getSupportData(){
-	currentProc->p_s.s_v0 = (int)(currentProc->p_supportStruct); /* place Current Process' supportStruct in v0 */
-	STCK(curr_tod); /* storing the current value on the Time of Day clock into curr_tod */
-	currentProc->p_time = currentProc->p_time + (curr_tod - start_tod); /* updating the accumulated CPU time for the Current Process */
-	loadProcessorState(currentProc); /* returning control to the Current Process (resume execution) */
+
+/************************************************************************
+ * getSupportDataSyscall (SYS8 - GETSUPPORTPTR)
+ *
+ * Returns the address of the Current Process’s Support Structure in v0, 
+ * or NULL if none was provided when the process was created. 
+ * Resumes execution afterward.
+ ************************************************************************/
+HIDDEN void getSupportDataSyscall() {
+    currentProcess->p_s.s_v0 = (int) currentProcess->p_supportStruct;
+
+    STCK(currentTOD);
+    currentProcess->p_time += (currentTOD - startTOD);
+    loadProcessorState(currentProcess);
 }
 
-/* Function that performs a standard Pass Up or Die operation using the provided index value. If the Current Process' p_supportStruct is
-NULL, then the exception is handled as a SYS2; the Current Process and all its progeny are terminated. (This is the "die" portion of "Pass
-Up or Die.") On the other hand, if the Current Process' p_supportStruct is not NULL, then the handling of the exception is "passed up." In
-this case, the saved exception state from the BIOS Data Page is copied to the correct sup_exceptState field of the Current Process, and 
-a LDCXT is performed using the fields from the proper sup_exceptContext field of the Current Process. */
-void passUpOrDie(int exceptionCode){ 
-	if (currentProc->p_supportStruct != NULL){
-		moveState(savedExceptState, &(currentProc->p_supportStruct->sup_exceptState[exceptionCode])); /* copying the saved exception state from the BIOS Data Page directly to the correct sup_exceptState field of the Current Process (accessible to the Support Level) */
-		STCK(curr_tod); /* storing the current value on the Time of Day clock into curr_tod */
-		currentProc->p_time = currentProc->p_time + (curr_tod - start_tod); /* updating the accumulated CPU time for the Current Process */
-		LDCXT(currentProc->p_supportStruct->sup_exceptContext[exceptionCode].c_stackPtr, currentProc->p_supportStruct->sup_exceptContext[exceptionCode].c_status,
-		currentProc->p_supportStruct->sup_exceptContext[exceptionCode].c_pc); /* performing a LDCXT using the fields from the correct sup_exceptContext field of the Current Process */
-	}
-	else{
-		/* the Current Process' p_support_struct is NULL, so we handle it as a SYS2: the Current Process and all its progeny are terminated */
-		terminateProcess(currentProc); /* calling the termination function that "kills" the Current Process and all of its children */
-		currentProc = NULL; /* setting the Current Process pointer to NULL */
-		switchProcess(); /* calling the Scheduler to begin executing the next process */
-	}
+
+/************************************************************************
+ * passUpOrDie
+ *
+ * Implements the “Pass Up or Die” mechanism for TLB exceptions, Program 
+ * Traps, or SYSCALLs ≥ 9. If the Current Process has a non-NULL Support 
+ * Structure, the saved exception state is copied into the appropriate 
+ * sup_exceptState area, and a LDCXT is performed using the sup_exceptContext. 
+ * Otherwise, the Current Process is terminated.
+ ************************************************************************/
+void passUpOrDie(int exceptionType) {
+    if (currentProcess->p_supportStruct != NULL) {
+        moveState(savedExceptState, 
+                  &(currentProcess->p_supportStruct->sup_exceptState[exceptionType]));
+
+        STCK(currentTOD);
+        currentProcess->p_time += (currentTOD - startTOD);
+
+        LDCXT(
+            currentProcess->p_supportStruct->sup_exceptContext[exceptionType].c_stackPtr,
+            currentProcess->p_supportStruct->sup_exceptContext[exceptionType].c_status,
+            currentProcess->p_supportStruct->sup_exceptContext[exceptionType].c_pc
+        );
+    } else {
+        /* No Support Structure => terminate this process and its children */
+        terminateProcessAndProgeny(currentProcess);
+        currentProcess = NULL;
+        switchProcess(); 
+    }
 }
 
-/* Function that represents the entry point into this module when handling SYSCALL events. This function's tasks include, but are not
-limited to, incrementing the value of the PC in the stored exception state (to avoid an infinite loop of SYSCALLs), checking to see if an
-attempt was made to request a SYSCALL while the system was in user mode (if so, the function handles this case as it would a Program Trap
-exception), and checking to see what SYSCALL number was requested so it can invoke an internal helper function to handle that specific
-SYSCALL. If an invalid SYSCALL number was provided (i.e., the SYSCALL number requested was nine or above), we invoke the internal
-function that performs a standard Pass Up or Die operation using the GENERALEXCEPT index value.  */
-void sysTrapH(){
-	/* initializing variables that are global to this module, as well as savedExceptState */ 
-	savedExceptState = (state_PTR) BIOSDATAPAGE; /* initializing the saved exception state to the state stored at the start of the BIOS Data Page */
-	sysNum = savedExceptState->s_a0; /* initializing the SYSCALL number variable to the correct number for the exception */
 
-	savedExceptState->s_pc = savedExceptState->s_pc + WORDLEN;
+/************************************************************************
+ * syscallExceptionHandler
+ *
+ * Entry point for SYSCALL exceptions (if a0 ∈ [1..8] and in kernel-mode).
+ * - Increments the saved state’s PC by 4 to avoid repeated SYSCALL loops.
+ * - Checks if the call was issued in user-mode. If so, treat it as a 
+ *   Program Trap.
+ * - Otherwise, updates Current Process’s PCB state and routes to the 
+ *   appropriate handler for SYS1..SYS8. For invalid calls (≥9), 
+ *   treat as Program Trap or pass up to the Support Level.
+ ************************************************************************/
+void syscallExceptionHandler() {
+    savedExceptState = (state_PTR) BIOSDATAPAGE;
+    syscallNumber = savedExceptState->s_a0;
 
-	/* Perform checks to make sure we want to proceed with handling the SYSCALL (as opposed to pgmTrapH) */
-	if (((savedExceptState->s_status) & USERPON) != ALLOFF){ /* if the process was executing in user mode when the SYSCALL was requested */
-		savedExceptState->s_cause = (savedExceptState->s_cause) & RESINSTRCODE; /* setting the Cause.ExcCode bits in the stored exception state to RI (10) */
-		pgmTrapH(); /* invoking the internal function that handles program trap events */
-	}
-	
-	if ((sysNum<SYS1NUM) || (sysNum > SYS8NUM)){ /* check if the SYSCALL number was not 1-8 (we'll punt & avoid uniquely handling it) */
-		pgmTrapH(); /* invoking the internal function that handles program trap events */
-	}
-	
-	updateCurrPcb(currentProc); /* copying the saved processor state into the Current Process' pcb  */
-	
-	/* enumerating the sysNum values (1-8) and passing control to the respective function to handle it */
-	switch (sysNum){ 
-		case SYS1NUM: /* if the sysNum indicates a SYS1 event */
-			/* a1 should contain the processor state associated with the SYSCALL */
-			/* a2 should contain the (optional) support struct, which may be NULL */
-			createProcess((state_PTR) (currentProc->p_s.s_a1), (support_t *) (currentProc->p_s.s_a2)); /* invoking the internal function that handles SYS1 events */
+    /* Avoid an infinite loop of re-executing SYSCALL */
+    savedExceptState->s_pc += WORDLEN;
 
-		case SYS2NUM: /* if the sysNum indicates a SYS2 event */
-			terminateProcess(currentProc); /* invoking the internal function that handles SYS2 events */
-			currentProc = NULL; /* setting the Current Process pointer to NULL */
-			switchProcess(); /* calling the Scheduler to begin executing the next process */
-		
-		case SYS3NUM: /* if the sysNum indicates a SYS3 event */
-			/* a1 should contain the addr of semaphore to be P'ed */
-			passEren((int *) (currentProc->p_s.s_a1)); /* invoking the internal function that handles SYS3 events */
-		
-		case SYS4NUM: /* if the sysNum indicates a SYS4 event */
-			/* a1 should contain the addr of semaphore to be V'ed */
-			verhogen((int *) (currentProc->p_s.s_a1)); /* invoking the internal function that handles SYS4 events */
+    /* If the calling process was in user-mode, treat this request as illegal */
+    if ((savedExceptState->s_status & USERPON) != ALLOFF) {
+        /* Force a Program Trap by setting Cause.ExcCode = RI */
+        savedExceptState->s_cause = (savedExceptState->s_cause & RESINSTRCODE);
+        programTrapHandler();
+    }
 
-		case SYS5NUM: /* if the sysNum indicates a SYS5 event */
-			/* a1 should contain the interrupt line number of the interrupt at the time of the SYSCALL */ 
-			/* a2 should contain the device number associated with the specified interrupt line */
-			/* a3 should contain TRUE or FALSE, indicating if waiting for a terminal read operation */
-			waitForIO(currentProc->p_s.s_a1, currentProc->p_s.s_a2, currentProc->p_s.s_a3); /* invoking the internal function that handles SYS5 events */
+    /* If SYSCALL code is outside 1..8, handle as Program Trap (illegal) */
+    if (syscallNumber < CREATEPROCESS || syscallNumber > GETSUPPORTPTR) {
+        programTrapHandler();
+    }
 
-		case SYS6NUM: /* if the sysNum indicates a SYS6 event */
-			getCPUTime(); /* invoking the internal function that handles SYS6 events */
-		
-		case SYS7NUM: /* if the sysNum indicates a SYS7 event */
-			waitForPClock(); /* invoking the internal function that handles SYS 7 events */
-		
-		case SYS8NUM: /* if the sysNum indicates a SYS8 event */
-			getSupportData(); /* invoking the internal function that handles SYS 8 events */
-		
-	}
+    /* Update the Current Process's PCB to reflect the saved state */
+    updateCurrentProcessState();
+
+    switch (syscallNumber) {
+        case CREATEPROCESS:    /* SYS1 */
+            createNewProcess(
+                (state_PTR) currentProcess->p_s.s_a1,
+                (support_t *) currentProcess->p_s.s_a2
+            );
+            break;
+
+        case TERMINATEPROCESS: /* SYS2 */
+            terminateProcessAndProgeny(currentProcess);
+            currentProcess = NULL;
+            switchProcess();
+            break;
+
+        case PASSEREN:         /* SYS3 */
+            passerenSyscall((int *) currentProcess->p_s.s_a1);
+            break;
+
+        case VERHOGEN:         /* SYS4 */
+            verhogenSyscall((int *) currentProcess->p_s.s_a1);
+            break;
+
+        case WAITIO:           /* SYS5 */
+            waitIODevice(
+                currentProcess->p_s.s_a1, 
+                currentProcess->p_s.s_a2, 
+                currentProcess->p_s.s_a3
+            );
+            break;
+
+        case GETCPUTIME:       /* SYS6 */
+            getCpuTimeSyscall();
+            break;
+
+        case WAITCLOCK:        /* SYS7 */
+            waitForClockSyscall();
+            break;
+
+        case GETSUPPORTPTR:    /* SYS8 */
+            getSupportDataSyscall();
+            break;
+
+        default:
+            /* Should never get here if [1..8] was properly checked */
+            programTrapHandler();
+            break;
+    }
 }
 
-/* Function that handles Program Trap exceptions. The function invokes the internal helper function that performs a standard Pass Up or Die
-operation using the GENERALEXCEPT index value. */
-void pgmTrapH(){
-	passUpOrDie(GENERALEXCEPT); /* performing a standard Pass Up or Die operation using the GENERALEXCEPT index value */
+
+/************************************************************************
+ * programTrapHandler
+ *
+ * Handles Program Trap exceptions (e.g., invalid instructions, reserved
+ * instructions, etc.). Invokes passUpOrDie with GENERALEXCEPT.
+ ************************************************************************/
+void programTrapHandler() {
+    passUpOrDie(GENERALEXCEPT);
 }
 
-/* Function that handles TLB exceptions. The function invokes the internal helper function that performs a standard Pass Up or Die
-operation using the PGFAULTEXCEPT index value. */
-void tlbTrapH(){
-	passUpOrDie(PGFAULTEXCEPT); /* performing a standard Pass Up or Die operation using the PGFAULTEXCEPT index value */
+
+/************************************************************************
+ * tlbExceptionHandler
+ *
+ * Handles TLB exceptions (1..3). Invokes passUpOrDie with PGFAULTEXCEPT.
+ ************************************************************************/
+void tlbExceptionHandler() {
+    passUpOrDie(PGFAULTEXCEPT);
 }

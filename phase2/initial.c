@@ -61,15 +61,15 @@ HIDDEN void genExceptionHandler() {
     } 
     else if (exCode <= TLBEXCPT) {
         /* Handle TLB exceptions (1..3) */
-        tlbTrapH();
+        tlbExceptionHandler();
     } 
     else if (exCode == SYSCALLEXCPT) {
         /* Handle SYSCALL exceptions (8) */
-        sysTrapH();
+        syscallExceptionHandler();
     } 
     else {
         /* All other exceptions: program traps, etc. */
-        pgmTrapH();
+        programTrapHandler();
     }
 }
 

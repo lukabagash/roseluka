@@ -94,8 +94,8 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 
 #define INITIALACCTIME	    0           /* initial value for the accumulated time field for a process that is instantiated */
 /* Constants for returning values in v0 to the caller */
-#define ERRORCONST		    -1			/* an error occurred in the caller's request */
-#define SUCCESSCONST	    0			/* the caller's request completed successfully */
+#define FAIL                -1			/* an error occurred in the caller's request */
+#define OK                  0			/* the caller's request completed successfully */
 
 /* Constants signifying the first index of the deviceSemaphores array (We can get the last index of the array by saying MAXDEVICECNT - 1.) */
 #define	FIRSTDEVINDEX	    0
@@ -105,14 +105,14 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 /* Cause register constant for setting all bits to 1 in the Cause register except for the ExcCode field, which is set to 10 for the RI code */
 #define	RESINSTRCODE	    0xFFFFFF28
 /* Constants representing the Syscall Numbers in Pandos */
-#define	SYS1NUM			    1		
-#define	SYS2NUM			    2
-#define	SYS3NUM			    3
-#define	SYS4NUM			    4
-#define	SYS5NUM			    5
-#define	SYS6NUM			    6
-#define	SYS7NUM			    7
-#define	SYS8NUM			    8
+#define	CREATEPROCESS       1		
+#define	TERMINATEPROCESS    2
+#define	PASSEREN            3
+#define	VERHOGEN            4
+#define	WAITIO			    5
+#define	GETCPUTIME          6
+#define	WAITCLOCK           7
+#define	GETSUPPORTPTR       8
 
 
 
