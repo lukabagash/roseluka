@@ -1,4 +1,4 @@
-/******************************** init.c **********************************
+/******************************** initial.c **********************************
  *
  * This file sets up the Pandos Nucleus (Phase 2). It:
  *   1. Defines and initializes Phase 2 global variables.

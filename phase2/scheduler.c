@@ -56,8 +56,8 @@ void moveState(state_PTR source, state_PTR dest) {
  *   - Performs an LDST to load the processor state.
  ************************************************************************/
 void loadProcessorState(pcb_PTR curr_proc) {
-	currentProc = curr_proc;
-	STCK(start_tod);  /* Store Time of Day when process starts execution */
+	currentProcess = curr_proc;
+	STCK(startTOD);  /* Store Time of Day when process starts execution */
 	LDST(&(curr_proc->p_s));  /* Load processor state for execution */
 }
 
@@ -73,24 +73,24 @@ void loadProcessorState(pcb_PTR curr_proc) {
  *     - If Process Count > 0 and Soft-block Count == 0, calls PANIC().
  ************************************************************************/
 void switchProcess() {
-currentProc = removeProcQ(&ReadyQueue);
-	if (currentProc != NULL) {
+currentProcess = removeProcQ(&readyQueue);
+	if (currentProcess != NULL) {
 		setTIMER(INITIALPLT);  /* Load five milliseconds on the PLT */
-		loadProcessorState(currentProc);  /* Load process state for execution */
+		loadProcessorState(currentProcess);  /* Load process state for execution */
 	}
 
 	/* Ready Queue is empty */
-	if (procCnt == INITIALPROCCNT) {
+	if (processCount == INITIALPROCCNT) {
 		HALT();  /* Halt system if no active processes */
 	}
 
 	/* The processor is not executing instructions, but waiting for a device interrupt to occur */
-	if ((procCnt > INITIALPROCCNT) && (softBlockCnt > INITIALSFTBLKCNT)) {
+	if ((processCount > INITIALPROCCNT) && (softBlockedCount > INITIALSFTBLKCNT)) {
 		setSTATUS(ALLOFF | IMON | IECON); /* Enable interrupts for the Status register so we can execute the WAIT instruction */
 		setTIMER(NEVER);  /* Set a high timer value to wait for device interrupt */
 		WAIT();  /* Enter wait state */
 	}
 
-	/* Deadlock detected: (procCnt > 0) && (softBlockCnt == 0) */
+	/* Deadlock detected: (processCount > 0) && (softBlockedCount == 0) */
 	PANIC();  /* Halt system with a warning message */
 }

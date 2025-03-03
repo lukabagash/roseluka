@@ -85,7 +85,7 @@
   *   - Performs a V operation on the semaphore for the device, unblocking 
   *     the waiting process (if any), placing its status code in v0, and 
   *     moving it to the Ready Queue.
-  *   - Decrements the softBlockCnt when a process is unblocked.
+  *   - Decrements the softBlockedCount when a process is unblocked.
   *   - Charges the CPU time spent handling the interrupt to the process
   *     responsible for generating the I/O request if that process exists.
   ************************************************************************/
@@ -116,46 +116,46 @@
 	 }
  
 	 devNum = findDeviceNum(lineNum); /* Initialize with the device number associated with the highest-priority interrupt */	
-	 index = ((lineNum - OFFSET) * DEVPERINT) + devNum; /* Initialize the index in deviceSemaphores of the device associated with the highest-priority interrupt */
+	 index = ((lineNum - OFFSET) * DEVPERINT) + devNum; /* Initialize the index in devSemaphore of the device associated with the highest-priority interrupt */
 	 temp = (devregarea_t *) RAMBASEADDR; /* initialization of temp */
 	 
 	 /* if the highest-priority interrupt occurred on line 7 and if the device's status code is not 1, the device is not "Ready" (write interrupt) */
 	 if ((lineNum == LINE7) && (((temp->devreg[index].t_transm_status) & STATUSON) != READY)){ 
 		 statusCode = temp->devreg[index].t_transm_status; /* Initialize the status code from the device register associated with the device that corresponds to the highest-priority interrupt */
 		 temp->devreg[index].t_transm_command = ACK; /* Acknowledge the interrupt */
-		 unblockedPcb = removeBlocked(&deviceSemaphores[index + DEVPERINT]); /* Initialize with corresponding pcb of the semaphore associated with the interrupt */
-		 deviceSemaphores[index + DEVPERINT]++; /* Increment the value of the semaphore associated with the interrupt (V operation) */
+		 unblockedPcb = removeBlocked(&devSemaphore[index + DEVPERINT]); /* Initialize with corresponding pcb of the semaphore associated with the interrupt */
+		 devSemaphore[index + DEVPERINT]++; /* Increment the value of the semaphore associated with the interrupt (V operation) */
 	 }
 	 /* Otherwise, the highest-priority interrupt either did not occur on a terminal device or it was a read interrupt on a terminal device */
 	 else{ 
 		 statusCode = temp->devreg[index].t_recv_status; /* Initialize the status code from the device register associated with the device that corresponds to the highest-priority interrupt */
 		 temp->devreg[index].t_recv_command = ACK; /* Acknowledge the interrupt */
-		 unblockedPcb = removeBlocked(&deviceSemaphores[index]); /* Initialize with corresponding pcb of the semaphore associated with the interrupt */
-		 deviceSemaphores[index]++; /* Increment the value of the semaphore associated with the interrupt (V operation) */
+		 unblockedPcb = removeBlocked(&devSemaphore[index]); /* Initialize with corresponding pcb of the semaphore associated with the interrupt */
+		 devSemaphore[index]++; /* Increment the value of the semaphore associated with the interrupt (V operation) */
 	 }
 	 
 	 if (unblockedPcb == NULL){ /* if the supposedly unblocked pcb is NULL, we want to return control to the Current Process */
-		 if (currentProc != NULL){ /* if there is a Current Process to return control to */
-			 updateCurrPcb(); /* Update the Current Process' processor state before resuming process' execution */
-			 currentProc->p_time = currentProc->p_time + (interrupt_tod - start_tod); /* Update the accumulated processor time used by the Current Process */
+		 if (currentProcess != NULL){ /* if there is a Current Process to return control to */
+			 updateCurrentProcessState(); /* Update the Current Process' processor state before resuming process' execution */
+			 currentProcess->p_time = currentProcess->p_time + (interrupt_tod - startTOD); /* Update the accumulated processor time used by the Current Process */
 			 setTIMER(remaining_time); /* Set the PLT to the remaining time left on the Current Process' quantum when the interrupt handler was first entered */
-			 loadProcessorState(currentProc); /* Return control to the Current Process */
+			 loadProcessorState(currentProcess); /* Return control to the Current Process */
 		 }
 		 switchProcess(); /* Execute the next process on the Ready Queue if there is no Current Process */
 	 }
 	 
 	 /* unblockedPcb is not NULL */
 	 unblockedPcb->p_s.s_v0 = statusCode; /* Place the status code in the newly unblocked pcb's v0 register */
-	 insertProcQ(&ReadyQueue, unblockedPcb); /* Turn "blocked" state to a "ready" state */
-	 softBlockCnt--; 
+	 insertProcQ(&readyQueue, unblockedPcb); /* Turn "blocked" state to a "ready" state */
+	 softBlockedCount--; 
 	 /* if there is a Current Process to return control to */
-	 if (currentProc != NULL){ 
-		 updateCurrPcb(); /* Update the Current Process' processor state before resuming process' execution */
+	 if (currentProcess != NULL){ 
+		 updateCurrentProcessState(); /* Update the Current Process' processor state before resuming process' execution */
 		 setTIMER(remaining_time); /* Set the PLT to the remaining time left on the Current Process' quantum when the interrupt handler was first entered */
-		 currentProc->p_time = currentProc->p_time + (interrupt_tod - start_tod); /* Update the accumulated processor time used by the Current Process */
+		 currentProcess->p_time = currentProcess->p_time + (interrupt_tod - startTOD); /* Update the accumulated processor time used by the Current Process */
 		 STCK(curr_tod); /* Store the current value on the Time of Day clock into curr_tod */
 		 unblockedPcb->p_time = unblockedPcb->p_time + (curr_tod - interrupt_tod); /* Charge the process associated with the I/O interrupt with the CPU time needed */
-		 loadProcessorState(currentProc); /* Return control to the Current Process */
+		 loadProcessorState(currentProcess); /* Return control to the Current Process */
 	 }
 	 switchProcess(); /* Execute the next process on the Ready Queue if there is no Current Process */
  }
@@ -175,13 +175,13 @@
 	 cpu_t curr_tod;
  
 	 /* if there was a running process when the interrupt was generated */
-	 if (currentProc != NULL) {
+	 if (currentProcess != NULL) {
 		 setTIMER(NEVER);	/* PLT will generate an interrupt on interrupt line 1, so it doesn't call PLT again */
-		 updateCurrPcb();	/* Move the updated exception state from the BIOS Data Page into the Current Process' processor state */
+		 updateCurrentProcessState();	/* Move the updated exception state from the BIOS Data Page into the Current Process' processor state */
 		 STCK(curr_tod);		/* Store the current value on the Time of Day clock into curr_tod */
-		 currentProc->p_time += (curr_tod - start_tod);	/* Update the accumulated processor time */
-		 insertProcQ(&ReadyQueue, currentProc);	/* Place back the Current Process on the Ready Queue */
-		 currentProc = NULL;	/* No process currently executing */
+		 currentProcess->p_time += (curr_tod - startTOD);	/* Update the accumulated processor time */
+		 insertProcQ(&readyQueue, currentProcess);	/* Place back the Current Process on the Ready Queue */
+		 currentProcess = NULL;	/* No process currently executing */
 		 switchProcess();	/* Call scheduler */
 	 }
 	 PANIC();	/* if current process is NULL */
@@ -204,18 +204,18 @@
 	 LDIT(INITIALINTTIMER); /* Place 100 milliseconds back on the Interval Timer for the next Pseudo-clock tick */
 	 
 	 /* unblocking all pcbs blocked on the Pseudo-Clock semaphore */
-	 while (headBlocked(&deviceSemaphores[PCLOCKIDX]) != NULL){ 
-		 temp = removeBlocked(&deviceSemaphores[PCLOCKIDX]); /* Unblock from the first pcb from the Pseudo-Clock semaphore's process queue */
-		 insertProcQ(&ReadyQueue, temp); /* Place the unblocked pcb back on the Ready Queue */
-		 softBlockCnt--; 
+	 while (headBlocked(&devSemaphore[PCLOCKIDX]) != NULL){ 
+		 temp = removeBlocked(&devSemaphore[PCLOCKIDX]); /* Unblock from the first pcb from the Pseudo-Clock semaphore's process queue */
+		 insertProcQ(&readyQueue, temp); /* Place the unblocked pcb back on the Ready Queue */
+		 softBlockedCount--; 
 	 }
-	 deviceSemaphores[PCLOCKIDX] = INITIALPCSEM; /* Reset the Pseudo-clock semaphore */
+	 devSemaphore[PCLOCKIDX] = INITIALPCSEM; /* Reset the Pseudo-clock semaphore */
 	 /* if there is a Current Process to return control to */
-	 if (currentProc != NULL){ 
+	 if (currentProcess != NULL){ 
 		 setTIMER(remaining_time); /* The remaining time left on the Current Process' quantum */
-		 updateCurrPcb(); /* Update before resuming process' execution */
-		 currentProc->p_time = currentProc->p_time + (interrupt_tod - start_tod); /* Update the accumulated processor time used by the Current Process */
-		 loadProcessorState(currentProc); /* Return control to the Current Process */
+		 updateCurrentProcessState(); /* Update before resuming process' execution */
+		 currentProcess->p_time = currentProcess->p_time + (interrupt_tod - startTOD); /* Update the accumulated processor time used by the Current Process */
+		 loadProcessorState(currentProcess); /* Return control to the Current Process */
 	 }
 	 switchProcess(); /* call scheduler if there is no Current Process to return control to */
  }
