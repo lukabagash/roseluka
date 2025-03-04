@@ -32,6 +32,12 @@
  #include "../h/initial.h"
  #include "/usr/include/umps3/umps/libumps.h"
 
+ HIDDEN int findDeviceNum(int lineNumber); /* function to find the device number associated with the highest-priority interrupt */
+ HIDDEN void IOInt(); /* function to handle I/O interrupts */
+ HIDDEN void pltTimerInt(); /* function to handle PLT interrupts */
+ HIDDEN void intTimerInt(); /* function to handle System-wide Interval Timer interrupts */
+ HIDDEN void intTrapH(); /* function to handle the Nucleus interrupt handler */
+
 /* Global Variables (from this module’s perspective) */
 cpu_t interruptTOD; /* the value on the Time of Day clock when the Interrupt Handler module is first entered */
 cpu_t remainingTime; /* the amount of time left on the Current Process' quantum when the interrupt was generated */
@@ -124,25 +130,32 @@ cpu_t remainingTime; /* the amount of time left on the Current Process' quantum 
 	 temp = (devregarea_t *) RAMBASEADDR; /* initialization of temp */
 	 
 	 /* if the highest-priority interrupt occurred on line 7 and if the device's status code is not 1, the device is not "Ready" (write interrupt) */
-	 if ((lineNum == LINE7) && (((temp->devreg[index].t_transm_status) & STATUSON) != READY)){ 
-		 statusCode = temp->devreg[index].t_transm_status; /* Initialize the status code from the device register associated with the device that corresponds to the highest-priority interrupt */
-		 temp->devreg[index].t_transm_command = ACK; /* Acknowledge the interrupt */
-		 unblockedPcb = removeBlocked(&devSemaphore[index + DEVPERINT]); /* Initialize with corresponding pcb of the semaphore associated with the interrupt */
-		 devSemaphore[index + DEVPERINT]++; /* Increment the value of the semaphore associated with the interrupt (V operation) */
+	 if ((lineNum == LINE7) && (((temp->devreg[index].t_transm_status) & STATUSON) != READY)){
+		 /* Terminal write interrupt */ 
+		 statusCode = temp->devreg[index].t_transm_status;
+		 temp->devreg[index].t_transm_command = ACK;
+
+		 /* Perform V operation on the "write" semaphore (index + DEVPERINT) */
+		 unblockedPcb = removeBlocked(&devSemaphore[index + DEVPERINT]);
+		 devSemaphore[index + DEVPERINT]++; 
 	 }
 	 /* Otherwise, the highest-priority interrupt either did not occur on a terminal device or it was a read interrupt on a terminal device */
-	 else{ 
-		 statusCode = temp->devreg[index].t_recv_status; /* Initialize the status code from the device register associated with the device that corresponds to the highest-priority interrupt */
-		 temp->devreg[index].t_recv_command = ACK; /* Acknowledge the interrupt */
-		 unblockedPcb = removeBlocked(&devSemaphore[index]); /* Initialize with corresponding pcb of the semaphore associated with the interrupt */
-		 devSemaphore[index]++; /* Increment the value of the semaphore associated with the interrupt (V operation) */
+	 else{
+		 /* Terminal read interrupt, or a non-terminal device interrupt */ 
+		 statusCode = temp->devreg[index].t_recv_status;
+		 temp->devreg[index].t_recv_command = ACK;
+
+		 /* Perform V operation on the "read" semaphore (index) */
+		 unblockedPcb = removeBlocked(&devSemaphore[index]);
+		 devSemaphore[index]++;
 	 }
 	 
-	 if (unblockedPcb == NULL){ /* if the supposedly unblocked pcb is NULL, we want to return control to the Current Process */
-		 if (currentProcess != NULL){ /* if there is a Current Process to return control to */
-			 updateCurrentProcessState(); /* Update the Current Process' processor state before resuming process' execution */
-			 currentProcess->p_time = currentProcess->p_time + (interruptTOD - startTOD); /* Update the accumulated processor time used by the Current Process */
-			 setTIMER(remainingTime); /* Set the PLT to the remaining time left on the Current Process' quantum when the interrupt handler was first entered */
+	 /* If no process was blocked on this device, just return to current or next process. */
+	 if (unblockedPcb == NULL){
+		 if (currentProcess != NULL){
+			 updateCurrentProcessState();
+			 currentProcess->p_time = currentProcess->p_time + (interruptTOD - startTOD); /* charge CPU time to Current Process */
+			 setTIMER(remainingTime);
 			 loadProcessorState(currentProcess); /* Return control to the Current Process */
 		 }
 		 switchProcess(); /* Execute the next process on the Ready Queue if there is no Current Process */
