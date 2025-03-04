@@ -36,7 +36,6 @@
  HIDDEN void IOInt(); /* function to handle I/O interrupts */
  HIDDEN void pltTimerInt(); /* function to handle PLT interrupts */
  HIDDEN void intTimerInt(); /* function to handle System-wide Interval Timer interrupts */
- HIDDEN void intTrapH(); /* function to handle the Nucleus interrupt handler */
 
 /* Global Variables (from this module’s perspective) */
 cpu_t interruptTOD; /* the value on the Time of Day clock when the Interrupt Handler module is first entered */
