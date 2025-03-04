@@ -330,11 +330,13 @@ void syscallExceptionHandler() {
         /* Force a Program Trap by setting Cause.ExcCode = RI */
         savedExceptState->s_cause = (savedExceptState->s_cause & RESINSTRCODE);
         programTrapHandler();
+		return; /* Ensures no return to the killed process */
     }
 
     /* If SYSCALL code is outside 1..8, handle as Program Trap (illegal) */
     if (syscallNumber < CREATEPROCESS || syscallNumber > GETSUPPORTPTR) {
         programTrapHandler();
+		return; /* Same reason as above */
     }
 
     /* Update the Current Process's PCB to reflect the saved state */
@@ -385,7 +387,7 @@ void syscallExceptionHandler() {
         default:
             /* Should never get here if [1..8] was properly checked */
             programTrapHandler();
-            break;
+            return;;
     }
 }
 
