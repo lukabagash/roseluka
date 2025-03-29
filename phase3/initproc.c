@@ -1,0 +1,2 @@
+/* initialize p3 data structures(call initvmsupport), initialize up to 8 u_porc(test files and each program makes library calls(one of the syscalls 9-13)): initialize pgtbl, initialize the passupordie field(tlb based or else?) stckptr, pc, etc need to be initialized(look at phase2), initialize state for the user process(refer to test file)
+ */
