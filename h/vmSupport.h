@@ -15,9 +15,5 @@
 #include "../h/types.h"
 
 extern void initSwapStructs();
-extern void vmTlbHandler();
-extern void setInterrupts(int onOrOff);
-extern void switchUContext(state_PTR returnState);
-extern void mutex(int opCode, int *semaphore); 
 
 #endif

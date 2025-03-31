@@ -128,6 +128,12 @@ int *s_semAdd; 				/* pointer to the semaphore*/
 pcb_t *s_procQ; 			/* tail pointer to a process queue */
 } semd_t;
 
+typedef struct swap_t {
+	int asid;          /* ASID of the process that owns this swap entry */
+	int VPN;    /* Page number of the entry */
+	pte_entry_t *pte; /* Pointer to the page table entry associated with this swap entry */
+} swap_t;
+
 
 #define	s_at	s_reg[0]
 #define	s_v0	s_reg[1]

@@ -16,12 +16,9 @@
 #include "../h/const.h"
 #include "../h/types.h"
 
-extern int masterSemaphore; /* semaphore to be V'd and P'd by test as a means to ensure test terminates in a way so that the PANIC()
-							function is not called */
-extern int devSemaphores[MAXIODEVICES]; /* array of mutual exclusion semaphores; each potentially sharable peripheral I/O device has one
-									semaphore defined for it. Note that this array will be implemented so that terminal device
-									semaphores are last and terminal device semaphores associated with a read operation in the array
-									come before those associated with a write operation. */
-extern void test(); /* function that represents the instantiator process */
+extern int masterSemaphore; /* Private semaphore for graceful conclusion/termination of the test function */
+extern int devSemaphores[48]; /* array of device semaphores for the various peripheral I/O devices (Disk, Flash, Network, Printer, Terminals) */
+/* This array contains 48 semaphores: 32 for the peripheral I/O devices (4 classes × 8 devices) and 16 for the terminal devices (8 terminals × 2 semaphores) */
+extern void test();
 
 #endif
