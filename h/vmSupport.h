@@ -15,5 +15,6 @@
 #include "../h/types.h"
 
 extern void initSwapStructs();
+extern void supLvlTlbExceptionHandler(); /* TLB exception handler function */
 
 #endif
