@@ -17,7 +17,8 @@ void test() {
     int j; /* Set dev sema4 to 1*/
     int k; /* Perform P after launching all the U-procs*/
     int asid; /* ASID for the process */
-    masterSemaphore = 0; 
+    masterSemaphore = 0;
+    int res; /* Result of the SYSCALL */
 
     /* The Swap Pool table and Swap Pool semaphore. [Section 4.4.1] */
     initSwapStructs(); /* Initialize the swap structures for paging */
@@ -47,9 +48,12 @@ void test() {
         u_procState->s_sp = (memaddr)  0xC000.0000; /* Set the stack pointer for the user process */
         u_procState->s_entryHI = asid; /* Set the entry HI for the user process */
 
-        SYSCALL(1, unsigned int u_procState, unsigned int &supportStruct[asid]); /* Call the SYSCALL to create a new process with the state and support structure */
+        res = SYSCALL(1, unsigned int u_procState, unsigned int &supportStruct[asid]); /* Call the SYSCALL to create a new process with the state and support structure */
+        if(res != OK) {
+            SYSCALL(2, 0, 0, 0); /* If the process creation failed, terminate the process */
+        }
     }
-
+    supportStruct.sup_privatePgTbl[31].entryHI = ALLOFF | (31 << VPNSHIFT) | 0xBFFFF000; /* Set the entry HI for the last page table entry */
     /*Perform a P (SYS3) operation on a private semaphore initialized to 0. 
     In this case, after all the U-proc “children” conclude, the Nucleus
     scheduler will detect deadlock and invoke PANIC. [Section 3.2]*/
