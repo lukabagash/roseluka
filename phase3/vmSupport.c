@@ -12,6 +12,7 @@ placed (without relocating the function), uTLB RefillHandler should
 still be found in the Level 3/Phase 2 exceptions.c file.*/
 
 #include "../h/vmSupport.h"
+#include "../h/initial.h"
 #include "../h/types.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
@@ -31,14 +32,14 @@ void initSwapStructs() {
 }
 
 void supLvlTlbExceptionHandler() {
-    support t *sPtr = SYSCALL (GETSUPPORTPTR, 0, 0, 0);
+    support_t *sPtr = SYSCALL (GETSUPPORTPTR, 0, 0, 0);
     unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Get the cause of the TLB exception */
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
     unsigned int entryHI = sPtr->sup_exceptState[0].s_entryHI; /* Get the Entry HI value from the saved state */
     int missingPN; /* Page number extracted from Entry HI */
-    int frameNumber; /* Frame number to be used for the page replacement */
+    static int frameNumber; /* Frame number to be used for the page replacement */
 
-    if(exc_code == 1) /*TLB-Modification Exception*/
+    if(exc_code == 1) /* TLB-Modification Exception */
     {
         programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
     }
@@ -50,8 +51,10 @@ void supLvlTlbExceptionHandler() {
     frameNumber = (frameNumber + 1) % (2*1); /* Simple page replacement algorithm: round-robin replacement for the sake of example */
     if(swapPool[frameNumber].asid != -1) /* If the frame is already occupied, we need to swap out the existing page */
     {
-       setSTATUS(getSTATUS() & ~0x00000001); /* Disable interrupts to prevent context switching during the page replacement */
-       swapPool[frameNumber].pte->entryLO = (swapPool[frameNumber].pte->entryLO & 0xFFFFFDFF); /* Valid off*/ 
+       setSTATUS(getSTATUS() & ~0x00000001); /* Disable interrupts while updating pagetable to prevent context switching during the page replacement */
+       swapPool[frameNumber].pte->entryLO = (swapPool[frameNumber].pte->entryLO & 0xFFFFFDFF); /* Valid off */ 
+       TLBCLR(); /* Erase ALL the entries in the TLB to update TLB */
+       WRITEBLK()
        setSTATUS(getSTATUS() | (0x00000001)); /* Enable interrupts again after setting the status */
     }
 
@@ -92,4 +95,16 @@ void supLvlTlbExceptionHandler() {
     14. Return control to the Current Process to retry the instruction that caused the
         page fault: LDST on the saved exception state.
     */
+}
+
+void uTLB_RefillHandler(){
+    support_t *sPtr = SYSCALL (GETSUPPORTPTR, 0, 0, 0);
+    unsigned int entryHI = sPtr->sup_exceptState[0].s_entryHI; /* Get the Entry HI value from the saved state */
+    missingPN = (entryHI & 0xFFFFF000) >> 12; /* Extract the missing page number from Entry HI */
+    pte_entry_t entry = sPtr->sup_privatePgTbl[missingPN];  /* Get the Page Table entry for page number of the Current Process */
+    /* Write this Page Table entry into the TLB */
+    setENTRYHI(entry.entryHI);  
+    setENTRYLO(entry.entryLO);
+    TLBWR();
+    LDST(&(currentProcess->p_s));   /* Return control to the Current Process to retry the instruction that caused the TLB-Refill event */
 }
