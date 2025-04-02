@@ -58,25 +58,31 @@ void supLvlTlbExceptionHandler() {
        setSTATUS(getSTATUS() | (0x00000001)); /* Enable interrupts again after setting the status */
     }
 
+    /* Update the Swap Pool table's entry to reflect the new page */
+    /*
+        9. Read the contents of the Current Process’s backing store/flash device logical
+       page pinto frame i. [Section 4.5.1]
+       Treat any error status from the read operation as a program trap. [Section
+       4.8]
+    */
+   setSTATUS(getSTATUS() & ~0x00000001); /* Disable interrupts while updating pagetable to prevent context switching during the page replacement */
+   WRITEBLK(HEADNUM, SECTNUM);
+   SYSCALL(5, int lineNum, int devNum, int isReadOperation); /* Perform a read operation on the flash device */
+   setSTATUS(getSTATUS() | (0x00000001)); /* Enable interrupts again after setting COMMAND */
+
+   swapPool[frameNumber].asid = sPtr->sup_asid; /* Set the ASID of the process that owns this swap entry */
+   sPtr->sup_privatePgTbl[sPtr->sup_asid].entryLO = ALLOFF | (frameNumber << PFNSHIFT) | VALIDON;
+
+   swapPool[frameNumber].pte = &(sPtr->sup_privatePgTbl[sPtr->sup_asid]);
+   TLBCLR();
+   SYSCALL(4, unsigned int &swapPoolSemaphore, 0, 0); /* Perform a P operation on the swap pool semaphore to ensure mutual exclusion */
+
+   LDST(&(currentProcess->p_s));
+
+
+
     /*
     STEPS LEFT [Section 4.4.2]:
-    8. If frame iis currently occupied, assume it is occupied by logical page num-
-       ber kbelonging to process x(ASID) and that it is “dirty” (i.e. been modi-
-       fied):
-       (a) Update process x’s Page Table: mark Page Table entry kas not valid.
-       This entry is easily accessible, since the Swap Pool table’s entry i
-       contains a pointer to this Page Table entry. (done)
-       (b) Update the TLB, if needed. The TLB is a cache of the most recently
-       executed process’s Page Table entries. If process x’s page k’s Page
-       Table entry is currently cached in the TLB it is clearly out of date; it
-       was just updated in the previous step.
-       Important Point: This step and the previous step must be accom-
-       plished atomically. [Section 4.5.3]
-       (c) Update process x’s backing store. Write the contents of frame ito the
-       correct location on process x’s backing store/flash device. [Section
-       4.5.1]
-       Treat any error status from the write operation as a program trap. [Sec-
-       tion 4.8]
     9. Read the contents of the Current Process’s backing store/flash device logical
        page pinto frame i. [Section 4.5.1]
        Treat any error status from the read operation as a program trap. [Section
