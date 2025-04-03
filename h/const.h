@@ -32,6 +32,7 @@ the Pseudo-clock */
 #define VALIDOFF            0x0         /* Valid */
 #define GLOBALOFF           0x0         /* Global */
 
+ 
 /* Stack pointer for Nucleus (used in Pass Up Vector) */
 #define NUCLEUSSTACK        0x20001000
 
