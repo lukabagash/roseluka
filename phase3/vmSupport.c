@@ -46,7 +46,7 @@ void supLvlTlbExceptionHandler() {
     frameNumber = (frameNumber + 1) % (2*1); /* Simple page replacement algorithm: round-robin replacement for the sake of example */
     u_proc 
 
-    if(exc_code == 1) /* TLB-Modification Exception */
+    if(exc_code == someshit) /* TLB-Modification Exception */
     {
         programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
     }

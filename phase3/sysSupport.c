@@ -17,7 +17,7 @@ HIDDEN void getTOD() {
     currentProcess->p_s.s_v0 = startTOD;
 }
 
-HIDDEN void writetoprinter(char *virtAddr, int len) {
+HIDDEN void writePrinter(char *virtAddr, int len) {
     int charNum = 0;
     devregarea_t reg = RAMBASEADDR;
     device_t printerdev = reg->devreg[PRNTINT];
@@ -38,4 +38,72 @@ HIDDEN void writetoprinter(char *virtAddr, int len) {
     } 
     //Resume back to user mode with v0 updated accordingly:
     currentProcess->p_s.s_v0 = charNum;
+}
+
+HIDDEN void writeTerminal(char *virtAddr, int len) {
+    int charNum = 0;
+    devregarea_t reg = RAMBASEADDR;
+    device_t printerdev = reg->devreg[TERMINT];
+       
+    for (int i = 0; i < len; i++) {
+        // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
+        printerdev.data0 = virtAddr[i];
+        printerdev.d_command = 2; /* PRINTCHR command code */
+        
+        /* do we issue sys5? to suspend u_proc */
+
+        /* if not successfully written PRINTERRRR status code */
+        if (printerdev.d_status = 4) {
+            charNum = -printerdev.d_status;
+            break;
+        }
+        charNum++;
+    } 
+    //Resume back to user mode with v0 updated accordingly:
+    currentProcess->p_s.s_v0 = charNum;
+}
+
+void supLvlGenExceptionHandler()
+{
+    support_t *sPtr = SYSCALL (GETSUPPORTPTR, 0, 0, 0);
+    unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Get the cause of the TLB exception */
+    unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
+    if (exc_code == someshit) /* TLB-Modification Exception */
+    {
+        programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
+    }
+    
+    /* Handle other general exceptions */
+    savedExceptState = (state_PTR) BIOSDATAPAGE;
+    syscallNumber = savedExceptState->s_a0;
+
+    switch (syscallNumber) {
+        case TERMINATE:            /* SYS9 */
+            schizoUserProcTerminate();
+            break;
+
+        case GETTOD:               /* SYS10 */
+            getTOD(); /* Get the current time of day */
+            break;
+
+        case WRITEPRINTER:         /* SYS11 */
+            writePrinter(
+                (char *) (savedExceptState->s_a1), /* virtual address of the string to print */
+                (int) (savedExceptState->s_a2)    /* length of the string */
+            );
+            break;
+
+        case WRITETERMINAL:        /* SYS12 */
+            writeTerminal();
+            break;
+
+        case READTERMINAL:         /* SYS13 */
+            readTerminal(); 
+            break;
+
+        default:
+            /* Should never get here if [1..8] was properly checked */
+            programTrapHandler();
+            return;
+    }
 }
