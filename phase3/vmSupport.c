@@ -31,13 +31,20 @@ void initSwapStructs() {
     swapPoolSemaphore = 1; /* Set the semaphore to 1 indicating the pool is available for use */
 }
 
+void mutex() {
+    /* if true, sys3 otherwise sys4 */
+}
+
 void supLvlTlbExceptionHandler() {
+    /* 14 steps in [Section 4.4.2] */
     support_t *sPtr = SYSCALL (GETSUPPORTPTR, 0, 0, 0);
     unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Get the cause of the TLB exception */
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
     unsigned int entryHI = sPtr->sup_exceptState[0].s_entryHI; /* Get the Entry HI value from the saved state */
     int missingPN; /* Page number extracted from Entry HI */
     static int frameNumber; /* Frame number to be used for the page replacement */
+    frameNumber = (frameNumber + 1) % (2*1); /* Simple page replacement algorithm: round-robin replacement for the sake of example */
+    u_proc 
 
     if(exc_code == 1) /* TLB-Modification Exception */
     {
@@ -48,59 +55,35 @@ void supLvlTlbExceptionHandler() {
 
     missingPN = (entryHI & 0xFFFFF000) >> 12; /* Extract the missing page number from Entry HI */
 
-    frameNumber = (frameNumber + 1) % (2*1); /* Simple page replacement algorithm: round-robin replacement for the sake of example */
-    if(swapPool[frameNumber].asid != -1) /* If the frame is already occupied, we need to swap out the existing page */
+    int physicaladdr = frameNumber * 32 + 12;
+
+    if(swapPool[frameNumber].asid != -1) /* If the frame is already occupied(assume page is dirty), we need to swap out the existing page */
     {
        setSTATUS(getSTATUS() & ~0x00000001); /* Disable interrupts while updating pagetable to prevent context switching during the page replacement */
        swapPool[frameNumber].pte->entryLO = (swapPool[frameNumber].pte->entryLO & 0xFFFFFDFF); /* Valid off */ 
        TLBCLR(); /* Erase ALL the entries in the TLB to update TLB */
-       WRITEBLK()
+       devregarea_t reg = RAMBASEADDR;
+       device_t flashdev = reg->devreg[FLASHINT + 8]; /*  */
+       flashdev.d_data0 = physicaladdr;
+       flashdev.d_command = 31 << 8 | 0x10; /* deviceBlockNumber and read block(Flash Device Command Code 2) */
+       SYSCALL(5, 4, FLASHINT, TRUE); /* Perform a read operation on the flash device */   
        setSTATUS(getSTATUS() | (0x00000001)); /* Enable interrupts again after setting the status */
     }
 
-    /* Update the Swap Pool table's entry to reflect the new page */
-    /*
-        9. Read the contents of the Current Process’s backing store/flash device logical
-       page pinto frame i. [Section 4.5.1]
-       Treat any error status from the read operation as a program trap. [Section
-       4.8]
-    */
-   setSTATUS(getSTATUS() & ~0x00000001); /* Disable interrupts while updating pagetable to prevent context switching during the page replacement */
-   WRITEBLK(HEADNUM, SECTNUM);
-   SYSCALL(5, int lineNum, int devNum, int isReadOperation); /* Perform a read operation on the flash device */
-   setSTATUS(getSTATUS() | (0x00000001)); /* Enable interrupts again after setting COMMAND */
+    swapPool[frameNumber].VPN = missingPN;  /* update page p belonging to the Current Process’s ASID */
+    /* swapPool[frameNumber].asid = sPtr->sup_asid;  Set the ASID of the process that owns this swap entry */
+    swapPool[frameNumber].pte = &(sPtr->sup_privatePgTbl[sPtr->sup_asid]);
 
-   swapPool[frameNumber].asid = sPtr->sup_asid; /* Set the ASID of the process that owns this swap entry */
-   sPtr->sup_privatePgTbl[sPtr->sup_asid].entryLO = ALLOFF | (frameNumber << PFNSHIFT) | VALIDON;
+    /* when frame is free: perform the ssd write */
+    setSTATUS(getSTATUS() & ~0x00000001); /* Disable interrupts while updating pagetable to prevent context switching during the page replacement */
 
-   swapPool[frameNumber].pte = &(sPtr->sup_privatePgTbl[sPtr->sup_asid]);
-   TLBCLR();
-   SYSCALL(4, unsigned int &swapPoolSemaphore, 0, 0); /* Perform a P operation on the swap pool semaphore to ensure mutual exclusion */
+    sPtr->sup_privatePgTbl[sPtr->sup_asid].entryLO = ALLOFF | (frameNumber << PFNSHIFT) | VALIDON; /* Update the Current Process’s Page Table entry for page p to indicate it is now present (V bit) */
+    TLBCLR(); /* Erase ALL the entries in the TLB to update TLB */
+    
+    setSTATUS(getSTATUS() | (0x00000001)); /* Enable interrupts again after setting the status */
 
-   LDST(&(currentProcess->p_s));
-
-
-
-    /*
-    STEPS LEFT [Section 4.4.2]:
-    9. Read the contents of the Current Process’s backing store/flash device logical
-       page pinto frame i. [Section 4.5.1]
-       Treat any error status from the read operation as a program trap. [Section
-       4.8]
-    10. Update the Swap Pool table’s entry ito reflect frame i’s new contents: page
-        p belonging to the Current Process’s ASID, and a pointer to the Current
-        Process’s Page Table entry for page p.
-    11. Update the Current Process’s Page Table entry for page p to indicate it is
-        now present (V bit) and occupying frame i(PFN field).
-    12. Update the TLB. The cached entry in the TLB for the Current Process’s
-        page pis clearly out of date; it was just updated in the previous step.
-        Important Point: This step and the previous step must be accomplished
-        atomically. [Section 4.5.3]
-    13. Release mutual exclusion over the Swap Pool table. (SYS4 – V operation
-        on the Swap Pool semaphore)
-    14. Return control to the Current Process to retry the instruction that caused the
-        page fault: LDST on the saved exception state.
-    */
+    SYSCALL(4, unsigned int &swapPoolSemaphore, 0, 0); /* mutex, Perform a V operation on the swap pool semaphore to ensure mutual exclusion */
+    LDST(&(currentProcess->p_s));
 }
 
 void uTLB_RefillHandler(){
