@@ -26,6 +26,12 @@ the Pseudo-clock */
 #define INITSOFTBLKCOUNT    0           /* Initial value for softBlockedCount */
 #define DEVSEMINIT          0           /* Initial value for each device semaphore */
 
+#define VPNSHIFT            12          
+#define PFNSHIFT            12
+#define DIRTYON             0x00000200  /* Dirty set to 1 */ 
+#define VALIDOFF            0x0         /* Valid */
+#define GLOBALOFF           0x0         /* Global */
+
 /* Stack pointer for Nucleus (used in Pass Up Vector) */
 #define NUCLEUSSTACK        0x20001000
 
