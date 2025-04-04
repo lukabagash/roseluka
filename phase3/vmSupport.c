@@ -16,14 +16,14 @@ still be found in the Level 3/Phase 2 exceptions.c file.*/
 #include "../h/types.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
-HIDDEN swap_t swapPool[2*1]; /* Swap Pool table: 2 entries for 1 page each (assuming 1 page per process) */
+HIDDEN swap_t swapPool[2 * UPROCMAX]; /* Swap Pool table: 2 entries for 1 page each (assuming 1 page per process) */
 int swapPoolSemaphore; /* A mutual exclusion semaphore (hence initialized to 1) that controls access to the Swap Pool data structure. */
 
 void initSwapStructs() {
     int i; /* For loop index */
     
     /* Initialize the Swap Pool table */
-    for (i = 0; i < 2*1; i++) {
+    for (i = 0; i < 2 * UPROCMAX; i++) {
         swapPool[i].asid = -1; /* Set the ASID to -1 indicating that the entry is free */
     }
 
@@ -43,8 +43,7 @@ void supLvlTlbExceptionHandler() {
     unsigned int entryHI = sPtr->sup_exceptState[0].s_entryHI; /* Get the Entry HI value from the saved state */
     int missingPN; /* Page number extracted from Entry HI */
     static int frameNumber; /* Frame number to be used for the page replacement */
-    frameNumber = (frameNumber + 1) % (2*1); /* Simple page replacement algorithm: round-robin replacement for the sake of example */
-    u_proc 
+    frameNumber = (frameNumber + 1) % (2 * UPROCMAX); /* Simple page replacement algorithm: round-robin replacement for the sake of example */
 
     if(exc_code == someshit) /* TLB-Modification Exception */
     {
@@ -53,7 +52,7 @@ void supLvlTlbExceptionHandler() {
 
     SYSCALL(3, unsigned int &swapPoolSemaphore, 0, 0); /* Perform a P operation on the swap pool semaphore to ensure mutual exclusion */
 
-    missingPN = (entryHI & 0xFFFFF000) >> 12; /* Extract the missing page number from Entry HI */
+    missingPN = (entryHI & 0xFFFFF000) >> VPNSHIFT; /* Extract the missing page number from Entry HI */
 
     int physicaladdr = frameNumber * 32 + 12;
 

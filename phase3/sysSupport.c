@@ -10,7 +10,7 @@
 #include "/usr/include/umps3/umps/libumps.h"
 
 HIDDEN void schizoUserProcTerminate() {
-    SYSCALL (2, 0, 0, 0)
+    SYSCALL (TERMINATEPROCESS, 0, 0, 0)
 }
 
 HIDDEN void getTOD() {
@@ -25,12 +25,12 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
     for (int i = 0; i < len; i++) {
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
         printerdev.data0 = virtAddr[i];
-        printerdev.d_command = 2; /* PRINTCHR command code */
+        printerdev.d_command = PRINTCHR; /* PRINTCHR command code */
         
         /* do we issue sys5? to suspend u_proc */
 
-        /* if not successfully written PRINTERRRR status code */
-        if (printerdev.d_status = 4) {
+        /* if not successfully written PRINTERROR status code */
+        if (printerdev.d_status = PRINTERROR) {
             charNum = -printerdev.d_status;
             break;
         }
@@ -48,12 +48,12 @@ HIDDEN void writeTerminal(char *virtAddr, int len) {
     for (int i = 0; i < len; i++) {
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
         printerdev.d_status = ALLOFF | printerdev.d_status | (virtAddr[i] << 8);
-        printerdev.d_command = 2; /* PRINTCHR command code */
+        printerdev.d_command = RECEIVECHAR; /* PRINTCHR command code */
 
         /* do we issue sys5? to suspend u_proc */
 
-        /* if not successfully written PRINTERRRR status code */
-        if ((printerdev.d_status & 0x0000000F)= 4) {
+        /* if not successfully written Receive Error status code */
+        if ((printerdev.d_status & 0x0000000F)= RECEIVEERROR) {
             charNum = -printerdev.d_status;
             break;
         }
@@ -71,12 +71,12 @@ HIDDEN void readTerminal(char *virtAddr){
     for (int i = 0; i < len; i++) {
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
         printerdev.d_data0 = ALLOFF | printerdev.d_data0 | (virtAddr[i] << 8);
-        printerdev.d_data1 = 2; /* PRINTCHR command code */
+        printerdev.d_data1 = TRANSMITCHAR; /* PRINTCHR command code */
 
         /* do we issue sys5? to suspend u_proc */
 
-        /* if not successfully written PRINTERRRR status code */
-        if ((printerdev.d_data0 & 0x0000000F) == 4) {
+        /* if not successfully written Transmission Error status code */
+        if ((printerdev.d_data0 & 0x0000000F) == TRANSMISERROR) {
             charNum = -printerdev.d_status;
             break;
         }
