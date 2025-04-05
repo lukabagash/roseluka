@@ -11,58 +11,61 @@ int masterSemaphore; /* Private semaphore for graceful conclusion/termination of
 
 void test() {
     pcb_PTR u_proc; /* Pointer to the user process */
-    static support_t supportStruct[UPROCMAX]; /* Initialize the support structure for the process */
-    state_PTR u_procState; /* Pointer to the user process state */
+    static support_t supportStruct[UPROCMAX + 1]; /* Initialize the support structure for the process */
+    state_PTR u_procState; /* Pointer to the processor state for u_proc */
     int i; /* For Page table */
     int j; /* Set dev sema4 to 1*/
     int k; /* Perform P after launching all the U-procs*/
-    int asid; /* ASID for the process */
-    masterSemaphore = 0;
+    int pid; /* Set the process ID (asid of u_proc) */
+    masterSemaphore = 0;    
     int res; /* Result of the SYSCALL */
 
     /* The Swap Pool table and Swap Pool semaphore. [Section 4.4.1] */
     initSwapStructs(); /* Initialize the swap structures for paging */
     for(j = 0; j < MAXDEVICECNT - 1; j++) {
-        devSemaphore[j] = 1; /* Initialize all device semaphores to 1 */
+        devSemaphore[j] = 1; /* Initialize the semaphores to 1 indicating the I/O devices are available, for mutual exclusion */
     }
 
     /* Initialize and launch (SYS1) between 1 and 8 U-procs */
-    for(asid = 1; asid < UPROCMAX + 1; asid++) {
-        supportStruct.sup_asid = asid; /* Set the process ID (asid) to 1 */
-        supportStruct.sup_exceptContext[0].c_pc = (memaddr) supLvlTlbExceptionHandler; /* Set the TLB exception handler address */
-        supportStruct.sup_exceptContext[0].c_stackPtr = (memaddr) &supportStruct[asid].sup_stackTLB[SUPSTCKTOP]; /* Set the stack pointer for TLB exceptions */
-        supportStruct.sup_exceptContext[0].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON; /* Interrup On, Timer On, Kernel-mode On */
+    for(pid = 1; pid < UPROCMAX + 1; pid++) {
+        supportStruct.sup_asid = pid; /* Assign process ID to asid of each u_proc */
+        supportStruct.sup_exceptContext[0].c_pc = (memaddr) supLvlTlbExceptionHandler; /* Set the TLB exception handler address for page fault exceptions */
+        supportStruct.sup_exceptContext[0].c_stackPtr = (memaddr) &supportStruct[pid].sup_stackTLB[SUPSTCKTOP]; /* Set the stack pointer for TLB exceptions */
+        supportStruct.sup_exceptContext[0].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON; /* Enable Interrupts, enable PLT, Kernel-mode */
 
-        supportStruct.sup_exceptContext[1].c_pc = (memaddr) supLvlGenExceptionHandler; /* Set the general exception handler address */
-        supportStruct.sup_exceptContext[1].c_stackPtr = (memaddr) &supportStruct[asid].sup_stackGen[SUPSTCKTOP]; /* Set the stack pointer for general exceptions */
-        supportStruct.sup_exceptContext[1].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON; /* Interrup On, Timer On, Kernel-mode On */
-        
-        for (i = 0; i < USERPGTBLSIZE; i++) {
-            supportStruct.sup_privatePgTbl[i].entryHI = ALLOFF | (i << VPNSHIFT) | supportStruct.sup_asid; /* Set entryHI with the page number and asid */
-            supportStruct.sup_privatePgTbl[i].entryLO = ALLOFF | (i << PFNSHIFT) | DIRTYON | VALIDOFF | GLOBALOFF; /* Set entryLO with the page number and frame number */
+        supportStruct.sup_exceptContext[1].c_pc = (memaddr) supLvlGenExceptionHandler; /* Set the general exception handler address for general exceptions */
+        supportStruct.sup_exceptContext[1].c_stackPtr = (memaddr) &supportStruct[pid].sup_stackGen[SUPSTCKTOP]; /* Set the stack pointer for general exceptions */
+        supportStruct.sup_exceptContext[1].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON; /* Enable Interrupts, enable PLT, Kernel-mode */
+
+        for (i = 0; i < PGTBLSIZE; i++) {
+            supportStruct.sup_privatePgTbl[i].entryHI = ALLOFF | (KUSEG + i << VPNSHIFT) | (pid << ASIDSHIFT); /* Set entryHI with the page number and asid */
+            supportStruct.sup_privatePgTbl[i].entryLO = ALLOFF | (i << PFNSHIFT) | DIRTYON | VALIDOFF | GLOBALOFF; /* Set entryLO with the frame number and write enabled, private to the specific ASID, and not valid */
         }
 
-        u_procState->s_pc = (memaddr) 0x8000.00B0;
-        u_procState->s_t9 = (memaddr) 0x8000.00B0; /* Set the program counter to the starting address of the user process */
+        /* Set the program counter and s_t9 to the logical address for the start of the .text area */
+        u_procState->s_pc = (memaddr) TEXTAREASTART;
+        u_procState->s_t9 = (memaddr) TEXTAREASTART; 
+        /* Set the status to enable Interrupts, enable PLT, User-mode */
         u_procState->s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON;
-        u_procState->s_sp = (memaddr)  0xC000.0000; /* Set the stack pointer for the user process */
-        u_procState->s_entryHI = asid; /* Set the entry HI for the user process */
+        u_procState->s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
+        u_procState->s_entryHI = pid; /* Set the entry HI for the user process */
 
-        res = SYSCALL(CREATEPROCESS, unsigned int u_procState, unsigned int &supportStruct[asid]); /* Call the SYSCALL to create a new process with the state and support structure */
+        supportStruct.sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | (STCKPGVPN << VPNSHIFT); /* Set the entry HI for the Page Table entry 31 */
+
+        res = SYSCALL(CREATEPROCESS, (unsigned int) u_procState, (unsigned int) &(supportStruct[pid]), 0); /* Call SYS1 to create a new process with the processor state and support structure */
+        
         if(res != OK) {
             SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* If the process creation failed, terminate the process */
+            SYSCALL(VERHOGEN, (unsigned int) &masterSemaphore, 0, 0); /* Nucleus terminate them instead of blocking test on a semaphore and forcing a PANIC */
         }
     }
-    supportStruct.sup_privatePgTbl[PGTBLSIZE].entryHI = ALLOFF | (PGTBLSIZE << VPNSHIFT) | 0xBFFFF000; /* Set the entry HI for the last page table entry */
-    /*Perform a P (SYS3) operation on a private semaphore initialized to 0. 
-    In this case, after all the U-proc “children” conclude, the Nucleus
-    scheduler will detect deadlock and invoke PANIC. [Section 3.2]*/
-    for(k = 0; k < 1; k++) {
+    /*After launching all the U-procs, the Nucleus scheduler will detect deadlock and invoke PANIC. [Section 3.2]*/
+    for(k = 0; k < UPROCMAX; k++) {
         /* Perform a P operation on the master semaphore to wait for all user processes to complete */
-        SYSCALL(PASSEREN, unsigned int &masterSemaphore, 0, 0);
+        SYSCALL(VERHOGEN, (unsigned int) &masterSemaphore, 0, 0);
     }
 
     /* Terminate (SYS2) after all of its U-proc “children” processes conclude. 
     This will drive Process Count to zero, triggering the Nucleus to invoke HALT. [Section 3.2] */
-    SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* After all processes conclude, HALT */
+    SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* After all processes conclude, HALT by the Nucleus*/
 }

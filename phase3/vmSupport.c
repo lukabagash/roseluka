@@ -28,67 +28,75 @@ void initSwapStructs() {
     }
 
     /* Initialize the Swap Pool semaphore */
-    swapPoolSemaphore = 1; /* Set the semaphore to 1 indicating the pool is available for use */
+    swapPoolSemaphore = 1; /* Set the semaphore to 1 indicating the pool is available, for mutual exclusion */
 }
 
-void mutex() {
-    /* if true, sys3 otherwise sys4 */
+void mutex(int *sem, int bool) {
+    if (bool == TRUE){ /* gain mutual exclusion, now having exclusive access */
+		SYSCALL(PASSEREN, (unsigned int) sem, 0, 0); 
+	}
+	else{ /* lose mutual exclusion, allowing others to access */
+		SYSCALL(VERHOGEN, (unsigned int) sem, 0, 0); 
+	}
 }
 
 void supLvlTlbExceptionHandler() {
     /* 14 steps in [Section 4.4.2] */
-    support_t *sPtr = SYSCALL (GETSUPPORTPTR, 0, 0, 0);
-    unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Get the cause of the TLB exception */
+    support_t *sPtr = SYSCALL(GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
+    unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Determine the cause of the TLB exception */
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
     unsigned int entryHI = sPtr->sup_exceptState[0].s_entryHI; /* Get the Entry HI value from the saved state */
     int missingPN; /* Page number extracted from Entry HI */
     static int frameNumber; /* Frame number to be used for the page replacement */
     frameNumber = (frameNumber + 1) % (2 * UPROCMAX); /* Simple page replacement algorithm: round-robin replacement for the sake of example */
 
-    if(exc_code == someshit) /* TLB-Modification Exception */
-    {
+    /* TLB-Modification Exception - a store instruction tries to write to a page */
+    if(exc_code == TLBEXCPT) { 
         programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
     }
 
-    SYSCALL(3, unsigned int &swapPoolSemaphore, 0, 0); /* Perform a P operation on the swap pool semaphore to ensure mutual exclusion */
+    mutex((int *) &swapPoolSemaphore, TRUE); /* Perform a P operation on the swap pool semaphore to gain mutual exclusion */
 
     missingPN = (entryHI & 0xFFFFF000) >> VPNSHIFT; /* Extract the missing page number from Entry HI */
 
-    int physicaladdr = frameNumber * 32 + 12;
+    int frameAddr = frameNumber * PAGESIZE + FRAMEPOOLSTART; /* Starting address of current frame number */
 
     if(swapPool[frameNumber].asid != -1) /* If the frame is already occupied(assume page is dirty), we need to swap out the existing page */
     {
-       setSTATUS(getSTATUS() & ~0x00000001); /* Disable interrupts while updating pagetable to prevent context switching during the page replacement */
+       setSTATUS(getSTATUS() & IECOFF); /* Disable interrupts while updating pagetable to prevent context switching during the page replacement */
        swapPool[frameNumber].pte->entryLO = (swapPool[frameNumber].pte->entryLO & 0xFFFFFDFF); /* Valid off */ 
        TLBCLR(); /* Erase ALL the entries in the TLB to update TLB */
        devregarea_t reg = RAMBASEADDR;
        device_t flashdev = reg->devreg[FLASHINT + 8]; /*  */
-       flashdev.d_data0 = physicaladdr;
+       flashdev.d_data0 = frameAddr;
        flashdev.d_command = 31 << 8 | 0x10; /* deviceBlockNumber and read block(Flash Device Command Code 2) */
-       SYSCALL(5, 4, FLASHINT, TRUE); /* Perform a read operation on the flash device */   
-       setSTATUS(getSTATUS() | (0x00000001)); /* Enable interrupts again after setting the status */
+       SYSCALL(WAITIO, FLASHINT, TRUE, 0); /* Perform a read operation on the flash device */   
+       setSTATUS(getSTATUS() | IECON); /* Enable interrupts again after setting the status */
     }
 
     swapPool[frameNumber].VPN = missingPN;  /* update page p belonging to the Current Process’s ASID */
     /* swapPool[frameNumber].asid = sPtr->sup_asid;  Set the ASID of the process that owns this swap entry */
     swapPool[frameNumber].pte = &(sPtr->sup_privatePgTbl[sPtr->sup_asid]);
 
+    if (status != OK) {
+        schizoUserProcTerminate(&swapPoolSemaphore)
+    }
     /* when frame is free: perform the ssd write */
-    setSTATUS(getSTATUS() & ~0x00000001); /* Disable interrupts while updating pagetable to prevent context switching during the page replacement */
+    setSTATUS(getSTATUS() & IECOFF); /* Disable interrupts while updating pagetable to prevent context switching during the page replacement */
 
     sPtr->sup_privatePgTbl[sPtr->sup_asid].entryLO = ALLOFF | (frameNumber << PFNSHIFT) | VALIDON; /* Update the Current Process’s Page Table entry for page p to indicate it is now present (V bit) */
     TLBCLR(); /* Erase ALL the entries in the TLB to update TLB */
     
-    setSTATUS(getSTATUS() | (0x00000001)); /* Enable interrupts again after setting the status */
+    setSTATUS(getSTATUS() | IECON); /* Enable interrupts again after setting the status */
 
-    SYSCALL(4, unsigned int &swapPoolSemaphore, 0, 0); /* mutex, Perform a V operation on the swap pool semaphore to ensure mutual exclusion */
+    mutex((int *) &swapPoolSemaphore, FALSE); /* mutex, Perform a V operation on the swap pool semaphore to ensure mutual exclusion */
     LDST(&(currentProcess->p_s));
 }
 
 void uTLB_RefillHandler(){
     support_t *sPtr = SYSCALL (GETSUPPORTPTR, 0, 0, 0);
     unsigned int entryHI = sPtr->sup_exceptState[0].s_entryHI; /* Get the Entry HI value from the saved state */
-    missingPN = (entryHI & 0xFFFFF000) >> 12; /* Extract the missing page number from Entry HI */
+    missingPN = (entryHI & 0xFFFFF000) >> VPNSHIFT; /* Extract the missing page number from Entry HI */
     pte_entry_t entry = sPtr->sup_privatePgTbl[missingPN];  /* Get the Page Table entry for page number of the Current Process */
     /* Write this Page Table entry into the TLB */
     setENTRYHI(entry.entryHI);  
@@ -96,3 +104,4 @@ void uTLB_RefillHandler(){
     TLBWR();
     LDST(&(currentProcess->p_s));   /* Return control to the Current Process to retry the instruction that caused the TLB-Refill event */
 }
+

@@ -27,11 +27,16 @@ the Pseudo-clock */
 #define DEVSEMINIT          0           /* Initial value for each device semaphore */
 
 #define VPNSHIFT            12          
+#define ASIDSHIFT           6
 #define PFNSHIFT            12
 #define DIRTYON             0x00000200  /* Dirty set to 1 */ 
 #define VALIDOFF            0x0         /* Valid */
+#define VALIDON             0x00000100
 #define GLOBALOFF           0x0         /* Global */
 
+#define UPROCMAX            1           /* User process count */          
+#define PGTBLSIZE           32          /* Array size of page table */
+#define SUPSTCKTOP          499         /* Top of the stack area for the process' exception handlers */
  
 /* Stack pointer for Nucleus (used in Pass Up Vector) */
 #define NUCLEUSSTACK        0x20001000
@@ -44,6 +49,7 @@ the Pseudo-clock */
 #define TEBITON             0x08000000  /* Enable processor Local Timer (PLT) */
 #define PANDOS_CAUSEINTMASK 0x0000FF00  /* Full interrupt mask bits on */
 #define IECON			    0x00000001	/* Enable the global interrupt bit (i.e., IEc (bit 0) = 1) */
+#define IECOFF              0xFFFFFFFE  /* Enable the global interrupt bit */
 /* Constant to help determine the index in deviceSemaphores/devSemaphores and in the Interrupt Devices Bitmap that a particular device is located at. 
 This constant is subtracted from the line number (or 4, in the case of backing store management), since interrupt lines 3-7 are used for peripheral devices  */
 #define	OFFSET			    3
@@ -81,9 +87,7 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define	LINE5			    5			/* Network (Ethernet) Devices */
 #define	LINE6			    6			/* Printer devices */
 #define	LINE7			    7			/* Terminal devices */
-/* Constant to help determine the index in deviceSemaphores/devSemaphores and in the Interrupt Devices Bitmap that a particular device is located at. 
-This constant is subtracted from the line number (or 4, in the case of backing store management), since interrupt lines 3-7 are used for peripheral devices  */
-#define	OFFSET			    3
+
 /* Constant that represents when the first four bits in a terminal device's device register's status field are turned on */
 #define	STATUSON		    0x0F
 /* Constants to help determine which device the highest-priority interrupt occurred on */
@@ -121,7 +125,12 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define	WAITCLOCK           7
 #define	GETSUPPORTPTR       8
 
-
+#define PRINTERROR          4           /* Printer Device Status Code: Error during character transmission */
+#define PRINTCHR            2           /* Printer Device Command Code: Transmit the character in DATA0 over the line */
+#define RECEIVEERROR        4           /* Terminal Device Status Code: Receive Error */
+#define TRANSMISERROR       4           /* Terminal Device Status Code: Transmission Error */
+#define RECEIVECHAR         2           /* Terminal Device Command Code: Receive the character over the line */
+#define TRANSMITCHAR        2           /* Terminal Device Command Code: Transmit the character over the line*/
 
 /* timer, timescale, TOD-LO and other bus regs */
 #define RAMBASEADDR		    0x10000000
@@ -181,10 +190,15 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define BIOSDATAPAGE        0x0FFFF000
 #define	PASSUPVECTOR	    0x0FFFF900
 
+#define TEXTAREASTART       0x800000B0
+#define STCKPGVPN           0xBFFFF000
+#define STCKTOPEND          0xC0000000
+
+#define FRAMEPOOLSTART      0x20001040  /* In RAM, the top of kernel stack (0x2000.1000) + OS area (64) */
+
 /* Exceptions related constants */
 #define	PGFAULTEXCEPT	    0
 #define GENERALEXCEPT	    1
-
 
 /* operations */
 #define	MIN(A,B)		    ((A) < (B) ? A : B)
