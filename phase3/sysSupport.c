@@ -82,10 +82,10 @@ HIDDEN void readTerminal(char *virtAddr){
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
         printerdev.t_transm_command = ALLOFF | printerdev.d_data0 | (virtAddr[i] << 8);
         
-        status = SYSCALL(WAITIO, 0, 0, 0);
+        SYSCALL(WAITIO, 0, 0, 0);
 
         /* if not successfully written Transmission Error status code */
-        if (status == TRANSMISERROR) {
+        if (printerdev.d_status == TRANSMISERROR) {
             charNum = 0 - status;
             break;
         }
@@ -100,7 +100,7 @@ void supLvlGenExceptionHandler()
     support_t *sPtr = SYSCALL (GETSUPPORTPTR, 0, 0, 0);
     unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Get the cause of the TLB exception */
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
-    if (exc_code == someshit) /* TLB-Modification Exception */
+    if (exc_code != SYSCALLEXCPT) /* TLB-Modification Exception */
     {
         programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
     }
@@ -134,7 +134,7 @@ void supLvlGenExceptionHandler()
             break;
 
         default:
-            /* Should never get here if [1..8] was properly checked */
+            /* Should never come here if the syscallexc checks out*/
             programTrapHandler();
             return;
     }

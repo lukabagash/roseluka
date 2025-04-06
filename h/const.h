@@ -207,7 +207,7 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define WRITEERR            5          /* Flash device status code for write error */
 #define READBLK             2          /* Copy the block located at (BLOCKNUMBER) into the RAM starting at the address in DATA0 */
 #define READERR             4          /* Flash device status code for read error */
-#define VPNMASK              0xFFFFF000 /* Mask to extract the VPN from the EntryHI field of a TLB entry */
+#define VPNMASK             0xFFFFF000 /* Mask to extract the VPN from the EntryHI field of a TLB entry */
 
 /* operations */
 #define	MIN(A,B)		    ((A) < (B) ? A : B)
