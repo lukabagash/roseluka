@@ -24,4 +24,6 @@ void supLvlGenExceptionHandler(void);
 /* Check for illegal syscall string length */
 void illegalCheck(int len);
 
+void programTrapHandler(void);
+
 #endif /* SYSSUPPORT_H */
