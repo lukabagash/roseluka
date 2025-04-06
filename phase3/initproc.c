@@ -26,6 +26,7 @@ void test() {
         devSemaphore[j] = 1; /* Initialize the semaphores to 1 indicating the I/O devices are available, for mutual exclusion */
     }
 
+    
     /* Initialize and launch (SYS1) between 1 and 8 U-procs */
     for(pid = 1; pid < UPROCMAX + 1; pid++) {
         supportStruct->sup_asid = pid; /* Assign process ID to asid of each u_proc */
