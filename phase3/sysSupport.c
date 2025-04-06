@@ -76,7 +76,7 @@ HIDDEN void readTerminal(char *virtAddr){
     int dnum = 1; /* Device number for the terminal device */
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
        
-    while(virtAddr != 0x0A){
+    while(*virtAddr != ENDOFLINE){
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
         terminaldev.t_transm_command = terminaldev.d_data0 | (virtAddr << 8);
         
