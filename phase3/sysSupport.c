@@ -55,12 +55,12 @@ HIDDEN void writeTerminal(char *virtAddr, int len) {
     for (int i = 0; i < len; i++) {
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
         /* terminaldev.d_status = ALLOFF | terminaldev.d_status | (virtAddr[i] << 8); */
-        terminaldev.t_recv_command = RECEIVECHAR; /* PRINTCHR command code */
+        terminaldev.t_transm_command = (virtAddr[i] << 8) | TRANSMITCHAR; /* PRINTCHR command code */
 
         SYSCALL(WAITIO, TERMINT, dnum, FALSE);  /* suspend u_proc */
 
         /* if not successfully written Receive Error status code */
-        if ((terminaldev.d_status & TERMSTATUSMASK) != CHARRECIVED) {
+        if ((terminaldev.t_transm_status & TERMSTATUSMASK) != CHARRECIVED) {
             charNum = 0 - terminaldev.d_status;
             break;
         }
@@ -78,13 +78,13 @@ HIDDEN void readTerminal(char *virtAddr){
        
     while(*virtAddr != ENDOFLINE){
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
-        terminaldev.t_transm_command = (virtAddr << 8);
+        terminaldev.t_recv_command = RECEIVECHAR;;
         
         SYSCALL(WAITIO, TERMINT, dnum, TRUE);
 
         /* if not successfully written Transmission Error status code */
-        if ((terminaldev.d_status & TERMSTATUSMASK) != CHARTRANSMITTED) {
-            charNum = 0 - terminaldev.d_status; /* Set charNum to negative of the status code to indicate an error */
+        if ((terminaldev.t_recv_status & TERMSTATUSMASK) != CHARTRANSMITTED) {
+            charNum = 0 - (terminaldev.d_status & TERMSTATUSMASK); /* Set charNum to negative of the status code to indicate an error */
             break;
         }
         charNum++;
