@@ -20,7 +20,6 @@ HIDDEN void schizoUserProcTerminate(int *address) {
 
 HIDDEN void getTOD() {
     currentProcess->p_s.s_v0 = startTOD;
-    /*need to rload state*/
 }
 
 HIDDEN void writePrinter(char *virtAddr, int len) {
@@ -34,8 +33,7 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
         printerdev.data0 = virtAddr[i];
         printerdev.d_command = PRINTCHR; /* PRINTCHR command code */
         
-        /* do we issue sys5? to suspend u_proc */
-        SYSCALL(5, )
+        SYSCALL(5, PRNTINT, dnum, FALSE); /* suspend u_proc, wait for I/O to complete */
 
         /* if not successfully written PRINTERROR status code */
         if (printerdev.d_status = PRINTERROR) {
@@ -51,20 +49,20 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
 HIDDEN void writeTerminal(char *virtAddr, int len) {
     int charNum = 0;
     devregarea_t reg = RAMBASEADDR;
-    device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT];
+    int dnum = 1; /* Device number for the terminal device */
+    device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
        
     for (int i = 0; i < len; i++) {
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
         /* terminaldev.d_status = ALLOFF | terminaldev.d_status | (virtAddr[i] << 8); */
-        terminaldev.d_command = RECEIVECHAR; /* PRINTCHR command code */
+        terminaldev.t_rec = RECEIVECHAR; /* PRINTCHR command code */
 
-        SYSCALL(WAITIO, TERMINT, TRUE, 0);  /* suspend u_proc */
+        SYSCALL(WAITIO, TERMINT, dnum, FALSE);  /* suspend u_proc */
         va = supportstruct.state.s_a1
-        devicesem = (PRNTINT - DISKINT) * DEVPERINT + (pid-1)
 
         /* if not successfully written Receive Error status code */
         if ((terminaldev.d_status & 0xFF)= RECEIVEERROR) {
-            charNum = -terminaldev.d_status;
+            charNum = 0 - terminaldev.d_status;
             break;
         }
         charNum++;
@@ -75,23 +73,25 @@ HIDDEN void writeTerminal(char *virtAddr, int len) {
 
 HIDDEN void readTerminal(char *virtAddr){
     int charNum = 0;
-    devregarea_t reg = RAMBASEADDR;
-    device_t printerdev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT];
+    devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
+    int dnum = 1; /* Device number for the terminal device */
+    device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
        
-    for (int i = 0; i < len; i++) {
+    while(virtAddr != 0x0A){
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
-        printerdev.t_transm_command = ALLOFF | printerdev.d_data0 | (virtAddr[i] << 8);
+        terminaldev.t_transm_command = terminaldev.d_data0 | (virtAddr << 8);
         
-        SYSCALL(WAITIO, 0, 0, 0);
+        SYSCALL(WAITIO, TERMINT, dnum, TRUE);
 
         /* if not successfully written Transmission Error status code */
-        if (printerdev.d_status == TRANSMISERROR) {
-            charNum = 0 - status;
+        if (terminaldev.d_status == TRANSMISERROR) {
+            charNum = 0 - terminaldev.d_status; /* Set charNum to negative of the status code to indicate an error */
             break;
         }
         charNum++;
+        *virtAddr++; /* Move to the next character in the buffer */
     } 
-    //Resume back to user mode with v0 updated accordingly:
+    /* Return the number of char read */
     currentProcess->p_s.s_v0 = charNum;
 }
 
@@ -107,7 +107,7 @@ void supLvlGenExceptionHandler()
     
     /* Handle other general exceptions */
     savedExceptState = (state_PTR) BIOSDATAPAGE;
-    syscallNumber = savedExceptState->s_a0;
+    int syscallNumber = savedExceptState->s_a0;
 
     switch (syscallNumber) {
         case TERMINATE:            /* SYS9 */
@@ -126,11 +126,16 @@ void supLvlGenExceptionHandler()
             break;
 
         case WRITETERMINAL:        /* SYS12 */
-            writeTerminal();
+            writeTerminal(
+                (char *) (savedExceptState->s_a1), /* virtual address of the string to print */
+                (int) (savedExceptState->s_a2)    /* length of the string */
+            );
             break;
 
         case READTERMINAL:         /* SYS13 */
-            readTerminal(); 
+            readTerminal(
+                (char *) (savedExceptState->s_a1) /* virtual address of the buffer to store the read characters */
+            ); 
             break;
 
         default:
