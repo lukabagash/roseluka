@@ -36,7 +36,7 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
         SYSCALL(WAITIO, PRNTINT, dnum, FALSE); /* suspend u_proc, wait for I/O to complete */
 
         /* if not successfully written PRINTERROR status code */
-        if (printerdev.d_status = PRINTERROR) {
+        if (printerdev.d_status == PRINTERROR) {
             charNum = -printerdev.d_status;
             break;
         }
