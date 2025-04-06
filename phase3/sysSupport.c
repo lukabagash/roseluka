@@ -78,7 +78,7 @@ HIDDEN void readTerminal(char *virtAddr){
        
     while(*virtAddr != ENDOFLINE){
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
-        terminaldev.t_transm_command = terminaldev.d_data0 | (virtAddr << 8);
+        terminaldev.t_transm_command = (virtAddr << 8);
         
         SYSCALL(WAITIO, TERMINT, dnum, TRUE);
 
