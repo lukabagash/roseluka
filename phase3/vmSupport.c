@@ -14,6 +14,7 @@ still be found in the Level 3/Phase 2 exceptions.c file.*/
 #include "../h/vmSupport.h"
 #include "../h/initial.h"
 #include "../h/types.h"
+#include "../h/sysSupport.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
 HIDDEN swap_t swapPool[2 * UPROCMAX]; /* Swap Pool table: 2 entries for 1 page each (assuming 1 page per process) */
