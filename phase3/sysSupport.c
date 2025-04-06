@@ -111,7 +111,7 @@ void supLvlGenExceptionHandler()
 
     switch (syscallNumber) {
         case TERMINATE:            /* SYS9 */
-            schizoUserProcTerminate();
+            schizoUserProcTerminate(NULL); /* Terminate the current process */
             break;
 
         case GETTOD:               /* SYS10 */
