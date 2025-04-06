@@ -10,6 +10,15 @@
 #include "../h/exceptions.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
+HIDDEN void illegalCheck(int len) {
+    /*
+     * Ensure the length is valid, this should be in the range of 0 to 12.
+     */
+    if (len < 0 || len > MAXSTRINGLEN) {
+        schizoUserProcTerminate(NULL); /* Terminate the process */
+    }
+}
+
 HIDDEN void schizoUserProcTerminate(int *address) {
     if (address != NULL) {
         mutex(address, FALSE);  /* Release the mutex if address is given */
@@ -27,6 +36,8 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int dnum = 1; /* Temporary dnum */
     device_t printerdev = reg->devreg[(PRNTINT - DISKINT) * DEVPERINT];
+
+    illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
        
     for (int i = 0; i < len; i++) {
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
@@ -36,7 +47,7 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
         SYSCALL(WAITIO, PRNTINT, dnum, FALSE); /* suspend u_proc, wait for I/O to complete */
 
         /* if not successfully written PRINTERROR status code */
-        if (printerdev.d_status == PRINTERROR) {
+        if (printerdev.d_status != DEVREDY) {
             charNum = 0 - printerdev.d_status;
             break;
         }
@@ -51,6 +62,7 @@ HIDDEN void writeTerminal(char *virtAddr, int len) {
     devregarea_t reg = RAMBASEADDR;
     int dnum = 1; /* Device number for the terminal device */
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
+    illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
        
     for (int i = 0; i < len; i++) {
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
@@ -75,6 +87,7 @@ HIDDEN void readTerminal(char *virtAddr){
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int dnum = 1; /* Device number for the terminal device */
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
+    illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
        
     while(*virtAddr != ENDOFLINE){
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)

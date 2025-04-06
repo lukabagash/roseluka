@@ -212,6 +212,8 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define TERMSTATUSMASK      0x0000000FF /* Mask to extract the status bits from the device register's status field for terminal devices */
 #define CHARRECIVED         5          /* Terminal device status code for character received successfully */
 #define CHARTRANSMITTED     5          /* Terminal device status code for character transmitted successfully */
+#define MAXSTRINGLEN        128        /* Maximum length of a string that can be passed to devices*/
+#define DEVREDY             1          /* Device is ready for I/O operations */
 
 /* operations */
 #define	MIN(A,B)		    ((A) < (B) ? A : B)
