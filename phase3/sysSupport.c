@@ -88,7 +88,7 @@ HIDDEN void readTerminal(char *virtAddr){
             break;
         }
         charNum++;
-        *virtAddr++; /* Move to the next character in the buffer */
+        virtAddr++; /* Move to the next character in the buffer */
     } 
     /* Return the number of char read */
     currentProcess->p_s.s_v0 = charNum;
