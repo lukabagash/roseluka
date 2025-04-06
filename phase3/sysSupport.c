@@ -46,7 +46,7 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
         
         SYSCALL(WAITIO, PRNTINT, dnum, FALSE); /* suspend u_proc, wait for I/O to complete */
 
-        /* if not successfully written PRINTERROR status code */
+        /* if not successfully written*/
         if (printerdev.d_status != DEVREDY) {
             charNum = 0 - printerdev.d_status;
             break;
@@ -87,7 +87,6 @@ HIDDEN void readTerminal(char *virtAddr){
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int dnum = 1; /* Device number for the terminal device */
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
-    illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
        
     while(*virtAddr != ENDOFLINE){
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
