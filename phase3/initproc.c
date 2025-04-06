@@ -3,6 +3,7 @@
 #include "../h/pcb.h"
 #include "../h/exceptions.h"  /* For the exception handler */
 #include "../h/vmSupport.h" /* For the initSwapStructs function */
+#include "../h/sysSupport.h" /* For the syscall support functions */
 #include "/usr/include/umps3/umps/libumps.h"
 
 int devSemaphore[MAXDEVICECNT - 1]; /* Sharable peripheral I/O device, (Disk, Flash, Network, Printer): 4 classes × 8 devices = 32 semaphores 
@@ -28,18 +29,18 @@ void test() {
 
     /* Initialize and launch (SYS1) between 1 and 8 U-procs */
     for(pid = 1; pid < UPROCMAX + 1; pid++) {
-        supportStruct.sup_asid = pid; /* Assign process ID to asid of each u_proc */
-        supportStruct.sup_exceptContext[0].c_pc = (memaddr) supLvlTlbExceptionHandler; /* Set the TLB exception handler address for page fault exceptions */
-        supportStruct.sup_exceptContext[0].c_stackPtr = (memaddr) &supportStruct[pid].sup_stackTLB[SUPSTCKTOP]; /* Set the stack pointer for TLB exceptions */
-        supportStruct.sup_exceptContext[0].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON; /* Enable Interrupts, enable PLT, Kernel-mode */
+        supportStruct->sup_asid = pid; /* Assign process ID to asid of each u_proc */
+        supportStruct->sup_exceptContext[0].c_pc = (memaddr) supLvlTlbExceptionHandler; /* Set the TLB exception handler address for page fault exceptions */
+        supportStruct->sup_exceptContext[0].c_stackPtr = (memaddr) &supportStruct[pid].sup_stackTLB[SUPSTCKTOP]; /* Set the stack pointer for TLB exceptions */
+        supportStruct->sup_exceptContext[0].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON; /* Enable Interrupts, enable PLT, Kernel-mode */
 
-        supportStruct.sup_exceptContext[1].c_pc = (memaddr) supLvlGenExceptionHandler; /* Set the general exception handler address for general exceptions */
-        supportStruct.sup_exceptContext[1].c_stackPtr = (memaddr) &supportStruct[pid].sup_stackGen[SUPSTCKTOP]; /* Set the stack pointer for general exceptions */
-        supportStruct.sup_exceptContext[1].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON; /* Enable Interrupts, enable PLT, Kernel-mode */
+        supportStruct->sup_exceptContext[1].c_pc = (memaddr) supLvlGenExceptionHandler; /* Set the general exception handler address for general exceptions */
+        supportStruct->sup_exceptContext[1].c_stackPtr = (memaddr) &supportStruct[pid].sup_stackGen[SUPSTCKTOP]; /* Set the stack pointer for general exceptions */
+        supportStruct->sup_exceptContext[1].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON; /* Enable Interrupts, enable PLT, Kernel-mode */
 
         for (i = 0; i < PGTBLSIZE; i++) {
-            supportStruct.sup_privatePgTbl[i].entryHI = ALLOFF | (KUSEG + i << VPNSHIFT) | (pid << ASIDSHIFT); /* Set entryHI with the page number and asid */
-            supportStruct.sup_privatePgTbl[i].entryLO = ALLOFF | (i << PFNSHIFT) | DIRTYON | VALIDOFF | GLOBALOFF; /* Set entryLO with the frame number and write enabled, private to the specific ASID, and not valid */
+            supportStruct->sup_privatePgTbl[i].entryHI = ALLOFF | ((KUSEG + i) << VPNSHIFT) | (pid << ASIDSHIFT); /* Set entryHI with the page number and asid */
+            supportStruct->sup_privatePgTbl[i].entryLO = ALLOFF | (i << PFNSHIFT) | DIRTYON | VALIDOFF | GLOBALOFF; /* Set entryLO with the frame number and write enabled, private to the specific ASID, and not valid */
         }
 
         /* Set the program counter and s_t9 to the logical address for the start of the .text area */
