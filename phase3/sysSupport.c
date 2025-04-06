@@ -24,7 +24,7 @@ HIDDEN void getTOD() {
 
 HIDDEN void writePrinter(char *virtAddr, int len) {
     int charNum = 0;
-    devregarea_t reg = RAMBASEADDR;
+    devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int dnum = 1; /* Temporary dnum */
     device_t printerdev = reg->devreg[(PRNTINT - DISKINT) * DEVPERINT];
        
