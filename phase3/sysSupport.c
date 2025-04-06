@@ -25,15 +25,15 @@ HIDDEN void getTOD() {
 HIDDEN void writePrinter(char *virtAddr, int len) {
     int charNum = 0;
     devregarea_t reg = RAMBASEADDR;
+    int dnum = 1; /* Temporary dnum */
     device_t printerdev = reg->devreg[(PRNTINT - DISKINT) * DEVPERINT];
-
        
     for (int i = 0; i < len; i++) {
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
         printerdev.data0 = virtAddr[i];
         printerdev.d_command = PRINTCHR; /* PRINTCHR command code */
         
-        SYSCALL(5, PRNTINT, dnum, FALSE); /* suspend u_proc, wait for I/O to complete */
+        SYSCALL(WAITIO, PRNTINT, dnum, FALSE); /* suspend u_proc, wait for I/O to complete */
 
         /* if not successfully written PRINTERROR status code */
         if (printerdev.d_status = PRINTERROR) {
