@@ -37,7 +37,7 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
 
         /* if not successfully written PRINTERROR status code */
         if (printerdev.d_status == PRINTERROR) {
-            charNum = -printerdev.d_status;
+            charNum = 0 - printerdev.d_status;
             break;
         }
         charNum++;
