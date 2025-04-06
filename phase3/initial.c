@@ -20,11 +20,11 @@
 #include "../h/scheduler.h"
 #include "../h/exceptions.h"
 #include "../h/interrupts.h"
+#include "../h/vmSupport.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
 /* External function declarations */
 extern void test();              /* The "main" test function (see p2test.c) */
-extern void uTLB_RefillHandler();/* Provided TLB-Refill handler placeholder */
 HIDDEN void genExceptionHandler();/* Internal function for all general exceptions */
 
 /* Global variables for Phase 2 */
