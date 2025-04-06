@@ -46,7 +46,7 @@ void supLvlTlbExceptionHandler() {
     unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Determine the cause of the TLB exception */
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
     unsigned int entryHI = sPtr->sup_exceptState[0].s_entryHI; /* Get the Entry HI value from the saved state */
-    int missingPN; /* Page number extracted from Entry HI */
+    int missingPN = (entryHI & VPNMASK) >> VPNSHIFT; /* Extract the missing page number from Entry HI */
     static int frameNumber; /* Frame number to be used for the page replacement */
     frameNumber = (frameNumber + 1) % (2 * UPROCMAX); /* Simple page replacement algorithm: round-robin replacement for the sake of example */
 
@@ -57,34 +57,37 @@ void supLvlTlbExceptionHandler() {
 
     mutex((int *) &swapPoolSemaphore, TRUE); /* Perform a P operation on the swap pool semaphore to gain mutual exclusion */
 
-    missingPN = (entryHI & 0xFFFFF000) >> VPNSHIFT; /* Extract the missing page number from Entry HI */
-
     int frameAddr = frameNumber * PAGESIZE + FRAMEPOOLSTART; /* Starting address of current frame number */
-
+    int flashId = (FLASHINT - OFFSET) * DEVPERINT + dnum; /* Device number for the flash device */
+    devregarea_t reg = (devregarea_t *) RAMBASEADDR; /* Get the device register area base address */
+    device_t flashdev = reg->devreg[flashId];
+    flashdev.d_data0 = frameAddr;
+    int dnum = 1; /* temporary placemholder until I figure out */
     if(swapPool[frameNumber].asid != -1) /* If the frame is already occupied(assume page is dirty), we need to swap out the existing page */
     {
        setSTATUS(getSTATUS() & IECOFF); /* Disable interrupts while updating pagetable to prevent context switching during the page replacement */
-       swapPool[frameNumber].pte->entryLO = (swapPool[frameNumber].pte->entryLO & 0xFFFFFDFF); /* Valid off */ 
+       swapPool[frameNumber].pte->entryLO = (swapPool[frameNumber].pte->entryLO & VALIDOFFTLB); /* Valid off */ 
        TLBCLR(); /* Erase ALL the entries in the TLB to update TLB */
-       devregarea_t reg = RAMBASEADDR;
-       device_t flashdev = reg->devreg[FLASHINT + 8]; /*  */
-       flashdev.d_data0 = frameAddr;
-       flashdev.d_command = 31 << 8 | 0x10; /* deviceBlockNumber and read block(Flash Device Command Code 2) */
-       SYSCALL(WAITIO, FLASHINT, TRUE, 0); /* Perform a read operation on the flash device */   
+       flashdev.d_command = frameNumber << FLASCOMHSHIFT | WRITEBLK; /* Write the contents of frame to the correct location on process backing store/flash device. */
+       SYSCALL(WAITIO, FLASHINT, dnum, FALSE); /* Perform write operation on the flash device */
+       if(flashdev.d_status == WRITEERR){
+            schizoUserProcTerminate(&swapPoolSemaphore); /* Handle the error if the write operation failed */
+       }   
        setSTATUS(getSTATUS() | IECON); /* Enable interrupts again after setting the status */
     }
+    flashdev.d_command = frameNumber << FLASCOMHSHIFT | READBLK; /* Write the contents of frame to the correct location on process backing store/flash device. */
+    SYSCALL(WAITIO, FLASHINT, dnum, TRUE); /* Perform write operation on the flash device */
+    if (flashdev.d_status == READERR) {
+        schizoUserProcTerminate(&swapPoolSemaphore);
+    } /* Handle the error if the read operation failed */
 
     swapPool[frameNumber].VPN = missingPN;  /* update page p belonging to the Current Process’s ASID */
-    /* swapPool[frameNumber].asid = sPtr->sup_asid;  Set the ASID of the process that owns this swap entry */
-    swapPool[frameNumber].pte = &(sPtr->sup_privatePgTbl[sPtr->sup_asid]);
+    swapPool[frameNumber].asid = sPtr->sup_asid;  /* Set the ASID of the process that owns this swap entry */
+    swapPool[frameNumber].pte = &(sPtr->sup_privatePgTbl[missingPN]); /* Set the pointer to the page table entry associated with this swap entry */
 
-    if (status != OK) {
-        schizoUserProcTerminate(&swapPoolSemaphore)
-    }
-    /* when frame is free: perform the ssd write */
     setSTATUS(getSTATUS() & IECOFF); /* Disable interrupts while updating pagetable to prevent context switching during the page replacement */
 
-    sPtr->sup_privatePgTbl[sPtr->sup_asid].entryLO = ALLOFF | (frameNumber << PFNSHIFT) | VALIDON; /* Update the Current Process’s Page Table entry for page p to indicate it is now present (V bit) */
+    sPtr->sup_privatePgTbl[missingPN].entryLO = (frameNumber << PFNSHIFT) | VALIDON; /* Update the Current Process’s Page Table entry for page p to indicate it is now present (V bit) */
     TLBCLR(); /* Erase ALL the entries in the TLB to update TLB */
     
     setSTATUS(getSTATUS() | IECON); /* Enable interrupts again after setting the status */
@@ -96,7 +99,7 @@ void supLvlTlbExceptionHandler() {
 void uTLB_RefillHandler(){
     support_t *sPtr = SYSCALL (GETSUPPORTPTR, 0, 0, 0);
     unsigned int entryHI = sPtr->sup_exceptState[0].s_entryHI; /* Get the Entry HI value from the saved state */
-    missingPN = (entryHI & 0xFFFFF000) >> VPNSHIFT; /* Extract the missing page number from Entry HI */
+    int missingPN = (entryHI & VPNMASK) >> VPNSHIFT; /* Extract the missing page number from Entry HI */
     pte_entry_t entry = sPtr->sup_privatePgTbl[missingPN];  /* Get the Page Table entry for page number of the Current Process */
     /* Write this Page Table entry into the TLB */
     setENTRYHI(entry.entryHI);  

@@ -200,6 +200,15 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define	PGFAULTEXCEPT	    0
 #define GENERALEXCEPT	    1
 
+/* Constants for the TLB exception handling */
+#define VALIDOFFTLB         0xFFFFFDFF /* Mask to clear the VALID bit in the EntryLO field of a TLB entry */
+#define WRITEBLK            3          /* Copy the 4 KB of RAM starting at the address in DATA0 into the block located at (BLOCKNUMBER)*/
+#define FLASCOMHSHIFT       8          /* Shift to get the block number from the command sent to the flash device */
+#define WRITEERR            5          /* Flash device status code for write error */
+#define READBLK             2          /* Copy the block located at (BLOCKNUMBER) into the RAM starting at the address in DATA0 */
+#define READERR             4          /* Flash device status code for read error */
+#define VPNMASK              0xFFFFF000 /* Mask to extract the VPN from the EntryHI field of a TLB entry */
+
 /* operations */
 #define	MIN(A,B)		    ((A) < (B) ? A : B)
 #define MAX(A,B)		    ((A) < (B) ? B : A)
