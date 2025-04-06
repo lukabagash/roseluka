@@ -7,7 +7,7 @@
 void initSwapStructs(void);
 
 /* Acquire or release mutex on a semaphore */
-void mutex(int *sem, int operation); // operation TRUE (P) or FALSE (V)
+void mutex(int *sem, int operation); /* operation TRUE (P) or FALSE (V) */
 
 /* TLB exception handler (pager) */
 void supLvlTlbExceptionHandler(void);
