@@ -208,7 +208,10 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define READBLK             2          /* Copy the block located at (BLOCKNUMBER) into the RAM starting at the address in DATA0 */
 #define READERR             4          /* Flash device status code for read error */
 #define VPNMASK             0xFFFFF000 /* Mask to extract the VPN from the EntryHI field of a TLB entry */
-#define ENDOFLINE           0x0000000A
+#define ENDOFLINE           0x0000000A /* End of line character for terminal devices (newline) */
+#define TERMSTATUSMASK      0x0000000FF /* Mask to extract the status bits from the device register's status field for terminal devices */
+#define CHARRECIVED         5          /* Terminal device status code for character received successfully */
+#define CHARTRANSMITTED     5          /* Terminal device status code for character transmitted successfully */
 
 /* operations */
 #define	MIN(A,B)		    ((A) < (B) ? A : B)

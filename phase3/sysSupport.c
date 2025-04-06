@@ -60,7 +60,7 @@ HIDDEN void writeTerminal(char *virtAddr, int len) {
         SYSCALL(WAITIO, TERMINT, dnum, FALSE);  /* suspend u_proc */
 
         /* if not successfully written Receive Error status code */
-        if ((terminaldev.d_status & 0xFF)= RECEIVEERROR) {
+        if ((terminaldev.d_status & TERMSTATUSMASK) != CHARRECIVED) {
             charNum = 0 - terminaldev.d_status;
             break;
         }
@@ -83,7 +83,7 @@ HIDDEN void readTerminal(char *virtAddr){
         SYSCALL(WAITIO, TERMINT, dnum, TRUE);
 
         /* if not successfully written Transmission Error status code */
-        if (terminaldev.d_status == TRANSMISERROR) {
+        if ((terminaldev.d_status & TERMSTATUSMASK) != CHARTRANSMITTED) {
             charNum = 0 - terminaldev.d_status; /* Set charNum to negative of the status code to indicate an error */
             break;
         }
