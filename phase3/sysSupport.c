@@ -10,18 +10,17 @@
 #include "../h/exceptions.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
-HIDDEN void schizoUserProcTerminate(address) {
-    
-    if address == NULL
-        mutex((int *) &devSemaphore, FALSE);
-    get supportstruct
-
-    SYSCALL (TERMINATEPROCESS, 0, 0, 0)
-
+HIDDEN void schizoUserProcTerminate(int *address) {
+    if (address != NULL) {
+        mutex(address, FALSE);  /* Release the mutex if address is given */
+    }
+    SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* Mentally unstable uproc calls sys2 */
 }
+
 
 HIDDEN void getTOD() {
     currentProcess->p_s.s_v0 = startTOD;
+    /*need to rload state*/
 }
 
 HIDDEN void writePrinter(char *virtAddr, int len) {
