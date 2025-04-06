@@ -11,7 +11,6 @@ int devSemaphore[MAXDEVICECNT - 1]; /* Sharable peripheral I/O device, (Disk, Fl
 int masterSemaphore; /* Private semaphore for graceful conclusion/termination of test */
 
 void test() {
-    pcb_PTR u_proc; /* Pointer to the user process */
     static support_t supportStruct[UPROCMAX + 1]; /* Initialize the support structure for the process */
     state_PTR u_procState; /* Pointer to the processor state for u_proc */
     int i; /* For Page table */
