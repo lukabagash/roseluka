@@ -58,7 +58,6 @@ HIDDEN void writeTerminal(char *virtAddr, int len) {
         terminaldev.t_recv_command = RECEIVECHAR; /* PRINTCHR command code */
 
         SYSCALL(WAITIO, TERMINT, dnum, FALSE);  /* suspend u_proc */
-        va = supportstruct.state.s_a1
 
         /* if not successfully written Receive Error status code */
         if ((terminaldev.d_status & 0xFF)= RECEIVEERROR) {
