@@ -1,24 +1,15 @@
-#ifndef INITPROC
-#define INITPROC
+#ifndef INITPROC_H
+#define INITPROC_H
 
-/**************************************************************************** 
- *
- * The externals declaration file for the module that implements the test()
- * function and declares and initializes the phase 3 global variables, which
- * include an array of device semaphores and the masterSemaphore responsible
- * for ensuring test() comes to a more graceful conclusion by calling HALT()
- * instead of PANIC()
- * 
- * Written by: Kollen Gruizenga and Jake Heyser
- * 
- ****************************************************************************/
+#include "types.h"
 
-#include "../h/const.h"
-#include "../h/types.h"
+/* External semaphore array for devices */
+extern int devSemaphore[MAXDEVICECNT - 1];
 
-extern int masterSemaphore; /* Private semaphore for graceful conclusion/termination of the test function */
-extern int devSemaphores[48]; /* array of device semaphores for the various peripheral I/O devices (Disk, Flash, Network, Printer, Terminals) */
-/* This array contains 48 semaphores: 32 for the peripheral I/O devices (4 classes × 8 devices) and 16 for the terminal devices (8 terminals × 2 semaphores) */
-extern void test();
+/* External master semaphore for synchronization */
+extern int masterSemaphore;
 
-#endif
+/* Test function to initialize the system and spawn user processes */
+void test(void);
+
+#endif /* INITPROC_H */

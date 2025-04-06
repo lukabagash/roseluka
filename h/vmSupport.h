@@ -1,20 +1,18 @@
-#ifndef VMSUPPORT
-#define VMSUPPORT
+#ifndef VMSUPPORT_H
+#define VMSUPPORT_H
 
-/**************************************************************************** 
- *
- * The externals declaration file for the module containing the TLB exception
- * handler, the functions for reading and writing flash devices, and the function
- * (initSwapStructs) which initializes both the Swap Pool table and the accompanying
- * semaphore
- * 
- * Written by: Kollen Gruizenga and Jake Heyser
- * 
- ****************************************************************************/
+#include "types.h"
 
-#include "../h/types.h"
+/* Initialize swap pool structures and semaphore */
+void initSwapStructs(void);
 
-extern void initSwapStructs();
-extern void supLvlTlbExceptionHandler(); /* TLB exception handler function */
+/* Acquire or release mutex on a semaphore */
+void mutex(int *sem, int operation); // operation TRUE (P) or FALSE (V)
 
-#endif
+/* TLB exception handler (pager) */
+void supLvlTlbExceptionHandler(void);
+
+/* TLB refill handler */
+void uTLB_RefillHandler(void);
+
+#endif /* VMSUPPORT_H */

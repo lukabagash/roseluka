@@ -1,19 +1,27 @@
-#ifndef SYSSUPPORT
-#define SYSSUPPORT
+#ifndef SYSSUPPORT_H
+#define SYSSUPPORT_H
 
-/**************************************************************************** 
- *
- * The externals declaration file for the module responsible for implementing
- * phase 3's general exception handler, SYSCALL exception handler, and Program
- * Trap exception handler
- * 
- * Written by: Kollen Gruizenga and Jake Heyser
- * 
- ****************************************************************************/
+#include "types.h"
 
-#include "../h/types.h"
+/* Terminate the user process, releasing mutex if needed */
+void schizoUserProcTerminate(int *address);
 
-extern void vmGeneralExceptionHandler();
-extern void programTrapHandler();
+/* Get the current Time of Day */
+void getTOD(void);
 
-#endif
+/* Write a string to the printer device */
+void writePrinter(char *virtAddr, int len);
+
+/* Write a string to the terminal device */
+void writeTerminal(char *virtAddr, int len);
+
+/* Read a string from the terminal device */
+void readTerminal(char *virtAddr);
+
+/* Support-level general exception handler */
+void supLvlGenExceptionHandler(void);
+
+/* Check for illegal syscall string length */
+void illegalCheck(int len);
+
+#endif /* SYSSUPPORT_H */
