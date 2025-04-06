@@ -13,6 +13,7 @@ int masterSemaphore; /* Private semaphore for graceful conclusion/termination of
 void test() {
     static support_t supportStruct[UPROCMAX + 1]; /* Initialize the support structure for the process */
     state_PTR u_procState; /* Pointer to the processor state for u_proc */
+    state_t u_procStateStruct;   /* <-- Real storage */
     int i; /* For Page table */
     int j; /* Set dev sema4 to 1*/
     int k; /* Perform P after launching all the U-procs*/
@@ -25,7 +26,13 @@ void test() {
     for(j = 0; j < MAXDEVICECNT - 1; j++) {
         devSemaphore[j] = 1; /* Initialize the semaphores to 1 indicating the I/O devices are available, for mutual exclusion */
     }
-
+    u_procState = &u_procStateStruct; /* Point to the real storage of the processor state */
+    /* Set the program counter and s_t9 to the logical address for the start of the .text area */
+    u_procState->s_pc = (memaddr) TEXTAREASTART;
+    u_procState->s_t9 = (memaddr) TEXTAREASTART; 
+    /* Set the status to enable Interrupts, enable PLT, User-mode */
+    u_procState->s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON;
+    u_procState->s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
     
     /* Initialize and launch (SYS1) between 1 and 8 U-procs */
     for(pid = 1; pid < UPROCMAX + 1; pid++) {
@@ -43,13 +50,7 @@ void test() {
             supportStruct->sup_privatePgTbl[i].entryLO = ALLOFF | (i << PFNSHIFT) | DIRTYON | VALIDOFF | GLOBALOFF; /* Set entryLO with the frame number and write enabled, private to the specific ASID, and not valid */
         }
 
-        /* Set the program counter and s_t9 to the logical address for the start of the .text area */
-        u_procState->s_pc = (memaddr) TEXTAREASTART;
-        u_procState->s_t9 = (memaddr) TEXTAREASTART; 
-        /* Set the status to enable Interrupts, enable PLT, User-mode */
-        u_procState->s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON;
-        u_procState->s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
-        u_procState->s_entryHI = pid; /* Set the entry HI for the user process */
+        u_procState->s_entryHI = (pid << ASIDSHIFT) | ALLOFF; /* Set the entry HI for the user process */
 
         supportStruct->sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | (STCKPGVPN << VPNSHIFT); /* Set the entry HI for the Page Table entry 31 */
 
