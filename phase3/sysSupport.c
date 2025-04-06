@@ -55,7 +55,7 @@ HIDDEN void writeTerminal(char *virtAddr, int len) {
     for (int i = 0; i < len; i++) {
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
         /* terminaldev.d_status = ALLOFF | terminaldev.d_status | (virtAddr[i] << 8); */
-        terminaldev.t_rec = RECEIVECHAR; /* PRINTCHR command code */
+        terminaldev.t_recv_command = RECEIVECHAR; /* PRINTCHR command code */
 
         SYSCALL(WAITIO, TERMINT, dnum, FALSE);  /* suspend u_proc */
         va = supportstruct.state.s_a1
