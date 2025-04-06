@@ -105,7 +105,7 @@ void supLvlGenExceptionHandler()
     }
     
     /* Handle other general exceptions */
-    savedExceptState = (state_PTR) BIOSDATAPAGE;
+    state_PTR savedExceptState = (state_PTR) BIOSDATAPAGE;
     int syscallNumber = savedExceptState->s_a0;
 
     switch (syscallNumber) {
