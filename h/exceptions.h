@@ -23,7 +23,4 @@ extern void syscallExceptionHandler(void);  /* SYSCALL exceptions */
 extern void tlbExceptionHandler(void);  /* TLB exceptions */
 extern void programTrapHandler(void);  /* Program Trap exceptions */
 
-/* Optional TLB-refill handler placeholder (if still used in initial.c) */
-extern void uTLB_RefillHandler(void);
-
 #endif

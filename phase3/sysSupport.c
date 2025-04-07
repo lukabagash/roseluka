@@ -10,6 +10,13 @@
 #include "../h/exceptions.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
+HIDDEN void illegalCheck(int len); /* Forward declaration of the illegal check function */
+HIDDEN void schizoUserProcTerminate(int *address); /* Forward declaration of the termination function */
+HIDDEN void getTOD(); /* Forward declaration of the getTOD function */
+HIDDEN void writePrinter(char *virtAddr, int len); /* Forward declaration of the printer write function */
+HIDDEN void writeTerminal(char *virtAddr, int len); /* Forward declaration of the terminal write function */
+HIDDEN void readTerminal(char *virtAddr); /* Forward declaration of the terminal read function */
+
 HIDDEN void illegalCheck(int len) {
     /*
      * Ensure the length is valid, this should be in the range of 0 to 12.
