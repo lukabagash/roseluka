@@ -67,7 +67,7 @@ HIDDEN void writeTerminal(char *virtAddr, int len) {
     illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
        
     for (i = 0; i < len; i++) {
-        // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
+        /* Write printer device's DATA0 field with printer device address (i.e., address of printer device)*/
         /* terminaldev.d_status = ALLOFF | terminaldev.d_status | (virtAddr[i] << 8); */
         terminaldev.t_transm_command = (virtAddr[i] << 8) | TRANSMITCHAR; /* PRINTCHR command code */
 
@@ -80,7 +80,7 @@ HIDDEN void writeTerminal(char *virtAddr, int len) {
         }
         charNum++;
     } 
-    //Resume back to user mode with v0 updated accordingly:
+    /*Resume back to user mode with v0 updated accordingly:*/
     currentProcess->p_s.s_v0 = charNum;
 }
 
@@ -91,7 +91,7 @@ HIDDEN void readTerminal(char *virtAddr){
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
        
     while(*virtAddr != ENDOFLINE){
-        // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
+        /* Write printer device's DATA0 field with printer device address (i.e., address of printer device)*/
         terminaldev.t_recv_command = RECEIVECHAR;;
         
         SYSCALL(WAITIO, TERMINT, dnum, TRUE);
