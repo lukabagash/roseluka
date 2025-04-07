@@ -61,11 +61,12 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
 HIDDEN void writeTerminal(char *virtAddr, int len) {
     int charNum = 0;
     devregarea_t reg = RAMBASEADDR;
+    int i; /* For loop index */
     int dnum = 1; /* Device number for the terminal device */
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
     illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
        
-    for (int i = 0; i < len; i++) {
+    for (i = 0; i < len; i++) {
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
         /* terminaldev.d_status = ALLOFF | terminaldev.d_status | (virtAddr[i] << 8); */
         terminaldev.t_transm_command = (virtAddr[i] << 8) | TRANSMITCHAR; /* PRINTCHR command code */
