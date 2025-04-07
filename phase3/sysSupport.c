@@ -60,7 +60,7 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
 
 HIDDEN void writeTerminal(char *virtAddr, int len) {
     int charNum = 0;
-    devregarea_t reg = RAMBASEADDR;
+    devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int i; /* For loop index */
     int dnum = 1; /* Device number for the terminal device */
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
@@ -110,7 +110,7 @@ HIDDEN void readTerminal(char *virtAddr){
 
 void supLvlGenExceptionHandler()
 {
-    support_t *sPtr = SYSCALL (GETSUPPORTPTR, 0, 0, 0);
+    support_t *sPtr = (support_t *) SYSCALL (GETSUPPORTPTR, 0, 0, 0);
     unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Get the cause of the TLB exception */
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
     if (exc_code != SYSCALLEXCPT) /* TLB-Modification Exception */
