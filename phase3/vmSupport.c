@@ -1,16 +1,3 @@
-/*This module implements the TLB exception handler (The
-Pager). Since reading and writing to each U-proc’s flash device is limited
-to supporting paging, this module should also contain the function(s) for
-reading and writing flash devices.
-Additionally, the Swap Pool table and Swap Pool semaphore are local to
-this module. Instead of declaring them globally in initProc.c they can be
-declared module-wide in vmSupport.c. The test function will now in-
-voke a new “public” function initSwapStructs which will do the work
-of initializing both the Swap Pool table and accompanying semaphore.
-Technical Point: Since the code for the TLB-Refill event handler was re-
-placed (without relocating the function), uTLB RefillHandler should
-still be found in the Level 3/Phase 2 exceptions.c file.*/
-
 #include "../h/vmSupport.h"
 #include "../h/initial.h"
 #include "../h/types.h"

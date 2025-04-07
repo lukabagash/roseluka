@@ -41,7 +41,7 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
     illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
        
     for (i = 0; i < len; i++) {
-        // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
+        /* Write printer device's DATA0 field with printer device address (i.e., address of printer device)*/
         printerdev.d_data0 = virtAddr[i];
         printerdev.d_command = PRINTCHR; /* PRINTCHR command code */
         
