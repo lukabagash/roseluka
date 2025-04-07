@@ -54,7 +54,7 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
         }
         charNum++;
     } 
-    //Resume back to user mode with v0 updated accordingly:
+    /*Resume back to user mode with v0 updated accordingly*/
     currentProcess->p_s.s_v0 = charNum;
 }
 
