@@ -15,4 +15,6 @@ void supLvlTlbExceptionHandler(void);
 /* TLB refill handler */
 void uTLB_RefillHandler(void);
 
+void programTrapHandler(void);
+
 #endif /* VMSUPPORT_H */

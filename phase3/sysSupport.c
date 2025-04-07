@@ -26,10 +26,6 @@ HIDDEN void schizoUserProcTerminate(int *address) {
     SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* Mentally unstable uproc calls sys2 */
 }
 
-HIDDEN void programTrapHandler(){
-    schizoUserProcTerminate(NULL); /* Terminate the current process if it encounters a program trap */
-}
-
 
 HIDDEN void getTOD() {
     currentProcess->p_s.s_v0 = startTOD;
