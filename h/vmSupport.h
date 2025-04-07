@@ -4,17 +4,17 @@
 #include "types.h"
 
 /* Initialize swap pool structures and semaphore */
-void initSwapStructs(void);
+extern void initSwapStructs();
 
 /* Acquire or release mutex on a semaphore */
-void mutex(int *sem, int operation); /* operation TRUE (P) or FALSE (V) */
+extern void mutex(int *sem, int operation); /* operation TRUE (P) or FALSE (V) */
 
 /* TLB exception handler (pager) */
-void supLvlTlbExceptionHandler(void);
+extern void supLvlTlbExceptionHandler(void);
 
 /* TLB refill handler */
-void uTLB_RefillHandler(void);
+extern void uTLB_RefillHandler(void);
 
-void programTrapHandler(void);
+extern void programTrapHandler(void);
 
 #endif /* VMSUPPORT_H */

@@ -4,7 +4,7 @@
 #include "types.h"
 
 /* Terminate the user process, releasing mutex if needed */
-void schizoUserProcTerminate(int *address);
+extern void schizoUserProcTerminate(int *address);
 
 /* Get the current Time of Day */
 void getTOD(void);
@@ -19,7 +19,7 @@ void writeTerminal(char *virtAddr, int len);
 void readTerminal(char *virtAddr);
 
 /* Support-level general exception handler */
-void supLvlGenExceptionHandler(void);
+extern void supLvlGenExceptionHandler(void);
 
 /* Check for illegal syscall string length */
 void illegalCheck(int len);
