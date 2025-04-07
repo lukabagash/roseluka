@@ -219,6 +219,7 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define CHARTRANSMITTED     5          /* Terminal device status code for character transmitted successfully */
 #define MAXSTRINGLEN        128        /* Maximum length of a string that can be passed to devices*/
 #define DEVREDY             1          /* Device is ready for I/O operations */
+#define PERIPHDEVCNT        48         /* Total number of peripheral devices (Disk, Flash, Network, Printer): 4 classes × 8 devices = 32 semaphores and (Terminal devices): 8 terminals × 2 semaphores = 16 semaphores */
 
 /* operations */
 #define	MIN(A,B)		    ((A) < (B) ? A : B)

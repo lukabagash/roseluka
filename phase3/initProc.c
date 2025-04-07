@@ -6,7 +6,7 @@
 #include "../h/sysSupport.h" /* For the syscall support functions */
 #include "/usr/include/umps3/umps/libumps.h"
 
-int devSemaphore[MAXDEVICECNT - 1]; /* Sharable peripheral I/O device, (Disk, Flash, Network, Printer): 4 classes × 8 devices = 32 semaphores 
+int p3devSemaphore[PERIPHDEVCNT]; /* Sharable peripheral I/O device, (Disk, Flash, Network, Printer): 4 classes × 8 devices = 32 semaphores 
                                                          (Terminal devices): 8 terminals × 2 semaphores = 16 semaphores*/
 int masterSemaphore; /* Private semaphore for graceful conclusion/termination of test */
 
@@ -24,7 +24,7 @@ void test() {
     /* The Swap Pool table and Swap Pool semaphore. [Section 4.4.1] */
     initSwapStructs(); /* Initialize the swap structures for paging */
     for(j = 0; j < MAXDEVICECNT - 1; j++) {
-        devSemaphore[j] = 1; /* Initialize the semaphores to 1 indicating the I/O devices are available, for mutual exclusion */
+        p3devSemaphore[j] = 1; /* Initialize the semaphores to 1 indicating the I/O devices are available, for mutual exclusion */
     }
     u_procState = &u_procStateStruct; /* Point to the real storage of the processor state */
     /* Set the program counter and s_t9 to the logical address for the start of the .text area */
