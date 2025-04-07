@@ -40,7 +40,7 @@ void supLvlTlbExceptionHandler() {
 
     /* TLB-Modification Exception - a store instruction tries to write to a page */
     if(exc_code == TLBEXCPT) { 
-        programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
+        ph3programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
     }
 
     mutex((int *) &swapPoolSemaphore, TRUE); /* Perform a P operation on the swap pool semaphore to gain mutual exclusion */
@@ -58,15 +58,15 @@ void supLvlTlbExceptionHandler() {
        flashdev.d_command = frameNumber << FLASCOMHSHIFT | WRITEBLK; /* Write the contents of frame to the correct location on process backing store/flash device. */
        SYSCALL(WAITIO, FLASHINT, dnum, FALSE); /* Perform write operation on the flash device */
        if(flashdev.d_status == WRITEERR){
-            schizoUserProcTerminate(&swapPoolSemaphore); /* Handle the error if the write operation failed */
+            schizoUserProcTerminate(&swapPoolSemaphore); /* Use sys9 here to also perform mutex that we never got to*/
        }   
        setSTATUS(getSTATUS() | IECON); /* Enable interrupts again after setting the status */
     }
     flashdev.d_command = frameNumber << FLASCOMHSHIFT | READBLK; /* Write the contents of frame to the correct location on process backing store/flash device. */
     SYSCALL(WAITIO, FLASHINT, dnum, TRUE); /* Perform write operation on the flash device */
     if (flashdev.d_status == READERR) {
-        schizoUserProcTerminate(&swapPoolSemaphore);
-    } /* Handle the error if the read operation failed */
+        schizoUserProcTerminate(&swapPoolSemaphore); /* Use sys9 here to also perform mutex that we never got to*/
+    }
 
     swapPool[frameNumber].VPN = missingPN;  /* update page p belonging to the Current Process’s ASID */
     swapPool[frameNumber].asid = sPtr->sup_asid;  /* Set the ASID of the process that owns this swap entry */
@@ -95,6 +95,6 @@ void uTLB_RefillHandler(){
     LDST(&(currentProcess->p_s));   /* Return control to the Current Process to retry the instruction that caused the TLB-Refill event */
 }
 
-void programTrapHandler(){
+void ph3programTrapHandler(){
     schizoUserProcTerminate(NULL); /* Terminate the current process if it encounters a program trap */
 }

@@ -15,7 +15,7 @@ HIDDEN void illegalCheck(int len) {
      * Ensure the length is valid, this should be in the range of 0 to 12.
      */
     if (len < 0 || len > MAXSTRINGLEN) {
-        schizoUserProcTerminate(NULL); /* Terminate the process */
+        ph3programTrapHandler(); /* Terminate the process */
     }
 }
 
@@ -115,7 +115,7 @@ void supLvlGenExceptionHandler()
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
     if (exc_code != SYSCALLEXCPT) /* TLB-Modification Exception */
     {
-        programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
+        ph3programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
     }
     
     /* Handle other general exceptions */
@@ -153,7 +153,7 @@ void supLvlGenExceptionHandler()
 
         default:
             /* Should never come here if the syscallexc checks out*/
-            programTrapHandler();
+            ph3programTrapHandler();
             return;
     }
 }

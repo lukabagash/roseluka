@@ -15,6 +15,6 @@ extern void supLvlTlbExceptionHandler(void);
 /* TLB refill handler */
 extern void uTLB_RefillHandler(void);
 
-extern void programTrapHandler(void);
+extern void ph3programTrapHandler(void);
 
 #endif /* VMSUPPORT_H */
