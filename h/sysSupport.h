@@ -22,6 +22,6 @@ void readTerminal(char *virtAddr);
 extern void supLvlGenExceptionHandler(void);
 
 /* Check for illegal syscall string length */
-void illegalCheck(int len);
+HIDDEN void illegalCheck(int len);
 
 #endif /* SYSSUPPORT_H */
