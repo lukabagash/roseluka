@@ -10,13 +10,6 @@
 #include "../h/exceptions.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
-HIDDEN void illegalCheck(int len); /* Forward declaration of the illegal check function */
-HIDDEN void schizoUserProcTerminate(int *address); /* Forward declaration of the termination function */
-HIDDEN void getTOD(); /* Forward declaration of the getTOD function */
-HIDDEN void writePrinter(char *virtAddr, int len); /* Forward declaration of the printer write function */
-HIDDEN void writeTerminal(char *virtAddr, int len); /* Forward declaration of the terminal write function */
-HIDDEN void readTerminal(char *virtAddr); /* Forward declaration of the terminal read function */
-
 HIDDEN void illegalCheck(int len) {
     /*
      * Ensure the length is valid, this should be in the range of 0 to 12.
@@ -42,13 +35,14 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int dnum = 1; /* Temporary dnum */
+    int i; /* For loop index */
     device_t printerdev = reg->devreg[(PRNTINT - DISKINT) * DEVPERINT];
 
     illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
        
-    for (int i = 0; i < len; i++) {
+    for (i = 0; i < len; i++) {
         // Write printer device's DATA0 field with printer device address (i.e., address of printer device)
-        printerdev.data0 = virtAddr[i];
+        printerdev.d_data0 = virtAddr[i];
         printerdev.d_command = PRINTCHR; /* PRINTCHR command code */
         
         SYSCALL(WAITIO, PRNTINT, dnum, FALSE); /* suspend u_proc, wait for I/O to complete */
