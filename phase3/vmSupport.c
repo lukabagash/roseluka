@@ -60,7 +60,7 @@ void supLvlTlbExceptionHandler() {
     int dnum = 1; /* temporary placemholder until I figure out */
     int frameAddr = frameNumber * PAGESIZE + FRAMEPOOLSTART; /* Starting address of current frame number */
     int flashId = (FLASHINT - OFFSET) * DEVPERINT + dnum; /* Device number for the flash device */
-    devregarea_t reg = (devregarea_t *) RAMBASEADDR; /* Get the device register area base address */
+    devregarea_t *reg = (devregarea_t *) RAMBASEADDR; /* Get the device register area base address */
     device_t flashdev = reg->devreg[flashId];
     flashdev.d_data0 = frameAddr;
     if(swapPool[frameNumber].asid != -1) /* If the frame is already occupied(assume page is dirty), we need to swap out the existing page */
