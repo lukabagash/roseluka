@@ -108,6 +108,6 @@ void uTLB_RefillHandler(){
     LDST(&(currentProcess->p_s));   /* Return control to the Current Process to retry the instruction that caused the TLB-Refill event */
 }
 
-HIDDEN void programTrapHandler(){
+void programTrapHandler(){
     schizoUserProcTerminate(NULL); /* Terminate the current process if it encounters a program trap */
 }
