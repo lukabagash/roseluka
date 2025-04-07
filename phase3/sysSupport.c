@@ -19,7 +19,7 @@ HIDDEN void illegalCheck(int len) {
     }
 }
 
-HIDDEN void schizoUserProcTerminate(int *address) {
+void schizoUserProcTerminate(int *address) {
     if (address != NULL) {
         mutex(address, FALSE);  /* Release the mutex if address is given */
     }
