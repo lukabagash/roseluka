@@ -98,8 +98,8 @@ void uTLB_RefillHandler(){
 
 	/* initializing local variables */
 	oldState = (state_t *) BIOSDATAPAGE; /* initializing oldState to the saved exception state at the start of the BIOS Data Page */
-	missingPgNo = ((oldState->s_entryHI) & GETVPN) >> VPNSHIFT; /* initializing the missing page number to the VPN specified in the EntryHI field of the saved exception state */
-	missingPgNo = missingPgNo % ENTRIESPERPG; /* using the hash function to determine the page number of the missing TLB entry from the VPN calculated in the previous line */
+	missingPgNo = ((oldState->s_entryHI) & VPNMASK) >> VPNSHIFT; /* initializing the missing page number to the VPN specified in the EntryHI field of the saved exception state */
+	missingPgNo = missingPgNo % PGTBLSIZE; /* using the hash function to determine the page number of the missing TLB entry from the VPN calculated in the previous line */
     debugVM(0xDEADBEEF, missingPgNo, 0, 0);
 	setENTRYHI(currentProc->p_supportStruct->sup_privatePgTbl[missingPgNo].entryHI); /* writing EntryHI of the missing page table entry into the TLB */
 	setENTRYLO(currentProc->p_supportStruct->sup_privatePgTbl[missingPgNo].entryLO); /* writing EntryLO of the missing page table entry into the TLB */
