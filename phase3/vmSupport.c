@@ -89,17 +89,23 @@ void supLvlTlbExceptionHandler() {
     LDST(&(currentProcess->p_s));
 }
 
+
+
 void uTLB_RefillHandler(){
-    support_t *sPtr = (support_t *) SYSCALL (GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
-    int missingPN = (((*(state_PTR)BIOSDATAPAGE).s_entryHI & VPNMASK) >> VPNSHIFT) % PGTBLSIZE; /* Extract the missing page number from Entry HI */
-    pte_entry_t entry = sPtr->sup_privatePgTbl[missingPN];  /* Get the Page Table entry for page number of the Current Process */
-    debugVM(0xBADDBABE, missingPN, entry.entryHI, entry.entryLO);
-    
-    /* Write this Page Table entry into the TLB */
-    setENTRYHI(entry.entryHI);  
-    setENTRYLO(entry.entryLO);
-    TLBWR();
-    LDST(&(currentProcess->p_s));   /* Return control to the Current Process to retry the instruction that caused the TLB-Refill event */
+	/* declaring local variables */
+	state_PTR oldState; /* a pointer to the saved exception state at the start of the BIOS Data Page */
+	int missingPgNo; /* the page number of the missing TLB entry */
+
+	/* initializing local variables */
+	oldState = (state_t *) BIOSDATAPAGE; /* initializing oldState to the saved exception state at the start of the BIOS Data Page */
+	missingPgNo = ((oldState->s_entryHI) & GETVPN) >> VPNSHIFT; /* initializing the missing page number to the VPN specified in the EntryHI field of the saved exception state */
+	missingPgNo = missingPgNo % ENTRIESPERPG; /* using the hash function to determine the page number of the missing TLB entry from the VPN calculated in the previous line */
+    debugVM(0xDEADBEEF, missingPgNo, 0, 0);
+	setENTRYHI(currentProc->p_supportStruct->sup_privatePgTbl[missingPgNo].entryHI); /* writing EntryHI of the missing page table entry into the TLB */
+	setENTRYLO(currentProc->p_supportStruct->sup_privatePgTbl[missingPgNo].entryLO); /* writing EntryLO of the missing page table entry into the TLB */
+
+	TLBWR(); /* finalizing the writing of the missing page table entry into the TLB */
+	LDST(oldState); /* returning control back to the Current Proccess to retry the instruction that caused the TLB-Refill event */
 }
 
 void ph3programTrapHandler(){
