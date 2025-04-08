@@ -10,7 +10,7 @@ int p3devSemaphore[PERIPHDEVCNT]; /* Sharable peripheral I/O device, (Disk, Flas
                                                          (Terminal devices): 8 terminals × 2 semaphores = 16 semaphores*/
 int masterSemaphore; /* Private semaphore for graceful conclusion/termination of test */
 
-extern void debug(int a, int b, int c, int d) {
+void debugFR(int a, int b, int c, int d) {
     /* Debugging function to print values */
     int i;
     i = 42;
@@ -66,7 +66,7 @@ void test() {
             SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* If the process creation failed, terminate the process */
             SYSCALL(VERHOGEN, (unsigned int) &masterSemaphore, 0, 0); /* Nucleus terminate them instead of blocking test on a semaphore and forcing a PANIC */
         }
-        debug(*(int *)0x800000B0, 0, 0, 0);
+        debugFR(*(int *)0x800000B0, 0, 0, 0);
     }
     /*After launching all the U-procs, the Nucleus scheduler will detect deadlock and invoke PANIC. [Section 3.2]*/
     for(k = 0; k < UPROCMAX; k++) {
