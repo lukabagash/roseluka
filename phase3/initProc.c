@@ -66,7 +66,6 @@ void test() {
             SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* If the process creation failed, terminate the process */
             SYSCALL(VERHOGEN, (unsigned int) &masterSemaphore, 0, 0); /* Nucleus terminate them instead of blocking test on a semaphore and forcing a PANIC */
         }
-        debugFR(*(int *)0x800000B0, 0, 0, 0);
     }
     /*After launching all the U-procs, the Nucleus scheduler will detect deadlock and invoke PANIC. [Section 3.2]*/
     for(k = 0; k < UPROCMAX; k++) {
