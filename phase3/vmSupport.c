@@ -92,7 +92,7 @@ void supLvlTlbExceptionHandler() {
 void uTLB_RefillHandler(){
     support_t *sPtr = (support_t *) SYSCALL (GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
     int missingPN = (((*(state_PTR)BIOSDATAPAGE).s_entryHI & VPNMASK) >> VPNSHIFT) % PGTBLSIZE; /* Extract the missing page number from Entry HI */
-    debugVM(0xBADDBABE, missingPN, 0xBEEFCAFE, 0);
+    debugVM(0xBADDBABE, missingPN, entry.entryHI, entry.entryLO);
     pte_entry_t entry = sPtr->sup_privatePgTbl[missingPN];  /* Get the Page Table entry for page number of the Current Process */
     /* Write this Page Table entry into the TLB */
     setENTRYHI(entry.entryHI);  
