@@ -90,6 +90,7 @@ void supLvlTlbExceptionHandler() {
 }
 
 void uTLB_RefillHandler(){
+    debugVM(0xDEADBEEF, 0, 0, 0);
     support_t *sPtr = (support_t *) SYSCALL (GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
     unsigned int entryHI = sPtr->sup_exceptState[0].s_entryHI; /* Get the Entry HI value from the saved state */
     int missingPN = (entryHI & VPNMASK) >> VPNSHIFT; /* Extract the missing page number from Entry HI */
