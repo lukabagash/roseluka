@@ -44,7 +44,7 @@ void supLvlTlbExceptionHandler() {
     }
 
     mutex((int *) &swapPoolSemaphore, TRUE); /* Perform a P operation on the swap pool semaphore to gain mutual exclusion */
-    int dnum = 1; /* temporary placemholder until I figure out */
+    int dnum = sPtr->sup_asid - 1; /*Each U-proc is associated with its own flash and terminal device. The ASID uniquely identifies the process and by extension, its devices*/
     int frameAddr = frameNumber * PAGESIZE + FRAMEPOOLSTART; /* Starting address of current frame number */
     int flashId = (FLASHINT - OFFSET) * DEVPERINT + dnum; /* Device number for the flash device */
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR; /* Get the device register area base address */

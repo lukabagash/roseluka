@@ -45,7 +45,7 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
      */
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
-    int dnum = sPtr->sup_asid - 1; /* Temporary dnum */
+    int dnum = sPtr->sup_asid - 1; /*Each U-proc is associated with its own flash and terminal device. The ASID uniquely identifies the process and by extension, its devices*/
     int i; /* For loop index */
     device_t printerdev = reg->devreg[(PRNTINT - DISKINT) * DEVPERINT + dnum]; /* Get the printer device register */
 
@@ -78,7 +78,7 @@ HIDDEN void writeTerminal(char *virtAddr, int len) {
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int i; /* For loop index */
-    int dnum = sPtr->sup_asid - 1; /* Device number for the terminal device */
+    int dnum = sPtr->sup_asid - 1; /*Each U-proc is associated with its own flash and terminal device. The ASID uniquely identifies the process and by extension, its devices*/
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
     illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
        
@@ -108,7 +108,7 @@ HIDDEN void readTerminal(char *virtAddr) {
      */
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
-    int dnum = sPtr->sup_asid - 1; /* Device number for the terminal device */
+    int dnum = sPtr->sup_asid - 1; /*Each U-proc is associated with its own flash and terminal device. The ASID uniquely identifies the process and by extension, its devices*/
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
        
     while(*virtAddr != ENDOFLINE){
