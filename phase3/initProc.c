@@ -10,7 +10,15 @@ int p3devSemaphore[PERIPHDEVCNT]; /* Sharable peripheral I/O device, (Disk, Flas
                                                          (Terminal devices): 8 terminals × 2 semaphores = 16 semaphores*/
 int masterSemaphore; /* Private semaphore for graceful conclusion/termination of test */
 
+extern void debug(int a, int b, int c, int d) {
+    /* Debugging function to print values */
+    int i;
+    i = 42;
+    i++;
+}
+
 void test() {
+    debug(48, 0, 0, 0);
     static support_t supportStruct[UPROCMAX + 1]; /* Initialize the support structure for the process */
     state_PTR u_procState; /* Pointer to the processor state for u_proc */
     state_t u_procStateStruct;   /* <-- Real storage */
