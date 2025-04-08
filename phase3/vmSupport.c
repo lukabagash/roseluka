@@ -95,7 +95,7 @@ void uTLB_RefillHandler(){
     int missingPN = (entryHI & VPNMASK) >> VPNSHIFT; /* Extract the missing page number from Entry HI */
     pte_entry_t entry = sPtr->sup_privatePgTbl[missingPN];  /* Get the Page Table entry for page number of the Current Process */
     /* Write this Page Table entry into the TLB */
-    debugVM(0xBADDBABE, entry.entryLO, sPtr, *(state_PTR)BIOSDATAPAGE);
+    debugVM(0xBADDBABE, entry.entryLO, sPtr->sup_exceptState[0].s_entryHI, (*(state_PTR)BIOSDATAPAGE)->sup_exceptState[0].s_entryHI);
     setENTRYHI(entry.entryHI);  
     setENTRYLO(entry.entryLO);
     TLBWR();
