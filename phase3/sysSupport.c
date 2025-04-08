@@ -37,7 +37,7 @@ HIDDEN void getTOD() {
     currentProcess->p_s.s_v0 = startTOD;
 }
 
-HIDDEN void writePrinter(char *virtAddr, int len) {
+HIDDEN void writePrinter(char *virtAddr, int len, int dnum) {
     /*
      * Causes the requesting U-proc to be suspended until a line of output (string of characters) has been transmitted 
      * to the printer device associated with the U-proc. 
@@ -45,7 +45,6 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
      */
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
-    int dnum = sPtr->sup_asid - 1; /*Each U-proc is associated with its own flash and terminal device. The ASID uniquely identifies the process and by extension, its devices*/
     int i; /* For loop index */
     device_t printerdev = reg->devreg[(PRNTINT - DISKINT) * DEVPERINT + dnum]; /* Get the printer device register */
 
@@ -69,7 +68,7 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
     currentProcess->p_s.s_v0 = charNum;
 }
 
-HIDDEN void writeTerminal(char *virtAddr, int len) {
+HIDDEN void writeTerminal(char *virtAddr, int len, int dnum) {
     /* 
      * Causes the requesting U-proc to be suspended until a line of output (string of characters) has been transmitted 
      * to the terminal device associated with the U-proc.
@@ -78,7 +77,6 @@ HIDDEN void writeTerminal(char *virtAddr, int len) {
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int i; /* For loop index */
-    int dnum = sPtr->sup_asid - 1; /*Each U-proc is associated with its own flash and terminal device. The ASID uniquely identifies the process and by extension, its devices*/
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
     illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
        
@@ -100,7 +98,7 @@ HIDDEN void writeTerminal(char *virtAddr, int len) {
     currentProcess->p_s.s_v0 = charNum;
 }
 
-HIDDEN void readTerminal(char *virtAddr) {
+HIDDEN void readTerminal(char *virtAddr, int dnum) {
     /*
      * Causes the requesting U-proc to be suspended until a line of input (string of characters) has been transmitted 
      * from the terminal device associated with the U-proc.
@@ -108,7 +106,6 @@ HIDDEN void readTerminal(char *virtAddr) {
      */
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
-    int dnum = sPtr->sup_asid - 1; /*Each U-proc is associated with its own flash and terminal device. The ASID uniquely identifies the process and by extension, its devices*/
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
        
     while(*virtAddr != ENDOFLINE){
@@ -136,6 +133,7 @@ void supLvlGenExceptionHandler() {
      * This function handles non-TLB exceptions, for all SYSCALL exceptions numbered 9 and above, and all Program Trap exceptions.
      */
     support_t *sPtr = (support_t *) SYSCALL (GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
+    int dnum = sPtr->sup_asid - 1; /*Each U-proc is associated with its own flash and terminal device. The ASID uniquely identifies the process and by extension, its devices*/
     unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Get the cause of the TLB exception */
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
     if (exc_code != SYSCALLEXCPT) /* TLB-Modification Exception */
@@ -160,6 +158,7 @@ void supLvlGenExceptionHandler() {
             writePrinter(
                 (char *) (savedExceptState->s_a1), /* virtual address of the string to print */
                 (int) (savedExceptState->s_a2)    /* length of the string */
+                , dnum
             );
             break;
 
@@ -167,12 +166,14 @@ void supLvlGenExceptionHandler() {
             writeTerminal(
                 (char *) (savedExceptState->s_a1), /* virtual address of the string to print */
                 (int) (savedExceptState->s_a2)    /* length of the string */
+                , dnum
             );
             break;
 
         case READTERMINAL:         /* SYS13 */
             readTerminal(
                 (char *) (savedExceptState->s_a1) /* virtual address of the buffer to store the read characters */
+                , dnum
             ); 
             break;
 
