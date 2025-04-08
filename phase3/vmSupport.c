@@ -2,6 +2,7 @@
 #include "../h/initial.h"
 #include "../h/types.h"
 #include "../h/sysSupport.h"
+#include "../h/initProc.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
 HIDDEN swap_t swapPool[2 * UPROCMAX]; /* Swap Pool table: 2 entries for 1 page each (assuming 1 page per process) */
@@ -30,6 +31,7 @@ void mutex(int *sem, int bool) {
 
 void supLvlTlbExceptionHandler() {
     /* 14 steps in [Section 4.4.2] */
+    debug(0xCAFEBABE, 0, 0, 0);
     support_t *sPtr = (support_t *) SYSCALL(GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
     unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Determine the cause of the TLB exception */
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
