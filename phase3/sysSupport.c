@@ -45,9 +45,9 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
      */
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
-    int dnum = 1; /* Temporary dnum */
+    int dnum = sPtr->sup_asid - 1; /* Temporary dnum */
     int i; /* For loop index */
-    device_t printerdev = reg->devreg[(PRNTINT - DISKINT) * DEVPERINT];
+    device_t printerdev = reg->devreg[(PRNTINT - DISKINT) * DEVPERINT + dnum]; /* Get the printer device register */
 
     illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
        
@@ -78,7 +78,7 @@ HIDDEN void writeTerminal(char *virtAddr, int len) {
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int i; /* For loop index */
-    int dnum = 1; /* Device number for the terminal device */
+    int dnum = sPtr->sup_asid - 1; /* Device number for the terminal device */
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
     illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
        
@@ -108,7 +108,7 @@ HIDDEN void readTerminal(char *virtAddr) {
      */
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
-    int dnum = 1; /* Device number for the terminal device */
+    int dnum = sPtr->sup_asid - 1; /* Device number for the terminal device */
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
        
     while(*virtAddr != ENDOFLINE){
