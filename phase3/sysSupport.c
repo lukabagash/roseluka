@@ -20,6 +20,9 @@ HIDDEN void illegalCheck(int len) {
 }
 
 void schizoUserProcTerminate(int *address) {
+    /*
+     * Causes the executing U-proc to cease to exist.
+     */
     if (address != NULL) {
         mutex(address, FALSE);  /* Release the mutex if address is given */
     }
@@ -28,10 +31,18 @@ void schizoUserProcTerminate(int *address) {
 
 
 HIDDEN void getTOD() {
+    /*
+     * Returns the number of microseconds since the system was last booted/reset. 
+     */
     currentProcess->p_s.s_v0 = startTOD;
 }
 
 HIDDEN void writePrinter(char *virtAddr, int len) {
+    /*
+     * Causes the requesting U-proc to be suspended until a line of output (string of characters) has been transmitted 
+     * to the printer device associated with the U-proc. 
+     * If the write was successful, returns the number of characters transmitted. Otherwise, returns the negative of the device’s status value.
+     */
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int dnum = 1; /* Temporary dnum */
@@ -41,11 +52,11 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
     illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
        
     for (i = 0; i < len; i++) {
-        /* Write printer device's DATA0 field with printer device address (i.e., address of printer device)*/
+        /* Write printer device's DATA0 field with printer device address (i.e., address of printer device) */
         printerdev.d_data0 = virtAddr[i];
         printerdev.d_command = PRINTCHR; /* PRINTCHR command code */
         
-        SYSCALL(WAITIO, PRNTINT, dnum, FALSE); /* suspend u_proc, wait for I/O to complete */
+        SYSCALL(WAITIO, PRNTINT, dnum, FALSE); /* Suspend u_proc, wait for I/O to complete */
 
         /* if not successfully written*/
         if (printerdev.d_status != DEVREDY) {
@@ -54,11 +65,16 @@ HIDDEN void writePrinter(char *virtAddr, int len) {
         }
         charNum++;
     } 
-    /*Resume back to user mode with v0 updated accordingly*/
+    /* Resume back to user mode with v0 updated accordingly */
     currentProcess->p_s.s_v0 = charNum;
 }
 
 HIDDEN void writeTerminal(char *virtAddr, int len) {
+    /* 
+     * Causes the requesting U-proc to be suspended until a line of output (string of characters) has been transmitted 
+     * to the terminal device associated with the U-proc.
+     * If the write was successful, returns the number of characters transmitted. Otherwise, returns the negative of the device’s status value.
+     */
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int i; /* For loop index */
@@ -84,7 +100,12 @@ HIDDEN void writeTerminal(char *virtAddr, int len) {
     currentProcess->p_s.s_v0 = charNum;
 }
 
-HIDDEN void readTerminal(char *virtAddr){
+HIDDEN void readTerminal(char *virtAddr) {
+    /*
+     * Causes the requesting U-proc to be suspended until a line of input (string of characters) has been transmitted 
+     * from the terminal device associated with the U-proc.
+     * If the read was successful, returns the number of characters transmitted. Otherwise, returns the negative of the device’s status value.
+     */
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int dnum = 1; /* Device number for the terminal device */
@@ -108,9 +129,13 @@ HIDDEN void readTerminal(char *virtAddr){
     currentProcess->p_s.s_v0 = charNum;
 }
 
-void supLvlGenExceptionHandler()
-{
-    support_t *sPtr = (support_t *) SYSCALL (GETSUPPORTPTR, 0, 0, 0);
+void supLvlGenExceptionHandler() {
+    /*
+     * The Support Level provides the exception handlers that the Nucleus “passes” handling “up” to; assuming the process was provided a non-NULL
+     * value for its Support Structure.
+     * This function handles non-TLB exceptions, for all SYSCALL exceptions numbered 9 and above, and all Program Trap exceptions.
+     */
+    support_t *sPtr = (support_t *) SYSCALL (GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
     unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Get the cause of the TLB exception */
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
     if (exc_code != SYSCALLEXCPT) /* TLB-Modification Exception */
