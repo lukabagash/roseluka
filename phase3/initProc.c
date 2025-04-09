@@ -40,6 +40,7 @@ void test() {
     /* Set the status to enable Interrupts, enable PLT, User-mode */
     u_procState->s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON;
     u_procState->s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
+    debugFR(0xDEADBEEF, 0, 0, 0);
     
     /* Initialize and launch (SYS1) between 1 and 8 U-procs */
     for(pid = 1; pid < UPROCMAX + 1; pid++) {
@@ -72,7 +73,6 @@ void test() {
         /* Perform a P operation on the master semaphore to wait for all user processes to complete */
         SYSCALL(VERHOGEN, (unsigned int) &masterSemaphore, 0, 0);
     }
-    debugFR(0xDEADBEEF, 0, 0, 0);
     /* Terminate (SYS2) after all of its U-proc “children” processes conclude. 
     This will drive Process Count to zero, triggering the Nucleus to invoke HALT. [Section 3.2] */
     SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* After all processes conclude, HALT by the Nucleus*/
