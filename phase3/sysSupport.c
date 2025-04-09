@@ -10,6 +10,13 @@
 #include "../h/exceptions.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
+void debugSYS(int a, int b, int c, int d) {
+    /* Debugging function to print values */
+    int i;
+    i = 42;
+    i++;
+}
+
 HIDDEN void illegalCheck(int len) {
     /*
      * Ensure the length is valid, this should be in the range of 0 to 12.
@@ -74,6 +81,7 @@ HIDDEN void writeTerminal(char *virtAddr, int len, int dnum) {
      * to the terminal device associated with the U-proc.
      * If the write was successful, returns the number of characters transmitted. Otherwise, returns the negative of the device’s status value.
      */
+    debugSYS(0xB16B00B5, 0, 0, 0);
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int i; /* For loop index */
@@ -104,6 +112,7 @@ HIDDEN void readTerminal(char *virtAddr, int dnum) {
      * from the terminal device associated with the U-proc.
      * If the read was successful, returns the number of characters transmitted. Otherwise, returns the negative of the device’s status value.
      */
+    debugSYS(0x000FADED, 0, 0, 0);
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
