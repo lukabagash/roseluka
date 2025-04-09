@@ -293,7 +293,7 @@ HIDDEN void getSupportDataSyscall() {
  * Otherwise, the Current Process is terminated.
  ************************************************************************/
 void passUpOrDie(int exceptionType) {
-    debugExc(0xB00B1E55, savedExceptState.s_a0, 0xDEADBEEF, 0xBADF00D);
+    debugExc(0xB00B1E55, savedExceptState->s_a0, 0xDEADBEEF, 0xBADF00D);
     if (currentProcess->p_supportStruct != NULL) {
         moveState(savedExceptState, 
                   &(currentProcess->p_supportStruct->sup_exceptState[exceptionType]));
