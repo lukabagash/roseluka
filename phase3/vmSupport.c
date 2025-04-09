@@ -35,6 +35,7 @@ void mutex(int *sem, int bool) {
 
 void supLvlTlbExceptionHandler() {
     /* 14 steps in [Section 4.4.2] */
+    debugVM(0x00BADA55, 0, 0, 0);
     support_t *sPtr = (support_t *) SYSCALL(GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
     unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Determine the cause of the TLB exception */
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
@@ -101,5 +102,6 @@ void uTLB_RefillHandler(){
 }
 
 void ph3programTrapHandler(){
+    debugVM(0xCA11BABE, 0, 0, 0);
     schizoUserProcTerminate(NULL); /* Terminate the current process if it encounters a program trap */
 }
