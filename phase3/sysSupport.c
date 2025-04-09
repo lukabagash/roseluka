@@ -147,7 +147,7 @@ void supLvlGenExceptionHandler() {
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
     if (exc_code != SYSCALLEXCPT) /* TLB-Modification Exception */
     {
-        debugSYS(0, exc_code, cause, 0xB00B1E55);
+        debugSYS(((state_PTR) BIOSDATAPAGE)->s_a0, exc_code, cause, 0xB00B1E55);
         ph3programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
     }
     
