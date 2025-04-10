@@ -81,7 +81,6 @@ HIDDEN void writeTerminal(char *virtAddr, int len, int dnum) {
      * to the terminal device associated with the U-proc.
      * If the write was successful, returns the number of characters transmitted. Otherwise, returns the negative of the device’s status value.
      */
-    debugSYS(0xB16B00B5, 0, 0, 0);
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int i; /* For loop index */
@@ -112,7 +111,6 @@ HIDDEN void readTerminal(char *virtAddr, int dnum) {
      * from the terminal device associated with the U-proc.
      * If the read was successful, returns the number of characters transmitted. Otherwise, returns the negative of the device’s status value.
      */
-    debugSYS(0x000FADED, 0, 0, 0);
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
