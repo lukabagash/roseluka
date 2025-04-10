@@ -296,7 +296,7 @@ HIDDEN void getSupportDataSyscall() {
  * Otherwise, the Current Process is terminated.
  ************************************************************************/
 void passUpOrDie(int exceptionType) {
-   debugExc(0xFADED60D, 0xCAFEBABE, 0xBEEFCAFE, 0);
+   debugExc(0x50000000, 0xCAFEBABE, 0xBEEFCAFE, 0);
     if (currentProcess->p_supportStruct != NULL) {
         debugExc(savedExceptState->s_pc, savedExceptState->s_entryHI, savedExceptState->s_cause, savedExceptState->s_status);
 
@@ -344,7 +344,7 @@ void passUpOrDie(int exceptionType) {
  *   treat as Program Trap or pass up to the Support Level.
  ************************************************************************/
 void syscallExceptionHandler() {
-    debugExc(0xBAD60D0D, 0xCAFEBABE, 0xBEEFCAFE, 0xDEADBEEF);
+    debugExc(0x40000000, 0xCAFEBABE, 0xBEEFCAFE, 0xDEADBEEF);
     savedExceptState = (state_PTR) BIOSDATAPAGE;
     syscallNumber = savedExceptState->s_a0;
     debugExc(
