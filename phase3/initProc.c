@@ -20,9 +20,7 @@ void debugRAM(memaddr address, int numWords) {
     int i;
     unsigned int *ptr = (unsigned int *) address;
 
-    for (i = 0; i < numWords; i++) {
-        debugFR(address + i * 4, ptr[i], 0xDEADBEEF, 0xCAFEBABE);
-    }
+
 }
 
 
@@ -49,8 +47,10 @@ void test() {
     /* Set the status to enable Interrupts, enable PLT, User-mode */
     u_procState->s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON;
     u_procState->s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
-    debugRAM(0x80000000, 8);
-
+    debugFR(0xBADBABE0, 0, 0, 0);
+    for (i = 0; i < 8; i++) {
+        debugFR(0x80000000 + i * 4, ptr[i], 0xDEADBEEF, 0xCAFEBABE);
+    }
     
     /* Initialize and launch (SYS1) between 1 and 8 U-procs */
     for(pid = 1; pid < UPROCMAX + 1; pid++) {
