@@ -30,6 +30,11 @@ void test() {
 
     /* The Swap Pool table and Swap Pool semaphore. [Section 4.4.1] */
     initSwapStructs(); /* Initialize the swap structures for paging */
+    unsigned int *userProgram = (unsigned int *) 0x80000000;
+
+userProgram[0] = 0x34020005;
+userProgram[1] = 0x0000000C; 
+userProgram[2] = 0x08000000; 
     for(j = 0; j < MAXDEVICECNT - 1; j++) {
         p3devSemaphore[j] = 1; /* Initialize the semaphores to 1 indicating the I/O devices are available, for mutual exclusion */
     }
