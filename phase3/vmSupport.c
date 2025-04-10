@@ -99,7 +99,7 @@ void uTLB_RefillHandler(){
     setENTRYHI(entry.entryHI);  
     setENTRYLO(entry.entryLO);
     TLBWR();
-    debugVM(entry.entryHI, entry.entryLO, 0xBADA55E5, 0);
+    debugVM(savedState->s_pc, savedState->s_entryHI, entry.entryHI, entry.entryLO);
     LDST(savedState);   /* Return control to the Current Process to retry the instruction that caused the TLB-Refill event */
 }
 
