@@ -41,6 +41,7 @@ void supLvlTlbExceptionHandler() {
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
     unsigned int entryHI = sPtr->sup_exceptState[0].s_entryHI; /* Get the Entry HI value from the saved state */
     int missingPN = (entryHI & VPNMASK) >> VPNSHIFT; /* Extract the missing page number from Entry HI */
+    missingPN = missingPN % 32; /* hash function since 32 entries per page, page number of the missing TLB entry */
     static int frameNumber; /* Frame number to be used for the page replacement */
     frameNumber = (frameNumber + 1) % (2 * UPROCMAX); /* Simple page replacement algorithm: round-robin replacement for the sake of example */
 
