@@ -27,7 +27,7 @@ void test() {
     int pid; /* Set the process ID (asid of u_proc) */
     masterSemaphore = 0;    
     int res; /* Result of the SYSCALL */
-    debugFR(0x0000ABCD,0,0,0);
+
     /* The Swap Pool table and Swap Pool semaphore. [Section 4.4.1] */
     initSwapStructs(); /* Initialize the swap structures for paging */
     for(j = 0; j < MAXDEVICECNT - 1; j++) {

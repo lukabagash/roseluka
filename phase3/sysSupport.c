@@ -143,7 +143,7 @@ void supLvlGenExceptionHandler() {
     int dnum = sPtr->sup_asid - 1; /*Each U-proc is associated with its own flash and terminal device. The ASID uniquely identifies the process and by extension, its devices*/
     unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Get the cause of the TLB exception */
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
-    debugSYS((sPtr->sup_exceptState[0].s_a0), exc_code, cause, 0xDEADBEEF);
+
     if (exc_code != SYSCALLEXCPT) /* TLB-Modification Exception */
     {
         ph3programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
