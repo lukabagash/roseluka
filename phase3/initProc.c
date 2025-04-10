@@ -6,6 +6,8 @@
 #include "../h/sysSupport.h" /* For the syscall support functions */
 #include "/usr/include/umps3/umps/libumps.h"
 
+HIDDEN void initProcessorState(state_PTR newState);
+
 int p3devSemaphore[PERIPHDEVCNT]; /* Sharable peripheral I/O device, (Disk, Flash, Network, Printer): 4 classes × 8 devices = 32 semaphores 
                                                          (Terminal devices): 8 terminals × 2 semaphores = 16 semaphores*/
 int masterSemaphore; /* Private semaphore for graceful conclusion/termination of test */
