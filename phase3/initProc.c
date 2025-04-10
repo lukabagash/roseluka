@@ -18,6 +18,7 @@ void debugFR(int a, int b, int c, int d) {
 }
 
 void test() {
+    debugFR(0xFADED60D, 0xDEADBEEF, 0xBEEFCAFE, 0xCAFEBABE);
     static support_t supportStruct[UPROCMAX + 1]; /* Initialize the support structure for the process */
     state_PTR u_procState; /* Pointer to the processor state for u_proc */
     state_t u_procStateStruct;   /* <-- Real storage */
