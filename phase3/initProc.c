@@ -49,6 +49,8 @@ void test() {
     debugFR(0x80000000 + 3 * 4, ptr[3], 0xDEADBEEF, 0xCAFEBABE);
     debugFR(0x80000000 + 4 * 4, ptr[4], 0xDEADBEEF, 0xCAFEBABE);
     debugFR(0x80000000 + 5 * 4, ptr[5], 0xDEADBEEF, 0xCAFEBABE);
+    debugFR(0x80000000 + 6 * 4, ptr[6], 0xDEADBEEF, 0xCAFEBABE);
+    debugDR(0xBABEBEEF, 0xCAFEBABE, 0xDEADBEEF, 0xBADBABE0);
     
     /* Initialize and launch (SYS1) between 1 and 8 U-procs */
     for(pid = 1; pid < UPROCMAX + 1; pid++) {
