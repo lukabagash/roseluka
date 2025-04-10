@@ -102,12 +102,17 @@ HIDDEN void blockCurrentProcess(int *semAddr) {
  * v0; otherwise returns 0.
  ************************************************************************/
 HIDDEN void createNewProcess(state_PTR stateSys, support_t *supportPtr) {
+    debugExc((int)stateSys, (int)supportPtr, 0xBEEF, 0xBABE);
     pcb_PTR newPcb = allocPcb();
     if (newPcb != NULL) {
+        debugExc((int)newPcb, 0xDEAD, 0xBEEF, 0xBABE);
         /* Populate fields of the new PCB */
         moveState(stateSys, &(newPcb->p_s));
+        debugExc((int)&(newPcb->p_s), newPcb->p_s.s_pc, newPcb->p_s.s_sp, 0xCAFE);
         newPcb->p_supportStruct = supportPtr;
+        debugExc((int)newPcb, (int)newPcb->p_supportStruct, 0xF00D, 0x1234);
         insertProcQ(&readyQueue, newPcb);
+
         insertChild(currentProcess, newPcb);
 
         newPcb->p_time   = INITIALACCTIME;
