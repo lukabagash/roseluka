@@ -97,10 +97,10 @@ void uTLB_RefillHandler(){
     pte_entry_t entry = sPtr->sup_privatePgTbl[missingPN];  /* Get the Page Table entry for page number of the Current Process */
     /* Write this Page Table entry into the TLB */
     debugVM(
-        savedState->s_pc,           // PC at fault
-        savedState->s_entryHI,       // Faulting virtual address
-        entry.entryHI,               // EntryHI from page table
-        entry.entryLO                // EntryLO from page table
+        savedState->s_pc,          
+        savedState->s_entryHI,    
+        entry.entryHI,             
+        entry.entryLO              
     );
     setENTRYHI(entry.entryHI);  
     setENTRYLO(entry.entryLO);
