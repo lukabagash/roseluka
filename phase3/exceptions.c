@@ -293,13 +293,27 @@ HIDDEN void getSupportDataSyscall() {
  * Otherwise, the Current Process is terminated.
  ************************************************************************/
 void passUpOrDie(int exceptionType) {
+   debugExc(0xFADED60D, 0xCAFEBABE, 0xBEEFCAFE, 0);
     if (currentProcess->p_supportStruct != NULL) {
+        debugExc(savedExceptState->s_pc, savedExceptState->s_entryHI, savedExceptState->s_cause, savedExceptState->s_status);
 
         moveState(savedExceptState, 
                   &(currentProcess->p_supportStruct->sup_exceptState[exceptionType]));
 
         STCK(currentTOD);
+        debugExc(
+            exceptionType,
+            currentProcess->p_supportStruct->sup_exceptState[exceptionType].s_a0,
+            currentProcess->p_supportStruct->sup_exceptState[exceptionType].s_cause,
+            0xDEADBEEF
+        );
         currentProcess->p_time += (currentTOD - startTOD);
+        debugExc(
+            currentProcess->p_supportStruct->sup_exceptContext[exceptionType].c_pc,
+            currentProcess->p_supportStruct->sup_exceptContext[exceptionType].c_stackPtr,
+            currentProcess->p_supportStruct->sup_exceptContext[exceptionType].c_status,
+            0xC0FFEE
+        );
 
         LDCXT(
             currentProcess->p_supportStruct->sup_exceptContext[exceptionType].c_stackPtr,
