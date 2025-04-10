@@ -295,11 +295,12 @@ HIDDEN void getSupportDataSyscall() {
 void passUpOrDie(int exceptionType) {
    debugExc(0xFADED60D, 0xCAFEBABE, 0xBEEFCAFE, 0);
     if (currentProcess->p_supportStruct != NULL) {
-        debugExc(0xDEADBEEF, 0, 0, 0xDEADBEEF);
         moveState(savedExceptState, 
                   &(currentProcess->p_supportStruct->sup_exceptState[exceptionType]));
 
         STCK(currentTOD);
+        debugExc(exceptionType, currentProcess->p_supportStruct->sup_exceptState[exceptionType].s_a0, currentProcess->p_supportStruct->sup_exceptState[exceptionType].s_cause, 0xDEADBEEF);
+
         currentProcess->p_time += (currentTOD - startTOD);
 
         LDCXT(
