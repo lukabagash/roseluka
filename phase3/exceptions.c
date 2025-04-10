@@ -276,7 +276,7 @@ HIDDEN void waitForClockSyscall() {
  * Resumes execution afterward.
  ************************************************************************/
 HIDDEN void getSupportDataSyscall() {
-    debugExc((int)currentProcess, (int)currentProcess->p_supportStruct, 0xDEADBEEF, 0xCAFEBABE);
+    debugExc(0x10000000, (int)currentProcess, (int)currentProcess->p_supportStruct, 0xCAFEBABE);
 
     currentProcess->p_s.s_v0 = (int) currentProcess->p_supportStruct;
 
@@ -296,7 +296,7 @@ HIDDEN void getSupportDataSyscall() {
  * Otherwise, the Current Process is terminated.
  ************************************************************************/
 void passUpOrDie(int exceptionType) {
-   debugExc(0x50000000, 0xCAFEBABE, 0xBEEFCAFE, 0);
+   debugExc(0x50000000, 0, 0, 0);
     if (currentProcess->p_supportStruct != NULL) {
         debugExc(savedExceptState->s_pc, savedExceptState->s_entryHI, savedExceptState->s_cause, savedExceptState->s_status);
 
@@ -344,9 +344,9 @@ void passUpOrDie(int exceptionType) {
  *   treat as Program Trap or pass up to the Support Level.
  ************************************************************************/
 void syscallExceptionHandler() {
-    debugExc(0x40000000, 0xCAFEBABE, 0xBEEFCAFE, 0xDEADBEEF);
     savedExceptState = (state_PTR) BIOSDATAPAGE;
     syscallNumber = savedExceptState->s_a0;
+    debugExc(0x40000000, syscallNumber, 0xBEEFCAFE, 0xDEADBEEF);
     debugExc(
         savedExceptState->s_a1,   
         savedExceptState->s_a2,    
@@ -432,6 +432,7 @@ void syscallExceptionHandler() {
  * instructions, etc.). Invokes passUpOrDie with GENERALEXCEPT.
  ************************************************************************/
 void programTrapHandler() {
+    debugExc(0x20000000, 0,0,0);
     passUpOrDie(GENERALEXCEPT);
 }
 
@@ -442,5 +443,6 @@ void programTrapHandler() {
  * Handles TLB exceptions (1..3). Invokes passUpOrDie with PGFAULTEXCEPT.
  ************************************************************************/
 void tlbExceptionHandler() {
+    debugExc(0x30000000, 0,0,0);
     passUpOrDie(PGFAULTEXCEPT);
 }
