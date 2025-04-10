@@ -341,6 +341,7 @@ void passUpOrDie(int exceptionType) {
  *   treat as Program Trap or pass up to the Support Level.
  ************************************************************************/
 void syscallExceptionHandler() {
+    debugExc(0xBAD60D0D, 0xCAFEBABE, 0xBEEFCAFE, 0xDEADBEEF);
     savedExceptState = (state_PTR) BIOSDATAPAGE;
     syscallNumber = savedExceptState->s_a0;
 
