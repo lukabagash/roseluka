@@ -6,8 +6,6 @@
 #include "../h/sysSupport.h" /* For the syscall support functions */
 #include "/usr/include/umps3/umps/libumps.h"
 
-HIDDEN void initProcessorState(state_PTR newState);
-
 int p3devSemaphore[PERIPHDEVCNT]; /* Sharable peripheral I/O device, (Disk, Flash, Network, Printer): 4 classes × 8 devices = 32 semaphores 
                                                          (Terminal devices): 8 terminals × 2 semaphores = 16 semaphores*/
 int masterSemaphore; /* Private semaphore for graceful conclusion/termination of test */
@@ -47,11 +45,11 @@ void test() {
     for(pid = 1; pid < UPROCMAX + 1; pid++) {
         supportStruct[pid].sup_asid = pid; /* Assign process ID to asid of each u_proc */
         supportStruct[pid].sup_exceptContext[0].c_pc = (memaddr) supLvlTlbExceptionHandler; /* Set the TLB exception handler address for page fault exceptions */
-        supportStruct[pid].sup_exceptContext[0].c_stackPtr = (memaddr) &supportStruct[pid].sup_stackTLB[SUPSTCKTOP]; /* Set the stack pointer for TLB exceptions */
+        supportStruct[pid].sup_exceptContext[0].c_stackPtr = (memaddr) &(supportStruct[pid].sup_stackTLB[SUPSTCKTOP]); /* Set the stack pointer for TLB exceptions */
         supportStruct[pid].sup_exceptContext[0].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON; /* Enable Interrupts, enable PLT, Kernel-mode */
 
         supportStruct[pid].sup_exceptContext[1].c_pc = (memaddr) supLvlGenExceptionHandler; /* Set the general exception handler address for general exceptions */
-        supportStruct[pid].sup_exceptContext[1].c_stackPtr = (memaddr) &supportStruct[pid].sup_stackGen[SUPSTCKTOP]; /* Set the stack pointer for general exceptions */
+        supportStruct[pid].sup_exceptContext[1].c_stackPtr = (memaddr) &(supportStruct[pid].sup_stackGen[SUPSTCKTOP]); /* Set the stack pointer for general exceptions */
         supportStruct[pid].sup_exceptContext[1].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON; /* Enable Interrupts, enable PLT, Kernel-mode */
 
         for (i = 0; i < PGTBLSIZE; i++) {
@@ -73,7 +71,7 @@ void test() {
     /*After launching all the U-procs, the Nucleus scheduler will detect deadlock and invoke PANIC. [Section 3.2]*/
     for(k = 0; k < UPROCMAX; k++) {
         /* Perform a P operation on the master semaphore to wait for all user processes to complete */
-        SYSCALL(VERHOGEN, (unsigned int) &masterSemaphore, 0, 0);
+        SYSCALL(PASSERN, (unsigned int) &masterSemaphore, 0, 0);
     }
     /* Terminate (SYS2) after all of its U-proc “children” processes conclude. 
     This will drive Process Count to zero, triggering the Nucleus to invoke HALT. [Section 3.2] */
