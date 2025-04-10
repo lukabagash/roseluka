@@ -49,7 +49,7 @@ void test() {
     /* Set the status to enable Interrupts, enable PLT, User-mode */
     u_procState->s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON;
     u_procState->s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
-    debugRAM(0x80000000, 8);
+    debugFR(0x80000000, 8);
 
     
     /* Initialize and launch (SYS1) between 1 and 8 U-procs */
