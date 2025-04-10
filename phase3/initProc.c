@@ -71,7 +71,7 @@ void test() {
     /*After launching all the U-procs, the Nucleus scheduler will detect deadlock and invoke PANIC. [Section 3.2]*/
     for(k = 0; k < UPROCMAX; k++) {
         /* Perform a P operation on the master semaphore to wait for all user processes to complete */
-        SYSCALL(PASSERN, (unsigned int) &masterSemaphore, 0, 0);
+        SYSCALL(PASSEREN, (unsigned int) &masterSemaphore, 0, 0);
     }
     /* Terminate (SYS2) after all of its U-proc “children” processes conclude. 
     This will drive Process Count to zero, triggering the Nucleus to invoke HALT. [Section 3.2] */
