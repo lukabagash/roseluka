@@ -68,7 +68,7 @@ void test() {
 
         u_procState.s_entryHI =  u_procState.s_entryHI | (pid << ASIDSHIFT) | ALLOFF;  /* Set the entry HI for the user process */
 
-        supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | (STCKPGVPN << VPNSHIFT); /* Set the entry HI for the Page Table entry 31 */
+        supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | STCKPGVPN; /* Set the entry HI for the Page Table entry 31 */
 
         res = SYSCALL(CREATEPROCESS, (unsigned int) &(u_procState), (unsigned int) &(supportStruct[pid]), 0); /* Call SYS1 to create a new process with the processor state and support structure */
         if(res != OK) {
