@@ -38,7 +38,7 @@ void test() {
     u_procState.s_t9 = (memaddr) TEXTAREASTART; 
     /* Set the status to enable Interrupts, enable PLT, User-mode */
     u_procState.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON;
-    u_procState.s_sp = (memaddr)(STCKTOPEND - 4); /* Set the stack pointer for the user process */
+    u_procState.s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
     debugFR(0xBADBABE0, 0, 0, 0);
     unsigned int *ptr = (unsigned int *) FRAMEPOOLSTART;
     debugFR(0x80000000 + 0 * 4, ptr[0], 0xDEADBEEF, 0xCAFEBABE);
