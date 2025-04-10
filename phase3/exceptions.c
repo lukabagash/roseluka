@@ -344,6 +344,12 @@ void syscallExceptionHandler() {
     debugExc(0xBAD60D0D, 0xCAFEBABE, 0xBEEFCAFE, 0xDEADBEEF);
     savedExceptState = (state_PTR) BIOSDATAPAGE;
     syscallNumber = savedExceptState->s_a0;
+    debugExc(
+        savedExceptState->s_a0,
+        savedExceptState->s_entryHI,
+        savedExceptState->s_cause,
+        savedExceptState->s_status
+    );
 
     /* Avoid an infinite loop of re-executing SYSCALL */
     savedExceptState->s_pc += WORDLEN;
