@@ -16,12 +16,6 @@ void debugFR(int a, int b, int c, int d) {
     i = 42;
     i++;
 }
-void debugRAM(memaddr address, int numWords) {
-    int i;
-    unsigned int *ptr = (unsigned int *) address;
-
-
-}
 
 
 void test() {
@@ -48,6 +42,7 @@ void test() {
     u_procState->s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON;
     u_procState->s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
     debugFR(0xBADBABE0, 0, 0, 0);
+    unsigned int *ptr = (unsigned int *) 0x80000000;
     for (i = 0; i < 8; i++) {
         debugFR(0x80000000 + i * 4, ptr[i], 0xDEADBEEF, 0xCAFEBABE);
     }
