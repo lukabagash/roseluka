@@ -53,7 +53,7 @@ void test() {
         supportStruct[pid].sup_exceptContext[1].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON; /* Enable Interrupts, enable PLT, Kernel-mode */
 
         for (i = 0; i < PGTBLSIZE; i++) {
-            supportStruct[pid].sup_privatePgTbl[i].entryHI = ALLOFF | ((KUSEG + i) << VPNSHIFT) | (pid << ASIDSHIFT); /* Set entryHI with the page number and asid */
+            supportStruct[pid].sup_privatePgTbl[i].entryHI = ALLOFF | (((KUSEG >> VPNSHIFT) + i) << VPNSHIFT) | (pid << ASIDSHIFT); /* Set entryHI with the page number and asid */
             supportStruct[pid].sup_privatePgTbl[i].entryLO = ALLOFF | (i << PFNSHIFT) | DIRTYON | VALIDOFF | GLOBALOFF; /* Set entryLO with the frame number and write enabled, private to the specific ASID, and not valid */
         } 
 
