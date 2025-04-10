@@ -33,7 +33,6 @@ void test() {
     for(j = 0; j < MAXDEVICECNT - 1; j++) {
         p3devSemaphore[j] = 1; /* Initialize the semaphores to 1 indicating the I/O devices are available, for mutual exclusion */
     }
-    u_procState = &u_procStateStruct; /* Point to the real storage of the processor state */
     /* Set the program counter and s_t9 to the logical address for the start of the .text area */
     u_procState.s_pc = (memaddr) TEXTAREASTART;
     u_procState.s_t9 = (memaddr) TEXTAREASTART; 
