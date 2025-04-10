@@ -41,7 +41,6 @@ void test() {
     /* Set the status to enable Interrupts, enable PLT, User-mode */
     u_procState->s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON;
     u_procState->s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
-    debugFR(0xBADBABE0, 0, 0, 0);
     unsigned int *ptr = (unsigned int *) 0x80000000;
     debugFR(0x80000000 + 0 * 4, ptr[0], 0xDEADBEEF, 0xCAFEBABE);
     debugFR(0x80000000 + 1 * 4, ptr[1], 0xDEADBEEF, 0xCAFEBABE);
