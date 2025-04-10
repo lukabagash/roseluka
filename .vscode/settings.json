@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "syssupport.h": "c",
+        "types.h": "c"
+    }
+}
