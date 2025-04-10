@@ -20,8 +20,7 @@ void debugFR(int a, int b, int c, int d) {
 
 void test() {
     static support_t supportStruct[UPROCMAX + 1]; /* Initialize the support structure for the process */
-    state_PTR u_procState; /* Pointer to the processor state for u_proc */
-    state_t u_procStateStruct;   /* <-- Real storage */
+    state_t u_procState; /* Pointer to the processor state for u_proc */
     int i; /* For Page table */
     int j; /* Set dev sema4 to 1*/
     int k; /* Perform P after launching all the U-procs*/
@@ -36,11 +35,11 @@ void test() {
     }
     u_procState = &u_procStateStruct; /* Point to the real storage of the processor state */
     /* Set the program counter and s_t9 to the logical address for the start of the .text area */
-    u_procState->s_pc = (memaddr) TEXTAREASTART;
-    u_procState->s_t9 = (memaddr) TEXTAREASTART; 
+    u_procState.s_pc = (memaddr) TEXTAREASTART;
+    u_procState.s_t9 = (memaddr) TEXTAREASTART; 
     /* Set the status to enable Interrupts, enable PLT, User-mode */
-    u_procState->s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON;
-    u_procState->s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
+    u_procState.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON;
+    u_procState.s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
     debugFR(0xBADBABE0, 0, 0, 0);
     unsigned int *ptr = (unsigned int *) FRAMEPOOLSTART;
     debugFR(0x80000000 + 0 * 4, ptr[0], 0xDEADBEEF, 0xCAFEBABE);
@@ -68,7 +67,7 @@ void test() {
             supportStruct[pid].sup_privatePgTbl[i].entryLO = ALLOFF | (i << PFNSHIFT) | DIRTYON | VALIDOFF | GLOBALOFF; /* Set entryLO with the frame number and write enabled, private to the specific ASID, and not valid */
         } 
 
-        u_procState->s_entryHI = (pid << ASIDSHIFT) | ALLOFF;  /* Set the entry HI for the user process */
+        /* u_procState->s_entryHI = (pid << ASIDSHIFT) | ALLOFF;  Set the entry HI for the user process */
 
         supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | (STCKPGVPN << VPNSHIFT); /* Set the entry HI for the Page Table entry 31 */
 
