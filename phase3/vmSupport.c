@@ -92,12 +92,13 @@ void supLvlTlbExceptionHandler() {
 void uTLB_RefillHandler(){
     support_t *sPtr = (support_t *) SYSCALL (GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
     state_PTR savedState = (state_PTR) BIOSDATAPAGE; /* Get the saved exception state from the BIOS Data Page */
+    debugVM((int)sPtr, (int)savedState, savedState->s_entryHI, 0xCAFEBABE);
     int missingPN = ((savedState->s_entryHI & VPNMASK) >> VPNSHIFT) % PGTBLSIZE; /* Extract the missing page number from Entry HI */
     pte_entry_t entry = sPtr->sup_privatePgTbl[missingPN];  /* Get the Page Table entry for page number of the Current Process */
+    debugExc(missingPN, entry.entryHI, entry.entryLO, 0xCAFEBABE);
     /* Write this Page Table entry into the TLB */
     setENTRYHI(entry.entryHI);  
     setENTRYLO(entry.entryLO);
-    debugVM(savedState->s_entryHI, entry.entryHI, entry.entryLO, 0xCAFEBABE);
     TLBWR();
     LDST(savedState);   /* Return control to the Current Process to retry the instruction that caused the TLB-Refill event */
 }
