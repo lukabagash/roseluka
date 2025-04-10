@@ -16,6 +16,15 @@ void debugFR(int a, int b, int c, int d) {
     i = 42;
     i++;
 }
+void debugRAM(memaddr address, int numWords) {
+    int i;
+    unsigned int *ptr = (unsigned int *) address;
+
+    for (i = 0; i < numWords; i++) {
+        debugVM(address + i * 4, ptr[i], 0xDEADBEEF, 0xCAFEBABE);
+    }
+}
+
 
 void test() {
     static support_t supportStruct[UPROCMAX + 1]; /* Initialize the support structure for the process */
@@ -40,6 +49,8 @@ void test() {
     /* Set the status to enable Interrupts, enable PLT, User-mode */
     u_procState->s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON;
     u_procState->s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
+    debugRAM(0x80000000, 8);
+
     
     /* Initialize and launch (SYS1) between 1 and 8 U-procs */
     for(pid = 1; pid < UPROCMAX + 1; pid++) {
