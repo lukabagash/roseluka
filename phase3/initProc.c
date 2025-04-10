@@ -73,7 +73,7 @@ void test() {
         res = SYSCALL(CREATEPROCESS, (unsigned int) &(u_procState), (unsigned int) &(supportStruct[pid]), 0); /* Call SYS1 to create a new process with the processor state and support structure */
         if(res != OK) {
             SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* If the process creation failed, terminate the process */
-            SYSCALL(VERHOGEN, (unsigned int) &masterSemaphore, 0, 0); /* Nucleus terminate them instead of blocking test on a semaphore and forcing a PANIC */
+            /* SYSCALL(VERHOGEN, (unsigned int) &masterSemaphore, 0, 0);  Nucleus terminate them instead of blocking test on a semaphore and forcing a PANIC */
         }
 
     }
