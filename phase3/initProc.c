@@ -68,7 +68,7 @@ void test() {
             supportStruct[pid].sup_privatePgTbl[i].entryLO = ALLOFF | (i << PFNSHIFT) | DIRTYON | VALIDOFF | GLOBALOFF; /* Set entryLO with the frame number and write enabled, private to the specific ASID, and not valid */
         } 
 
-        /* u_procState->s_entryHI = (pid << ASIDSHIFT) | ALLOFF;  Set the entry HI for the user process */
+        u_procState->s_entryHI = (pid << ASIDSHIFT) | ALLOFF;  /* Set the entry HI for the user process */
 
         supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | (STCKPGVPN << VPNSHIFT); /* Set the entry HI for the Page Table entry 31 */
 
