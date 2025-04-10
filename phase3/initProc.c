@@ -70,7 +70,7 @@ void test() {
 
         supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | (STCKPGVPN << VPNSHIFT); /* Set the entry HI for the Page Table entry 31 */
 
-        res = SYSCALL(CREATEPROCESS, (unsigned int) u_procState, (unsigned int) &(supportStruct[pid]), 0); /* Call SYS1 to create a new process with the processor state and support structure */
+        res = SYSCALL(CREATEPROCESS, (unsigned int) &(u_procState), (unsigned int) &(supportStruct[pid]), 0); /* Call SYS1 to create a new process with the processor state and support structure */
         if(res != OK) {
             SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* If the process creation failed, terminate the process */
             SYSCALL(VERHOGEN, (unsigned int) &masterSemaphore, 0, 0); /* Nucleus terminate them instead of blocking test on a semaphore and forcing a PANIC */
