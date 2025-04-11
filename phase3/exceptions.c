@@ -104,6 +104,7 @@ HIDDEN void blockCurrentProcess(int *semAddr) {
 HIDDEN void createNewProcess(state_PTR stateSys, support_t *supportPtr) {
     pcb_PTR newPcb = allocPcb();
     if (newPcb != NULL) {
+        debugExc(4,4,4,4);
         /* Populate fields of the new PCB */
         moveState(stateSys, &(newPcb->p_s));
         newPcb->p_supportStruct = supportPtr;
@@ -117,6 +118,7 @@ HIDDEN void createNewProcess(state_PTR stateSys, support_t *supportPtr) {
         processCount++;
         currentProcess->p_s.s_v0 = OK;  /* success */
     } else {
+        debugExc(9,9,9,9);
         currentProcess->p_s.s_v0 = FAIL; /* error (no more PCBs) */
     }
 
