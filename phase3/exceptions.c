@@ -294,8 +294,9 @@ HIDDEN void getSupportDataSyscall() {
  * Otherwise, the Current Process is terminated.
  ************************************************************************/
 void passUpOrDie(int exceptionType) {
+    debugExc(0xBABE, 0xBEEF, 0xDEAD, 0xF00D);
     if (currentProcess->p_supportStruct != NULL) {
-        debugExc(savedExceptState->s_pc, savedExceptState->s_entryHI, savedExceptState->s_cause, savedExceptState->s_status);
+        debugExc(savedExceptState->s_pc, savedExceptState->s_entryHI, savedExceptState->s_cause, 0xBABE);
 
         moveState(savedExceptState, 
                   &(currentProcess->p_supportStruct->sup_exceptState[exceptionType]));
@@ -409,7 +410,6 @@ void syscallExceptionHandler() {
  * instructions, etc.). Invokes passUpOrDie with GENERALEXCEPT.
  ************************************************************************/
 void programTrapHandler() {
-    debugExc(0xBABE, 0xBEEF, 0xDEAD, 0xF00D);
     passUpOrDie(GENERALEXCEPT);
 }
 
