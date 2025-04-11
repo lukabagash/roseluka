@@ -30,7 +30,6 @@ void schizoUserProcTerminate(int *address) {
     /*
      * Causes the executing U-proc to cease to exist.
      */
-    debugSYS(0x00000001, 0, 0, 0);
     if (address != NULL) {
         mutex(address, FALSE);  /* Release the mutex if address is given */
     }
@@ -42,7 +41,6 @@ HIDDEN void getTOD() {
     /*
      * Returns the number of microseconds since the system was last booted/reset. 
      */
-    debugSYS(0x00000002, 0, 0, 0);
     currentProcess->p_s.s_v0 = startTOD;
 }
 
@@ -52,7 +50,6 @@ HIDDEN void writePrinter(char *virtAddr, int len, int dnum) {
      * to the printer device associated with the U-proc. 
      * If the write was successful, returns the number of characters transmitted. Otherwise, returns the negative of the device’s status value.
      */
-    debugSYS(0x11000000, 0, 0, 0);
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int i; /* For loop index */
@@ -84,7 +81,6 @@ HIDDEN void writeTerminal(char *virtAddr, int len, int dnum) {
      * to the terminal device associated with the U-proc.
      * If the write was successful, returns the number of characters transmitted. Otherwise, returns the negative of the device’s status value.
      */
-    debugSYS(0x21000000, 0, 0, 0);
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int i; /* For loop index */
@@ -115,7 +111,6 @@ HIDDEN void readTerminal(char *virtAddr, int dnum) {
      * from the terminal device associated with the U-proc.
      * If the read was successful, returns the number of characters transmitted. Otherwise, returns the negative of the device’s status value.
      */
-    debugSYS(0x22000000, 0, 0, 0);
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
@@ -148,7 +143,6 @@ void supLvlGenExceptionHandler() {
     int dnum = sPtr->sup_asid - 1; /*Each U-proc is associated with its own flash and terminal device. The ASID uniquely identifies the process and by extension, its devices*/
     unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Get the cause of the TLB exception */
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
-    debugSYS(0x10000000, exc_code, 0x60D, 0x60D);
 
     if (exc_code != SYSCALLEXCPT) /* TLB-Modification Exception */
     {

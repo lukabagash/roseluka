@@ -37,6 +37,13 @@ int devSemaphore[MAXDEVICECNT];  /* One semaphore per external device + 1 pseudo
 cpu_t startTOD;                  /* Time-of-day value when currentProcess starts */
 state_PTR savedExceptState;      /* Saved exception state pointer */
 
+void debugInit(int a, int b, int c, int d) {
+    /* Debugging function to print values */
+    int i;
+    i = 42;
+    i++;
+}
+
 /************************************************************************
  * genExceptionHandler - Handles all exceptions except TLB-refill
  *
@@ -54,7 +61,7 @@ HIDDEN void genExceptionHandler() {
 
     /* Extract the exception code */
     exCode = ((oldState->s_cause) & PANDOS_CAUSEMASK) >> EXCCODESHIFT;
-
+    debugInit(exCode, 0xBABE, 0,0,0);
     if (exCode == INTEXCPT) {
         /* Handle device/timer interrupts */
         intTrapH();

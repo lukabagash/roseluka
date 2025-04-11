@@ -276,8 +276,6 @@ HIDDEN void waitForClockSyscall() {
  * Resumes execution afterward.
  ************************************************************************/
 HIDDEN void getSupportDataSyscall() {
-    debugExc(0x10000000, (int)currentProcess, (int)currentProcess->p_supportStruct, 0xCAFEBABE);
-
     currentProcess->p_s.s_v0 = (int) currentProcess->p_supportStruct;
 
     STCK(currentTOD);
@@ -296,7 +294,6 @@ HIDDEN void getSupportDataSyscall() {
  * Otherwise, the Current Process is terminated.
  ************************************************************************/
 void passUpOrDie(int exceptionType) {
-   debugExc(0x50000000, 0, 0, 0);
     if (currentProcess->p_supportStruct != NULL) {
         debugExc(savedExceptState->s_pc, savedExceptState->s_entryHI, savedExceptState->s_cause, savedExceptState->s_status);
 
@@ -304,20 +301,7 @@ void passUpOrDie(int exceptionType) {
                   &(currentProcess->p_supportStruct->sup_exceptState[exceptionType]));
 
         STCK(currentTOD);
-        debugExc(
-            exceptionType,
-            currentProcess->p_supportStruct->sup_exceptState[exceptionType].s_a0,
-            currentProcess->p_supportStruct->sup_exceptState[exceptionType].s_cause,
-            0xDEADBEEF
-        );
         currentProcess->p_time += (currentTOD - startTOD);
-        debugExc(
-            currentProcess->p_supportStruct->sup_exceptContext[exceptionType].c_pc,
-            currentProcess->p_supportStruct->sup_exceptContext[exceptionType].c_stackPtr,
-            currentProcess->p_supportStruct->sup_exceptContext[exceptionType].c_status,
-            0xC0FFEE
-        );
-
         LDCXT(
             currentProcess->p_supportStruct->sup_exceptContext[exceptionType].c_stackPtr,
             currentProcess->p_supportStruct->sup_exceptContext[exceptionType].c_status,
@@ -346,13 +330,6 @@ void passUpOrDie(int exceptionType) {
 void syscallExceptionHandler() {
     savedExceptState = (state_PTR) BIOSDATAPAGE;
     syscallNumber = savedExceptState->s_a0;
-    debugExc(0x40000000, syscallNumber, 0xBEEFCAFE, 0xDEADBEEF);
-    debugExc(
-        savedExceptState->s_a1,   
-        savedExceptState->s_a2,    
-        savedExceptState->s_a3,   
-        savedExceptState->s_a0    
-    );
     
 
     /* Avoid an infinite loop of re-executing SYSCALL */
@@ -432,7 +409,6 @@ void syscallExceptionHandler() {
  * instructions, etc.). Invokes passUpOrDie with GENERALEXCEPT.
  ************************************************************************/
 void programTrapHandler() {
-    debugExc(0x20000000, 0,0,0);
     passUpOrDie(GENERALEXCEPT);
 }
 
@@ -443,6 +419,5 @@ void programTrapHandler() {
  * Handles TLB exceptions (1..3). Invokes passUpOrDie with PGFAULTEXCEPT.
  ************************************************************************/
 void tlbExceptionHandler() {
-    debugExc(0x30000000, 0,0,0);
     passUpOrDie(PGFAULTEXCEPT);
 }

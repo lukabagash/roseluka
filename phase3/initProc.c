@@ -39,15 +39,6 @@ void test() {
     /* Set the status to enable Interrupts, enable PLT, User-mode */
     u_procState.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON;
     u_procState.s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
-    debugFR(0x10000000, 0, 0, 0);
-    unsigned int *ptr = (unsigned int *) FRAMEPOOLSTART;
-    debugFR(0x10000000 + 0 * 4, ptr[0], 0xDEADBEEF, 0xCAFEBABE);
-    debugFR(0x10000000 + 1 * 4, ptr[1], 0xDEADBEEF, 0xCAFEBABE);
-    debugFR(0x10000000 + 2 * 4, ptr[2], 0xDEADBEEF, 0xCAFEBABE);
-    debugFR(0x10000000 + 3 * 4, ptr[3], 0xDEADBEEF, 0xCAFEBABE);
-    debugFR(0x10000000 + 4 * 4, ptr[4], 0xDEADBEEF, 0xCAFEBABE);
-    debugFR(0x10000000 + 5 * 4, ptr[5], 0xDEADBEEF, 0xCAFEBABE);
-    debugFR(0x10000000 + 6 * 4, ptr[6], 0xDEADBEEF, 0xCAFEBABE);
     
     /* Initialize and launch (SYS1) between 1 and 8 U-procs */
     for(pid = 1; pid < UPROCMAX + 1; pid++) {
