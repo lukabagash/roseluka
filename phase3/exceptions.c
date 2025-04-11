@@ -329,6 +329,7 @@ void passUpOrDie(int exceptionType) {
  *   treat as Program Trap or pass up to the Support Level.
  ************************************************************************/
 void syscallExceptionHandler() {
+
     savedExceptState = (state_PTR) BIOSDATAPAGE;
     syscallNumber = savedExceptState->s_a0;
     
@@ -349,6 +350,7 @@ void syscallExceptionHandler() {
         programTrapHandler();
 		return; /* Same reason as above */
     }
+    debugSYS(0xB16BEEF, syscallNumber, 0, 0);
 
     /* Update the Current Process's PCB to reflect the saved state */
     updateCurrentProcessState();
