@@ -97,10 +97,9 @@ void uTLB_RefillHandler(){
     /* Write this Page Table entry into the TLB */
     setENTRYHI(entry.entryHI);  
     setENTRYLO(entry.entryLO);
-    debugVM(0xAAAA, entry.entryHI, entry.entryLO, 0);
+    debugVM(0xCAFE, entry.entryHI, entry.entryLO, 0);
 
     TLBWR();
-    debugVM(0xBBBB, savedState->s_pc, savedState->s_sp, savedState->s_status);
     LDST(savedState);   /* Return control to the Current Process to retry the instruction that caused the TLB-Refill event */
     debugVM(0xDEAD, 0, 0, 0);
 }

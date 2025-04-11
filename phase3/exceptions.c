@@ -409,6 +409,7 @@ void syscallExceptionHandler() {
  * instructions, etc.). Invokes passUpOrDie with GENERALEXCEPT.
  ************************************************************************/
 void programTrapHandler() {
+    debugExc(0xBABE, 0xBEEF, 0xDEAD, 0xF00D);
     passUpOrDie(GENERALEXCEPT);
 }
 
