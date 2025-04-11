@@ -55,10 +55,10 @@ void debugInit(int a, int b, int c, int d) {
 HIDDEN void genExceptionHandler() {
     state_t *oldState;
     int exCode;
-
+    
     /* Get saved exception state from BIOS Data Page */
     oldState = (state_t *) BIOSDATAPAGE;
-
+    
     /* Extract the exception code */
     exCode = ((oldState->s_cause) & PANDOS_CAUSEMASK) >> EXCCODESHIFT;
     debugInit(exCode, 0xBABE, 0,0);
