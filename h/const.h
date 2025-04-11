@@ -29,7 +29,7 @@ the Pseudo-clock */
 #define VPNSHIFT            12          
 #define ASIDSHIFT           6
 #define PFNSHIFT            12
-#define DIRTYON             0x00000200  /* Dirty set to 1 */ 
+#define DIRTYON             0x00000400  /* Dirty set to 1 */ 
 #define VALIDOFF            0x0         /* Valid */
 #define VALIDON             0x00000100
 #define GLOBALOFF           0x0         /* Global */
