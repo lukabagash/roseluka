@@ -95,11 +95,11 @@ void uTLB_RefillHandler(){
     state_PTR savedState = (state_PTR) BIOSDATAPAGE; /* Get the saved exception state from the BIOS Data Page */
     int missingPN = ((savedState->s_entryHI & VPNMASK) >> VPNSHIFT) % PGTBLSIZE; /* Extract the missing page number from Entry HI */
     debugVM(0xFADED, missingPN, savedState->s_entryHI, sPtr->sup_privatePgTbl[missingPN].entryHI);
-    debugVM(0xBADA55, sPtr->sup_privatePgTbl[0].entryHI);
-    debugVM(0xBADA55, sPtr->sup_privatePgTbl[1].entryHI);
-    debugVM(0xBADA55, sPtr->sup_privatePgTbl[2].entryHI);
-    debugVM(0xBADA55, sPtr->sup_privatePgTbl[3].entryHI);
-    debugVM(0xBADA55, sPtr->sup_privatePgTbl[4].entryHI);
+    debugVM(0xBADA55, sPtr->sup_privatePgTbl[0].entryHI, 0,0);
+    debugVM(0xBADA55, sPtr->sup_privatePgTbl[1].entryHI, 0,0);
+    debugVM(0xBADA55, sPtr->sup_privatePgTbl[2].entryHI, 0,0);
+    debugVM(0xBADA55, sPtr->sup_privatePgTbl[3].entryHI, 0,0);
+    debugVM(0xBADA55, sPtr->sup_privatePgTbl[4].entryHI, 0,0);
     pte_entry_t entry = sPtr->sup_privatePgTbl[missingPN];  /* Get the Page Table entry for page number of the Current Process */
     /* Write this Page Table entry into the TLB */
     /*debugVM(0xCAFE, entry.entryHI, savedState->s_entryHI, entry.entryLO);*/
