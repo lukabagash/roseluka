@@ -356,6 +356,7 @@ void syscallExceptionHandler() {
         programTrapHandler();
 		return; /* Same reason as above */
     }
+    debugExc(0xEEFEFEF, 0xA55555, 0xBEEEEEEF, 0xBAAAAAD);
     debugExc(0xB16BEEF, syscallNumber, 0, 0);
     debugExc(0xB16BEEF, currentProcess->p_supportStruct->sup_privatePgTbl[0].entryHI, currentProcess->p_supportStruct->sup_privatePgTbl[0].entryLO, 0);
 
