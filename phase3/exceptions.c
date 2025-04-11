@@ -350,7 +350,7 @@ void syscallExceptionHandler() {
         programTrapHandler();
 		return; /* Same reason as above */
     }
-    debugSYS(0xB16BEEF, syscallNumber, 0, 0);
+    debugExc(0xB16BEEF, syscallNumber, 0, 0);
 
     /* Update the Current Process's PCB to reflect the saved state */
     updateCurrentProcessState();
