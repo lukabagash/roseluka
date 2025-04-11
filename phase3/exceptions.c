@@ -301,6 +301,7 @@ void passUpOrDie(int exceptionType) {
     debugExc(0xBABE, 0xBEEF, 0xDEAD, 0xF00D);
     if (currentProcess->p_supportStruct != NULL) {
         debugExc(savedExceptState->s_pc, savedExceptState->s_entryHI, savedExceptState->s_cause, 0xBABE);
+        debugExc(0xB16BEEF, currentProcess->p_supportStruct->sup_privatePgTbl[0].entryHI, currentProcess->p_supportStruct->sup_privatePgTbl[0].entryLO, 0);
 
         moveState(savedExceptState, 
                   &(currentProcess->p_supportStruct->sup_exceptState[exceptionType]));
@@ -358,7 +359,6 @@ void syscallExceptionHandler() {
     }
     debugExc(0xEEFEFEF, 0xA55555, 0xBEEEEEEF, 0xBAAAAAD);
     debugExc(0xB16BEEF, syscallNumber, 0, 0);
-    debugExc(0xB16BEEF, currentProcess->p_supportStruct->sup_privatePgTbl[0].entryHI, currentProcess->p_supportStruct->sup_privatePgTbl[0].entryLO, 0);
 
     /* Update the Current Process's PCB to reflect the saved state */
     updateCurrentProcessState();
