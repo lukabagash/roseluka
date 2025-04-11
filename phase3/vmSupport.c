@@ -94,6 +94,7 @@ void uTLB_RefillHandler(){
     debugVM(0xCA11, 0,0,0);
     support_t *sPtr = (support_t *) SYSCALL (GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
     state_PTR savedState = (state_PTR) BIOSDATAPAGE; /* Get the saved exception state from the BIOS Data Page */
+    savedState = &(sPtr->sup_exceptState[PGFAULTEXCEPT]); /* update to the state from the Current Process' Support Structure  */
     int missingPN = ((savedState->s_entryHI & VPNMASK) >> VPNSHIFT) % PGTBLSIZE; /* Extract the missing page number from Entry HI */
     debugVM(0xFADED, missingPN, savedState->s_entryHI, sPtr->sup_privatePgTbl[missingPN].entryHI);
     debugVM(0xBADA55, sPtr->sup_privatePgTbl[0].entryHI, 0,0);
