@@ -276,6 +276,7 @@ HIDDEN void waitForClockSyscall() {
  * Resumes execution afterward.
  ************************************************************************/
 HIDDEN void getSupportDataSyscall() {
+    debugExc(currentProcess->p_supportStruct->sup_privatePgTbl[0].entryHI, currentProcess->p_supportStruct->sup_privatePgTbl[0].entryLO, 0xDEADBEEF);
     currentProcess->p_s.s_v0 = (int) currentProcess->p_supportStruct;
 
     STCK(currentTOD);
