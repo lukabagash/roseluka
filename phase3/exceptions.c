@@ -102,6 +102,7 @@ HIDDEN void blockCurrentProcess(int *semAddr) {
  * v0; otherwise returns 0.
  ************************************************************************/
 HIDDEN void createNewProcess(state_PTR stateSys, support_t *supportPtr) {
+    debugExc(0x60D, 0x60D, 0x60D, 0x60D);
     pcb_PTR newPcb = allocPcb();
     if (newPcb != NULL) {
         debugExc(4,4,4,4);
