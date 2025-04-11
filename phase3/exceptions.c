@@ -352,6 +352,7 @@ void syscallExceptionHandler() {
 		return; /* Same reason as above */
     }
     debugExc(0xB16BEEF, syscallNumber, 0, 0);
+    debugExc(0xB16BEEF, currentProcess->p_supportStruct->sup_privatePgTbl[0].entryHI, currentProcess->p_supportStruct->sup_privatePgTbl[0].entryLO, 0);
 
     /* Update the Current Process's PCB to reflect the saved state */
     updateCurrentProcessState();
