@@ -100,6 +100,7 @@ void uTLB_RefillHandler(){
     TLBWR();
     debugVM(0x60D, 0,0,0);
     LDST(savedState);   /* Return control to the Current Process to retry the instruction that caused the TLB-Refill event */
+    debugVM(0xDEAD, 0, 0, 0);
 }
 
 void ph3programTrapHandler(){
