@@ -343,6 +343,7 @@ void syscallExceptionHandler() {
     /* If the calling process was in user-mode, treat this request as illegal */
     if ((savedExceptState->s_status & USERPON) != ALLOFF) {
         /* Force a Program Trap by setting Cause.ExcCode = RI */
+        debugExc(0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD);
         savedExceptState->s_cause = (savedExceptState->s_cause & RESINSTRCODE);
         programTrapHandler();
 		return; /* Ensures no return to the killed process */
@@ -350,6 +351,7 @@ void syscallExceptionHandler() {
 
     /* If SYSCALL code is outside 1..8, handle as Program Trap (illegal) */
     if (syscallNumber < CREATEPROCESS || syscallNumber > GETSUPPORTPTR) {
+        debugExc(0xBEEF, 0xBEEF, 0xBEEF, 0xBEEF);
         programTrapHandler();
 		return; /* Same reason as above */
     }
