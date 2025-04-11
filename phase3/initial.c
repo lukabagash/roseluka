@@ -61,7 +61,7 @@ HIDDEN void genExceptionHandler() {
 
     /* Extract the exception code */
     exCode = ((oldState->s_cause) & PANDOS_CAUSEMASK) >> EXCCODESHIFT;
-    debugInit(exCode, 0xBABE, 0,0,0);
+    debugInit(exCode, 0xBABE, 0,0);
     if (exCode == INTEXCPT) {
         /* Handle device/timer interrupts */
         intTrapH();
