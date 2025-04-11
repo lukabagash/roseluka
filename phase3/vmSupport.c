@@ -96,10 +96,11 @@ void uTLB_RefillHandler(){
     int missingPN = ((savedState->s_entryHI & VPNMASK) >> VPNSHIFT) % PGTBLSIZE; /* Extract the missing page number from Entry HI */
     pte_entry_t entry = sPtr->sup_privatePgTbl[missingPN];  /* Get the Page Table entry for page number of the Current Process */
     /* Write this Page Table entry into the TLB */
-    debugVM(0xCAFE, entry.entryHI, savedState->s_entryHI, entry.entryLO);
+    /*debugVM(0xCAFE, entry.entryHI, savedState->s_entryHI, entry.entryLO);*/
 
     setENTRYHI(entry.entryHI);  
     setENTRYLO(entry.entryLO);
+    debugVM(0x60D, 0xBABE, entry.entryHI, entry.entryLO);
 
     TLBWR();
     LDST(savedState);   /* Return control to the Current Process to retry the instruction that caused the TLB-Refill event */
