@@ -37,7 +37,7 @@ void test() {
     u_procState.s_pc = (memaddr) TEXTAREASTART;
     u_procState.s_t9 = (memaddr) TEXTAREASTART; 
     /* Set the status to enable Interrupts, enable PLT, User-mode */
-    u_procState.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON;
+    u_procState.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON | PANDOS_CAUSEINTMASK;
     u_procState.s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
     
     /* Initialize and launch (SYS1) between 1 and 8 U-procs */
@@ -68,12 +68,12 @@ void test() {
         }
 
     }
-    /*After launching all the U-procs, the Nucleus scheduler will detect deadlock and invoke PANIC. [Section 3.2]*/
+    /* After launching all the U-procs, the Nucleus scheduler will detect deadlock and invoke PANIC. [Section 3.2] */
     for(k = 0; k < UPROCMAX; k++) {
         /* Perform a P operation on the master semaphore */
         SYSCALL(PASSEREN, (unsigned int) &masterSemaphore, 0, 0);
     }
     /* Terminate (SYS2) after all of its U-proc “children” processes conclude. 
     This will drive Process Count to zero, triggering the Nucleus to invoke HALT. [Section 3.2] */
-    SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* After all processes conclude, HALT by the Nucleus*/
+    SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* After all processes conclude, HALT by the Nucleus */
 }
