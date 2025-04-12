@@ -39,7 +39,7 @@ void test() {
     /* Set the status to enable Interrupts, enable PLT, User-mode */
     u_procState.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON | PANDOS_CAUSEINTMASK;
     u_procState.s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
-    
+
     /* Initialize and launch (SYS1) between 1 and 8 U-procs */
     for(pid = 1; pid < UPROCMAX + 1; pid++) {
         supportStruct[pid].sup_asid = pid; /* Assign process ID to asid of each u_proc */
@@ -56,7 +56,7 @@ void test() {
             supportStruct[pid].sup_privatePgTbl[i].entryLO = ALLOFF | (i << PFNSHIFT) | 0x00000400 | VALIDOFF | GLOBALOFF; /* Set entryLO with the frame number and write enabled, private to the specific ASID, and not valid */
         } 
 
-        u_procState.s_entryHI = KUSEG | (pid << ASIDSHIFT) | ALLOFF;  /* Set the entry HI for the user process */
+        u_procState.s_entryHI = (pid << ASIDSHIFT) | ALLOFF;  /* Set the entry HI for the user process */
 
         supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | STCKPGVPN; /* Set the entry HI for the Page Table entry 31 */
 
