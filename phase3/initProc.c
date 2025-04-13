@@ -57,6 +57,7 @@ void test() {
         } 
 
         u_procState.s_entryHI = KUSEG | (pid << ASIDSHIFT) | ALLOFF;  /* Set the entry HI for the user process */
+        debugFR(0x4, u_procState.s_entryHI, 0, 0);
 
         supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | STCKPGVPN; /* Set the entry HI for the Page Table entry 31 */
 
@@ -66,7 +67,7 @@ void test() {
             SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* If the process creation failed, terminate the process */
             /* SYSCALL(VERHOGEN, (unsigned int) &masterSemaphore, 0, 0);  Nucleus terminate them instead of blocking test on a semaphore and forcing a PANIC */
         }
-        debugFR(0x4, supportStruct[pid].sup_privatePgTbl[0].entryHI, supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI, 0);
+        debugFR(0x5, supportStruct[pid].sup_privatePgTbl[0].entryHI, supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI, 0);
     }
     /* After launching all the U-procs, the Nucleus scheduler will detect deadlock and invoke PANIC. [Section 3.2] */
     for(k = 0; k < UPROCMAX; k++) {
