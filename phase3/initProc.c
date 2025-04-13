@@ -27,7 +27,7 @@ void test() {
     int pid; /* Set the process ID (asid of u_proc) */
     masterSemaphore = 0;    
     int res; /* Result of the SYSCALL */
-    debugFR(0x1, 0,0,0)
+    debugFR(0x1, 0,0,0);
     /* The Swap Pool table and Swap Pool semaphore. [Section 4.4.1] */
     initSwapStructs(); /* Initialize the swap structures for paging */
     for(j = 0; j < MAXDEVICECNT - 1; j++) {
@@ -39,7 +39,7 @@ void test() {
     /* Set the status to enable Interrupts, enable PLT, User-mode */
     u_procState.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON | PANDOS_CAUSEINTMASK;
     u_procState.s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
-    debugFR(0x2, 0,0,0)
+    debugFR(0x2, 0,0,0);
     /* Initialize and launch (SYS1) between 1 and 8 U-procs */
     for(pid = 1; pid < UPROCMAX + 1; pid++) {
         supportStruct[pid].sup_asid = pid; /* Assign process ID to asid of each u_proc */
@@ -50,7 +50,7 @@ void test() {
         supportStruct[pid].sup_exceptContext[1].c_pc = (memaddr) supLvlGenExceptionHandler; /* Set the general exception handler address for general exceptions */
         supportStruct[pid].sup_exceptContext[1].c_stackPtr = (memaddr) &(supportStruct[pid].sup_stackGen[SUPSTCKTOP]); /* Set the stack pointer for general exceptions */
         supportStruct[pid].sup_exceptContext[1].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON; /* Enable Interrupts, enable PLT, Kernel-mode */
-        debugFR(0x3, supportStruct[pid].sup_exceptContext[0].c_pc,supportStruct[pid].sup_exceptContext[1].c_pc, supportStruct[pid].sup_exceptContext[0].c_stackPtr)
+        debugFR(0x3, supportStruct[pid].sup_exceptContext[0].c_pc,supportStruct[pid].sup_exceptContext[1].c_pc, supportStruct[pid].sup_exceptContext[0].c_stackPtr);
         for (i = 0; i < PGTBLSIZE; i++) {
             supportStruct[pid].sup_privatePgTbl[i].entryHI = ALLOFF | (((KUSEG >> VPNSHIFT) + i) << VPNSHIFT) | (pid << ASIDSHIFT); /* Set entryHI with the page number and asid */
             supportStruct[pid].sup_privatePgTbl[i].entryLO = ALLOFF | (i << PFNSHIFT) | 0x00000400 | VALIDOFF | GLOBALOFF; /* Set entryLO with the frame number and write enabled, private to the specific ASID, and not valid */
@@ -66,14 +66,14 @@ void test() {
             SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* If the process creation failed, terminate the process */
             /* SYSCALL(VERHOGEN, (unsigned int) &masterSemaphore, 0, 0);  Nucleus terminate them instead of blocking test on a semaphore and forcing a PANIC */
         }
-        debugFR(0x4, supportStruct[pid].sup_privatePgTbl[0].entryHI, supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI, 0)
+        debugFR(0x4, supportStruct[pid].sup_privatePgTbl[0].entryHI, supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI, 0);
     }
     /* After launching all the U-procs, the Nucleus scheduler will detect deadlock and invoke PANIC. [Section 3.2] */
     for(k = 0; k < UPROCMAX; k++) {
         /* Perform a P operation on the master semaphore */
         SYSCALL(PASSEREN, (unsigned int) &masterSemaphore, 0, 0);
     }
-    debugFR(0x5, masterSemaphore, 0, 0)
+    debugFR(0x5, masterSemaphore, 0, 0);
     /* Terminate (SYS2) after all of its U-proc “children” processes conclude. 
     This will drive Process Count to zero, triggering the Nucleus to invoke HALT. [Section 3.2] */
     SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* After all processes conclude, HALT by the Nucleus */
