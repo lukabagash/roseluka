@@ -36,7 +36,6 @@ void mutex(int *sem, int bool) {
 void supLvlTlbExceptionHandler() {
     /* 14 steps in [Section 4.4.2] */
     support_t *sPtr = (support_t *) SYSCALL(GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
-    debugVM(0x1, sPtr->sup_exceptState[0].s_cause, sPtr->sup_exceptState[0].s_entryHI, (entryHI & VPNMASK) >> VPNSHIFT);
     unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Determine the cause of the TLB exception */
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
     unsigned int entryHI = sPtr->sup_exceptState[0].s_entryHI; /* Get the Entry HI value from the saved state */
@@ -44,7 +43,7 @@ void supLvlTlbExceptionHandler() {
     missingPN = missingPN % 32; /* hash function since 32 entries per page, page number of the missing TLB entry */
     static int frameNumber; /* Frame number to be used for the page replacement */
     frameNumber = (frameNumber + 1) % (2 * UPROCMAX); /* Simple page replacement algorithm: round-robin replacement for the sake of example */
-
+    debugVM(0x1, sPtr->sup_exceptState[0].s_cause, sPtr->sup_exceptState[0].s_entryHI, (entryHI & VPNMASK) >> VPNSHIFT);
     /* TLB-Modification Exception - a store instruction tries to write to a page */
     if(exc_code == TLBEXCPT) { 
         ph3programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
