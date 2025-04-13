@@ -119,6 +119,7 @@ HIDDEN void newPageSwapIn(support_t *sPtr, int frameNo, int missingPN) {
 
     /* Check for read error */
     if (flashDev->d_status == READERR) {
+        debugVM(0xBAD, flashDev->d_status, 0xDEADBEEF, 0xDEADBEEF);
         schizoUserProcTerminate(&swapPoolSemaphore);
     }
 }
