@@ -114,8 +114,11 @@ HIDDEN void newPageSwapIn(support_t *sPtr, int frameNo, int missingPN) {
 
     /* read from block = missingPN (Step 9) */
     flashDev->d_data0 = frameAddr;
+    debugVM(0xBAD, 0xBAD, 0xBAD, 0);
     flashDev->d_command = (missingPN << FLASCOMHSHIFT) | READBLK;
+    debugVM(0xBAD, 0xBAD, 0xBAD, 1);
     SYSCALL(WAITIO, FLASHINT, (curAsid - 1), TRUE);
+    debugVM(0xBAD, 0xBAD, 0xBAD, 2);
 
     /* Check for read error */
     if (flashDev->d_status == READERR) {
