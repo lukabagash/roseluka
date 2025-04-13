@@ -29,6 +29,14 @@
 #include "../h/initial.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
+
+void debugSch(int a, int b, int c, int d) {
+	/* Debugging function to print values */
+	int i;
+	i = 42;
+	i++;
+}
+
 /************************************************************************
  * moveState - Copies a processor state from source to destination.
  *
@@ -38,11 +46,12 @@
  ************************************************************************/
 void moveState(state_PTR source, state_PTR dest) {
 	int i;
-
+	debugSch(0xBADBABE, source->s_entryHI, source->s_cause, source->s_status);
 	dest->s_entryHI = source->s_entryHI;
 	dest->s_cause = source->s_cause;
 	dest->s_status = source->s_status;
 	dest->s_pc = source->s_pc;
+
 
 	/* Copy all general-purpose registers */
 	for (i = 0; i < STATEREGNUM; i++) {
