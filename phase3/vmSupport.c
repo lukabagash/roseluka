@@ -45,13 +45,14 @@ void supLvlTlbExceptionHandler() {
     missingPN = missingPN % 32; /* hash function since 32 entries per page, page number of the missing TLB entry */
     static int frameNumber; /* Frame number to be used for the page replacement */
     frameNumber = (frameNumber + 1) % (2 * UPROCMAX); /* Simple page replacement algorithm: round-robin replacement for the sake of example */
-    /* TLB-Modification Exception - a store instruction tries to write to a page */
-    if(exc_code == TLBEXCPT) { 
+
+    if(exc_code == TLBMODEXC) { 
         ph3programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
     }
 
     mutex((int *) &swapPoolSemaphore, TRUE); /* Perform a P operation on the swap pool semaphore to gain mutual exclusion */
-    int dnum = sPtr->sup_asid - 1; /*Each U-proc is associated with its own flash and terminal device. The ASID uniquely identifies the process and by extension, its devices*/
+    int occupantAsid  = swapPool[frameNumber].asid;
+    int dnum  = occupantAsid - 1; 
     int frameAddr = frameNumber * PAGESIZE + FRAMEPOOLSTART; /* Starting address of current frame number */
     int flashId = (FLASHINT - OFFSET) * DEVPERINT + dnum; /* Device number for the flash device */
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR; /* Get the device register area base address */
@@ -62,14 +63,17 @@ void supLvlTlbExceptionHandler() {
        setSTATUS(getSTATUS() & IECOFF); /* Disable interrupts while updating pagetable to prevent context switching during the page replacement */
        swapPool[frameNumber].pte->entryLO = (swapPool[frameNumber].pte->entryLO & VALIDOFFTLB); /* Valid off */ 
        TLBCLR(); /* Erase ALL the entries in the TLB to update TLB */
-       flashdev.d_command = frameNumber << FLASCOMHSHIFT | WRITEBLK; /* Write the contents of frame to the correct location on process backing store/flash device. */
+       flashdev.d_command = (swapPool[frameNumber].VPN << FLASCOMHSHIFT) | WRITEBLK; /* Write the contents of frame to the correct location on process backing store/flash device. */
        SYSCALL(WAITIO, FLASHINT, dnum, FALSE); /* Perform write operation on the flash device */
        if(flashdev.d_status == WRITEERR){
             schizoUserProcTerminate(&swapPoolSemaphore); /* Use sys9 here to also perform mutex that we never got to*/
        }   
        setSTATUS(getSTATUS() | IECON); /* Enable interrupts again after setting the status */
     }
-    flashdev.d_command = frameNumber << FLASCOMHSHIFT | READBLK; /* Write the contents of frame to the correct location on process backing store/flash device. */
+    dnum = sPtr->sup_asid - 1; /* Update the device number for the current process */
+    flashdev = reg->devreg[(FLASHINT - OFFSET) * DEVPERINT + dnum];
+    flashdev.d_data0 = frameAddr;
+    flashdev.d_command = (missingPN << FLASCOMHSHIFT) | READBLK; /* Write the contents of frame to the correct location on process backing store/flash device. */
     SYSCALL(WAITIO, FLASHINT, dnum, TRUE); /* Perform write operation on the flash device */
     if (flashdev.d_status == READERR) {
         schizoUserProcTerminate(&swapPoolSemaphore); /* Use sys9 here to also perform mutex that we never got to*/
@@ -81,7 +85,7 @@ void supLvlTlbExceptionHandler() {
 
     setSTATUS(getSTATUS() & IECOFF); /* Disable interrupts while updating pagetable to prevent context switching during the page replacement */
 
-    sPtr->sup_privatePgTbl[missingPN].entryLO = (frameNumber << PFNSHIFT) | VALIDON; /* Update the Current Process’s Page Table entry for page p to indicate it is now present (V bit) */
+    sPtr->sup_privatePgTbl[missingPN].entryLO = (frameNumber << PFNSHIFT) | VALIDON | DIRTYON; /* Update the Current Process’s Page Table entry for page p to indicate it is now present (V bit) */
     TLBCLR(); /* Erase ALL the entries in the TLB to update TLB */
     
     setSTATUS(getSTATUS() | IECON); /* Enable interrupts again after setting the status */

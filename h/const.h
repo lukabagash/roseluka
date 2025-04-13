@@ -21,6 +21,7 @@ the Pseudo-clock */
 #define INTEXCPT            0           /* Interrupt exception code */
 #define TLBEXCPT            3           /* Upper bound for TLB exceptions */
 #define SYSCALLEXCPT        8           /* SYSCALL exception code */
+#define TLBMODEXC           1           /* TLB modification exception code */
 
 #define INITPROCCOUNT       0           /* Initial value for processCount */
 #define INITSOFTBLKCOUNT    0           /* Initial value for softBlockedCount */
