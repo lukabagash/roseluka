@@ -90,6 +90,17 @@ void supLvlTlbExceptionHandler() {
     LDST(&(currentProcess->p_s));
 }
 
+void uTLB_RefillHandler(){
+    state_PTR savedState = (state_PTR) BIOSDATAPAGE;
+    int missingPN = ((savedState->s_entryHI & VPNMASK) >> VPNSHIFT) % PGTBLSIZE; /* Extract the missing page number from Entry HI */
+
+    setENTRYHI(currentProcess->p_supportStruct->sup_privatePgTbl[missingPN].entryHI);
+    setENTRYLO(currentProcess->p_supportStruct->sup_privatePgTbl[missingPN].entryLO);
+
+    TLBWR();
+    debugVM(0x3, 0, 0, 0);
+    LDST(savedState);   /* Return control to the Current Process to retry the instruction that caused the TLB-Refill event */
+}
 
 void ph3programTrapHandler(){
     debugVM(0x4, 0, 0, 0);

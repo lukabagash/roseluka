@@ -436,19 +436,3 @@ void programTrapHandler() {
 void tlbExceptionHandler() {
     passUpOrDie(PGFAULTEXCEPT);
 }
-
-void uTLB_RefillHandler(){
-    state_PTR savedState; /* Get the saved exception state from the BIOS Data Page */
-    /*savedState = &(sPtr->sup_exceptState[PGFAULTEXCEPT]);  update to the state from the Current Process' Support Structure  */
-    savedState = (state_PTR) BIOSDATAPAGE;
-    int missingPN = ((savedState->s_entryHI & VPNMASK) >> VPNSHIFT) % PGTBLSIZE; /* Extract the missing page number from Entry HI */
-    /* Write this Page Table entry into the TLB */
-    /*debugVM(0xCAFE, entry.entryHI, savedState->s_entryHI, entry.entryLO);*/
-
-    setENTRYHI(currentProcess->p_supportStruct->sup_privatePgTbl[missingPN].entryHI);
-    setENTRYLO(currentProcess->p_supportStruct->sup_privatePgTbl[missingPN].entryLO);
-
-    TLBWR();
-    debugExc(0x3, 0, 0, 0);
-    LDST(savedState);   /* Return control to the Current Process to retry the instruction that caused the TLB-Refill event */
-}
