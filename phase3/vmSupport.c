@@ -37,7 +37,7 @@ void enableInterrupts() {
     setSTATUS(getSTATUS() | IECON);
 }
 
-static void performFlashOperation(int asid, int pageBlock, int frameNo, unsigned int operation)
+static void performRW(int asid, int pageBlock, int frameNo, unsigned int operation)
 {
     int devIndex = (FLASHINT - OFFSET)*DEVPERINT + (asid - 1);
     int *devSem  = &p3devSemaphore[devIndex];
@@ -98,7 +98,7 @@ void supLvlTlbExceptionHandler()
         enableInterrupts();
 
         /* (b) Write occupant’s page out */
-        performFlashOperation(
+        performRW(
             occupantAsid,       /* occupant process ID */
             occupantVPN,        /* occupant’s block number */
             frameNo,            /* frame index in swap pool */
@@ -106,7 +106,7 @@ void supLvlTlbExceptionHandler()
         );
     }
 
-    performFlashOperation(
+    performRW(
         sPtr->sup_asid,   /* current process ID */
         missingPN,        /* the missing page block # */
         frameNo,          /* chosen frame index */
