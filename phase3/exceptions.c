@@ -442,7 +442,6 @@ void uTLB_RefillHandler(){
     /*savedState = &(sPtr->sup_exceptState[PGFAULTEXCEPT]);  update to the state from the Current Process' Support Structure  */
     savedState = (state_PTR) BIOSDATAPAGE;
     int missingPN = ((savedState->s_entryHI & VPNMASK) >> VPNSHIFT) % PGTBLSIZE; /* Extract the missing page number from Entry HI */
-    debugExc(0x2, missingPN, savedState->s_entryHI, sPtr->sup_privatePgTbl[missingPN].entryHI);
     /* Write this Page Table entry into the TLB */
     /*debugVM(0xCAFE, entry.entryHI, savedState->s_entryHI, entry.entryLO);*/
 
