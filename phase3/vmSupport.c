@@ -4,97 +4,189 @@
 #include "../h/sysSupport.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
-HIDDEN swap_t swapPool[2 * UPROCMAX]; /* Swap Pool table: 2 entries for 1 page each (assuming 1 page per process) */
-int swapPoolSemaphore; /* A mutual exclusion semaphore (hence initialized to 1) that controls access to the Swap Pool data structure. */
+/* Each swap_t structure can hold info about a frame, who owns it, and which page number it corresponds to. */
+HIDDEN swap_t swapPool[2 * UPROCMAX];  /* Swap Pool table */
+int swapPoolSemaphore;                /* Controls mutual exclusion over swapPool */
+
 void debugVM(int a, int b, int c, int d) {
     /* Debugging function to print values */
     int i;
     i = 42;
     i++;
 }
+
 void initSwapStructs() {
-    int i; /* For loop index */
-    
     /* Initialize the Swap Pool table */
+    int i
     for (i = 0; i < 2 * UPROCMAX; i++) {
-        swapPool[i].asid = -1; /* Set the ASID to -1 indicating that the entry is free */
+        swapPool[i].asid = -1; /* Mark as free */
     }
 
-    /* Initialize the Swap Pool semaphore */
-    swapPoolSemaphore = 1; /* Set the semaphore to 1 indicating the pool is available, for mutual exclusion */
+    /* Initialize the semaphore (used for mutual exclusion on the swap pool) */
+    swapPoolSemaphore = 1;
 }
 
-void mutex(int *sem, int bool) {
-    if (bool == TRUE){ /* gain mutual exclusion, now having exclusive access */
-		SYSCALL(PASSEREN, (unsigned int) sem, 0, 0); 
-	}
-	else{ /* lose mutual exclusion, allowing others to access */
-		SYSCALL(VERHOGEN, (unsigned int) sem, 0, 0); 
-	}
+/* Simple wrapper to acquire/release the swapPool semaphore */
+void mutex(int *sem, int acquire) {
+    if (acquire == TRUE) {
+        SYSCALL(PASSEREN, (unsigned int)sem, 0, 0);  /* P operation */
+    } else {
+        SYSCALL(VERHOGEN, (unsigned int)sem, 0, 0);  /* V operation */
+    }
 }
 
+/* ----------------------------------------------------------------------------
+ * Helper: disableInterrupts() / enableInterrupts()
+ *   Turn off or on the IE bit in the Status register (Pandos 4.5.3).
+ *   This ensures TLB updates and Page Table changes happen atomically.
+ * ---------------------------------------------------------------------------*/
+static inline void disableInterrupts() {
+    setSTATUS(getSTATUS() & IECOFF);  /* Clear the IE bit */
+}
+
+static inline void enableInterrupts() {
+    setSTATUS(getSTATUS() | IECON);   /* Set the IE bit */
+}
+
+/* ----------------------------------------------------------------------------
+ * Helper: occupantSwapOut()
+ *   - If frame <frameNo> is occupied, write occupant's page back to occupant's 
+ *     backing store (Steps 7–8 in *Pandos*, Section 4.4.2).
+ *   - occupant’s device is identified by occupantAsid; occupant’s block = occupantVPN.
+ *   - Occupant’s page table is invalidated atomically with TLBCLR (4.5.3).
+ * ---------------------------------------------------------------------------*/
+static void occupantSwapOut(int frameNo) {
+    if (swapPool[frameNo].asid == -1) {
+        /* Frame is free; nothing to swap out */
+        return;
+    }
+
+    /* occupant info */
+    int occupantAsid = swapPool[frameNo].asid;
+    int occupantVPN  = swapPool[frameNo].VPN;
+    pteEntry_t *occPTEntry = swapPool[frameNo].pte;
+
+    /* occupant’s flash device index (Pandos 4.5.1) */
+    int occupantDevNum = (FLASHINT - OFFSET) * DEVPERINT + (occupantAsid - 1);
+
+    /* occupant’s frame physical address */
+    int frameAddr = FRAMEPOOLSTART + frameNo * PAGESIZE;
+
+    /* Access occupant’s flash device register */
+    devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;
+    device_t *flashDev   = &(devReg->devreg[occupantDevNum]);
+
+    /* (a) Atomically invalidate occupant's page table entry & TLB */
+    disableInterrupts();  
+    occPTEntry->entryLO &= VALIDOFFTLB;  /* Turn off V bit */
+    TLBCLR();
+    enableInterrupts();
+
+    /* (b) Write occupant’s page out to occupant’s block number = occupantVPN */
+    flashDev->d_data0 = frameAddr;
+    flashDev->d_command = (occupantVPN << FLASCOMHSHIFT) | WRITEBLK;
+    SYSCALL(WAITIO, FLASHINT, (occupantAsid - 1), FALSE);
+
+    /* Check for write error */
+    if (flashDev->d_status == WRITEERR) {
+        schizoUserProcTerminate(&swapPoolSemaphore); 
+    }
+}
+
+/* ----------------------------------------------------------------------------
+ * Helper: newPageSwapIn()
+ *   - Read the newly missing page from the current process’s backing store 
+ *     into frame <frameNo> (Step 9 in *Pandos*, Section 4.4.2).
+ * ---------------------------------------------------------------------------*/
+static void newPageSwapIn(support_t *sPtr, int frameNo, int missingPN) {
+    /* current process info */
+    int curAsid = sPtr->sup_asid;
+    int curDevNum = (FLASHINT - OFFSET) * DEVPERINT + (curAsid - 1);
+
+    /* frame's physical address */
+    int frameAddr = FRAMEPOOLSTART + frameNo * PAGESIZE;
+
+    /* device register for current process's flash dev */
+    devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;
+    device_t *flashDev   = &(devReg->devreg[curDevNum]);
+
+    /* read from block = missingPN (Step 9) */
+    flashDev->d_data0 = frameAddr;
+    flashDev->d_command = (missingPN << FLASCOMHSHIFT) | READBLK;
+    SYSCALL(WAITIO, FLASHINT, (curAsid - 1), TRUE);
+
+    /* Check for read error */
+    if (flashDev->d_status == READERR) {
+        schizoUserProcTerminate(&swapPoolSemaphore);
+    }
+}
+
+/* ----------------------------------------------------------------------------
+ * Helper: updateSwapPoolAndPageTable()
+ *   - Update swapPool entry with the new occupant info (Steps 10–11).
+ *   - Mark page as valid and dirty (ensuring R/W access).
+ *   - Atomically update TLB (Step 12).
+ * ---------------------------------------------------------------------------*/
+static void updateSwapPoolAndPageTable(support_t *sPtr, int frameNo, int missingPN) {
+    swapPool[frameNo].VPN  = missingPN;
+    swapPool[frameNo].asid = sPtr->sup_asid;
+    swapPool[frameNo].pte  = &(sPtr->sup_privatePgTbl[missingPN]);
+
+    /* Atomically set the new page table entry as valid & dirty, then TLBCLR */
+    disableInterrupts();
+    sPtr->sup_privatePgTbl[missingPN].entryLO = ((frameNo << PFNSHIFT) | VALIDON | DIRTYON);
+    TLBCLR();
+    enableInterrupts();
+}
+
+/* ----------------------------------------------------------------------------
+ * Main TLB-Exception Handler (Level 4, Section 4.4.2)
+ * ---------------------------------------------------------------------------*/
 void supLvlTlbExceptionHandler() {
-    /* 14 steps in [Section 4.4.2] */
     debugVM(0x1, 0xBADBABE, 0xBEEF, 0xDEADBEEF);
-    support_t *sPtr = (support_t *) SYSCALL(GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
-    state_PTR savedState = &(sPtr->sup_exceptState[0]); /* Get the saved state from the support structure */
-    unsigned int cause = savedState->s_cause; /* Determine the cause of the TLB exception */
-    unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
-    unsigned int entryHI = savedState->s_entryHI; /* Get the Entry HI value from the saved state */
-    int missingPN = (entryHI & VPNMASK) >> VPNSHIFT; /* Extract the missing page number from Entry HI */
-    missingPN = missingPN % 32; /* hash function since 32 entries per page, page number of the missing TLB entry */
-    static int frameNumber; /* Frame number to be used for the page replacement */
-    frameNumber = (frameNumber + 1) % (2 * UPROCMAX); /* Simple page replacement algorithm: round-robin replacement for the sake of example */
 
-    if(exc_code == TLBMODEXC) { 
-        ph3programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
+    /* (1) Get pointer to Support Structure (SYS8) */
+    support_t *sPtr = (support_t *) SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+    state_PTR savedState = &(sPtr->sup_exceptState[0]);
+
+    /* (2) Determine cause (TLBL / TLBS / Mod) */
+    unsigned int cause    = savedState->s_cause;
+    unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT;
+
+    /* (3) If TLB-Modification, treat as program trap (pandos 4.8) */
+    if (exc_code == TLBMODEXC) {
+        ph3programTrapHandler();
     }
 
-    mutex((int *) &swapPoolSemaphore, TRUE); /* Perform a P operation on the swap pool semaphore to gain mutual exclusion */
-    int occupantAsid  = swapPool[frameNumber].asid;
-    int dnum  = occupantAsid - 1; 
-    int frameAddr = frameNumber * PAGESIZE + FRAMEPOOLSTART; /* Starting address of current frame number */
-    int flashId = (FLASHINT - OFFSET) * DEVPERINT + dnum; /* Device number for the flash device */
-    devregarea_t *reg = (devregarea_t *) RAMBASEADDR; /* Get the device register area base address */
-    device_t flashdev = reg->devreg[flashId];
-    flashdev.d_data0 = frameAddr;
-    if(swapPool[frameNumber].asid != -1) /* If the frame is already occupied(assume page is dirty), we need to swap out the existing page */
-    {
-       setSTATUS(getSTATUS() & IECOFF); /* Disable interrupts while updating pagetable to prevent context switching during the page replacement */
-       swapPool[frameNumber].pte->entryLO = (swapPool[frameNumber].pte->entryLO & VALIDOFFTLB); /* Valid off */ 
-       TLBCLR(); /* Erase ALL the entries in the TLB to update TLB */
-       flashdev.d_command = (swapPool[frameNumber].VPN << FLASCOMHSHIFT) | WRITEBLK; /* Write the contents of frame to the correct location on process backing store/flash device. */
-       SYSCALL(WAITIO, FLASHINT, dnum, FALSE); /* Perform write operation on the flash device */
-       if(flashdev.d_status == WRITEERR){
-            schizoUserProcTerminate(&swapPoolSemaphore); /* Use sys9 here to also perform mutex that we never got to*/
-       }   
-       setSTATUS(getSTATUS() | IECON); /* Enable interrupts again after setting the status */
-    }
-    dnum = sPtr->sup_asid - 1; /* Update the device number for the current process */
-    flashdev = reg->devreg[(FLASHINT - OFFSET) * DEVPERINT + dnum];
-    flashdev.d_data0 = frameAddr;
-    flashdev.d_command = (missingPN << FLASCOMHSHIFT) | READBLK; /* Write the contents of frame to the correct location on process backing store/flash device. */
-    SYSCALL(WAITIO, FLASHINT, dnum, TRUE); /* Perform write operation on the flash device */
-    if (flashdev.d_status == READERR) {
-        schizoUserProcTerminate(&swapPoolSemaphore); /* Use sys9 here to also perform mutex that we never got to*/
-    }
+    /* (5) Determine the missing page number */
+    unsigned int entryHI  = savedState->s_entryHI;
+    int missingPN = ((entryHI & VPNMASK) >> VPNSHIFT) % 32; 
 
-    swapPool[frameNumber].VPN = missingPN;  /* update page p belonging to the Current Process’s ASID */
-    swapPool[frameNumber].asid = sPtr->sup_asid;  /* Set the ASID of the process that owns this swap entry */
-    swapPool[frameNumber].pte = &(sPtr->sup_privatePgTbl[missingPN]); /* Set the pointer to the page table entry associated with this swap entry */
+    /* (6) Choose a frame from the Swap Pool; simple round-robin here */
+    static int frameNo;
+    frameNo = (frameNo + 1) % (2 * UPROCMAX);
 
-    setSTATUS(getSTATUS() & IECOFF); /* Disable interrupts while updating pagetable to prevent context switching during the page replacement */
+    /* (4) Gain mutual exclusion over Swap Pool table */
+    mutex(&swapPoolSemaphore, TRUE);
 
-    sPtr->sup_privatePgTbl[missingPN].entryLO = (frameNumber << PFNSHIFT) | VALIDON | DIRTYON; /* Update the Current Process’s Page Table entry for page p to indicate it is now present (V bit) */
-    TLBCLR(); /* Erase ALL the entries in the TLB to update TLB */
-    
-    setSTATUS(getSTATUS() | IECON); /* Enable interrupts again after setting the status */
+    /* (7–8) If occupied, write occupant out */
+    occupantSwapOut(frameNo);
 
-    mutex((int *) &swapPoolSemaphore, FALSE); /* mutex, Perform a V operation on the swap pool semaphore to ensure mutual exclusion */
+    /* (9) Read new occupant’s page into the selected frame */
+    newPageSwapIn(sPtr, frameNo, missingPN);
+
+    /* (10–12) Update Swap Pool & Page Table, TLB flush */
+    updateSwapPoolAndPageTable(sPtr, frameNo, missingPN);
+
+    /* (13) Release mutual exclusion */
+    mutex(&swapPoolSemaphore, FALSE);
+
+    /* (14) LDST back to user to retry instruction */
     LDST(savedState);
 }
 
-void uTLB_RefillHandler(){
+/* uTLB-Refill Handler */
+void uTLB_RefillHandler() {
     state_PTR savedState = (state_PTR) BIOSDATAPAGE;
     int missingPN = ((savedState->s_entryHI & VPNMASK) >> VPNSHIFT) % PGTBLSIZE; /* Extract the missing page number from Entry HI */
 
@@ -103,10 +195,11 @@ void uTLB_RefillHandler(){
 
     TLBWR();
     debugVM(0x3, 0, 0, 0);
-    LDST(savedState);   /* Return control to the Current Process to retry the instruction that caused the TLB-Refill event */
+    LDST(savedState);
 }
 
-void ph3programTrapHandler(){
+/* Program Trap Handler */
+void ph3programTrapHandler() {
     debugVM(0x4, 0, 0, 0);
-    schizoUserProcTerminate(NULL); /* Terminate the current process if it encounters a program trap */
+    schizoUserProcTerminate(NULL); 
 }
