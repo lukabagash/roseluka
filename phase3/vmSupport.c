@@ -37,14 +37,14 @@ void supLvlTlbExceptionHandler() {
     /* 14 steps in [Section 4.4.2] */
     debugVM(0x1, 0xBADBABE, 0xBEEF, 0xDEADBEEF);
     support_t *sPtr = (support_t *) SYSCALL(GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
-    unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Determine the cause of the TLB exception */
+    state_PTR savedState = &(sPtr->sup_exceptState[0]); /* Get the saved state from the support structure */
+    unsigned int cause = savedState->s_cause; /* Determine the cause of the TLB exception */
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
-    unsigned int entryHI = sPtr->sup_exceptState[0].s_entryHI; /* Get the Entry HI value from the saved state */
+    unsigned int entryHI = savedState->s_entryHI; /* Get the Entry HI value from the saved state */
     int missingPN = (entryHI & VPNMASK) >> VPNSHIFT; /* Extract the missing page number from Entry HI */
     missingPN = missingPN % 32; /* hash function since 32 entries per page, page number of the missing TLB entry */
     static int frameNumber; /* Frame number to be used for the page replacement */
     frameNumber = (frameNumber + 1) % (2 * UPROCMAX); /* Simple page replacement algorithm: round-robin replacement for the sake of example */
-    debugVM(0x1, sPtr->sup_exceptState[0].s_cause, sPtr->sup_exceptState[0].s_entryHI, (entryHI & VPNMASK) >> VPNSHIFT);
     /* TLB-Modification Exception - a store instruction tries to write to a page */
     if(exc_code == TLBEXCPT) { 
         ph3programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
@@ -87,7 +87,7 @@ void supLvlTlbExceptionHandler() {
     setSTATUS(getSTATUS() | IECON); /* Enable interrupts again after setting the status */
 
     mutex((int *) &swapPoolSemaphore, FALSE); /* mutex, Perform a V operation on the swap pool semaphore to ensure mutual exclusion */
-    LDST(&(currentProcess->p_s));
+    LDST(savedState);
 }
 
 void uTLB_RefillHandler(){
