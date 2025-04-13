@@ -238,6 +238,7 @@ HIDDEN void waitIODevice(int lineNum, int devNum, int isReadOperation) {
     softBlockedCount++;
     devSemaphore[devIndex]--;
     blockCurrentProcess(&devSemaphore[devIndex]);
+    debugExc(0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD);
     switchProcess();  /* Never returns here */
 }
 
