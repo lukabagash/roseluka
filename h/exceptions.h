@@ -22,5 +22,6 @@ extern void updateCurrentProcessState(void);
 extern void syscallExceptionHandler(void);  /* SYSCALL exceptions */
 extern void tlbExceptionHandler(void);  /* TLB exceptions */
 extern void programTrapHandler(void);  /* Program Trap exceptions */
+extern void excuTLB_RefillHandler();
 
 #endif

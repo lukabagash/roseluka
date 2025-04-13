@@ -98,7 +98,7 @@ int main() {
 
     /* Set Pass Up Vector */
     passUpPtr = (passupvector_t *) PASSUPVECTOR;
-    passUpPtr->tlb_refll_handler = (memaddr) uTLB_RefillHandler;
+    passUpPtr->tlb_refll_handler = (memaddr) excuTLB_RefillHandler;
     passUpPtr->tlb_refll_stackPtr = NUCLEUSSTACK;
     passUpPtr->exception_handler = (memaddr) genExceptionHandler;
     passUpPtr->exception_stackPtr = NUCLEUSSTACK;

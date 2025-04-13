@@ -436,3 +436,22 @@ void programTrapHandler() {
 void tlbExceptionHandler() {
     passUpOrDie(PGFAULTEXCEPT);
 }
+
+void excuTLB_RefillHandler(){
+	/* declaring local variables */
+
+	state_PTR oldState; /* a pointer to the saved exception state at the start of the BIOS Data Page */
+	int missingPgNo; /* the page number of the missing TLB entry */
+
+	/* initializing local variables */
+	oldState = (state_t *) BIOSDATAPAGE; /* initializing oldState to the saved exception state at the start of the BIOS Data Page */
+	missingPgNo = ((oldState->s_entryHI) & 0xFFFFF000) >> VPNSHIFT; /* initializing the missing page number to the VPN specified in the EntryHI field of the saved exception state */
+	missingPgNo = missingPgNo % 32; /* using the hash function to determine the page number of the missing TLB entry from the VPN calculated in the previous line */
+
+	setENTRYHI(currentProcess->p_supportStruct->sup_privatePgTbl[missingPgNo].entryHI); /* writing EntryHI of the missing page table entry into the TLB */
+	setENTRYLO(currentProcess->p_supportStruct->sup_privatePgTbl[missingPgNo].entryLO); /* writing EntryLO of the missing page table entry into the TLB */
+
+	TLBWR(); /* finalizing the writing of the missing page table entry into the TLB */
+    debugExc(0xBEEF, 0xBEEF, 0xBEEF, 0xBEEF);
+	LDST(oldState); /* returning control back to the Current Proccess to retry the instruction that caused the TLB-Refill event */
+}
