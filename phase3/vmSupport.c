@@ -2,6 +2,7 @@
 #include "../h/initial.h"
 #include "../h/types.h"
 #include "../h/sysSupport.h"
+#include "../h/initProc.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
 /* Each swap_t structure can hold info about a frame, who owns it, and which page number it corresponds to. */
