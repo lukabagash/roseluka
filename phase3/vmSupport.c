@@ -17,7 +17,7 @@ void debugVM(int a, int b, int c, int d) {
 
 void initSwapStructs() {
     /* Initialize the Swap Pool table */
-    int i
+    int i;
     for (i = 0; i < 2 * UPROCMAX; i++) {
         swapPool[i].asid = -1; /* Mark as free */
     }
@@ -64,7 +64,7 @@ static void occupantSwapOut(int frameNo) {
     /* occupant info */
     int occupantAsid = swapPool[frameNo].asid;
     int occupantVPN  = swapPool[frameNo].VPN;
-    pteEntry_t *occPTEntry = swapPool[frameNo].pte;
+    pte_entry_t *occPTEntry = swapPool[frameNo].pte;
 
     /* occupant’s flash device index (Pandos 4.5.1) */
     int occupantDevNum = (FLASHINT - OFFSET) * DEVPERINT + (occupantAsid - 1);
