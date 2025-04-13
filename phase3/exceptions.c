@@ -443,16 +443,13 @@ void uTLB_RefillHandler(){
     /*savedState = &(sPtr->sup_exceptState[PGFAULTEXCEPT]);  update to the state from the Current Process' Support Structure  */
     savedState = (state_PTR) BIOSDATAPAGE;
     int missingPN = ((savedState->s_entryHI & VPNMASK) >> VPNSHIFT) % PGTBLSIZE; /* Extract the missing page number from Entry HI */
-    int missingPgNo;
-    missingPgNo = ((oldState->s_entryHI) & GETVPN) >> VPNSHIFT; /* initializing the missing page number to the VPN specified in the EntryHI field of the saved exception state */
-	missingPgNo = missingPgNo % ENTRIESPERPG; /* using the hash function to determine the page number of the missing TLB entry from the VPN calculated in the previous line */
     debugExc(0x2, missingPN, savedState->s_entryHI, sPtr->sup_privatePgTbl[missingPN].entryHI);
     pte_entry_t entry = sPtr->sup_privatePgTbl[missingPN];  /* Get the Page Table entry for page number of the Current Process */
     /* Write this Page Table entry into the TLB */
     /*debugVM(0xCAFE, entry.entryHI, savedState->s_entryHI, entry.entryLO);*/
 
-    setENTRYHI(currentProcess->p_supportStruct->sup_privatePgTbl[missingPgNo].entryHI);
-    setENTRYLO(currentProcess->p_supportStruct->sup_privatePgTbl[missingPgNo].entryLO);
+    setENTRYHI(currentProcess->p_supportStruct->sup_privatePgTbl[missingPN].entryHI);
+    setENTRYLO(currentProcess->p_supportStruct->sup_privatePgTbl[missingPN].entryLO);
 
     TLBWR();
     debugExc(0x3, 0, 0, 0);
