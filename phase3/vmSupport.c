@@ -2,7 +2,6 @@
 #include "../h/initial.h"
 #include "../h/types.h"
 #include "../h/sysSupport.h"
-#include "../h/exceptions.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
 HIDDEN swap_t swapPool[2 * UPROCMAX]; /* Swap Pool table: 2 entries for 1 page each (assuming 1 page per process) */
@@ -91,23 +90,6 @@ void supLvlTlbExceptionHandler() {
     LDST(&(currentProcess->p_s));
 }
 
-void uTLB_RefillHandler(){
-    support_t *sPtr = (support_t *) SYSCALL (GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
-    state_PTR savedState = (state_PTR) BIOSDATAPAGE; /* Get the saved exception state from the BIOS Data Page */
-    /*savedState = &(sPtr->sup_exceptState[PGFAULTEXCEPT]);  update to the state from the Current Process' Support Structure  */
-    int missingPN = ((savedState->s_entryHI & VPNMASK) >> VPNSHIFT) % PGTBLSIZE; /* Extract the missing page number from Entry HI */
-    debugVM(0x2, missingPN, savedState->s_entryHI, sPtr->sup_privatePgTbl[missingPN].entryHI);
-    pte_entry_t entry = sPtr->sup_privatePgTbl[missingPN];  /* Get the Page Table entry for page number of the Current Process */
-    /* Write this Page Table entry into the TLB */
-    /*debugVM(0xCAFE, entry.entryHI, savedState->s_entryHI, entry.entryLO);*/
-
-    setENTRYHI(currentProcess->p_supportStruct->sup_privatePgTbl[missingPN].entryHI);
-    setENTRYLO(currentProcess->p_supportStruct->sup_privatePgTbl[missingPN].entryLO);
-
-    TLBWR();
-    debugVM(0x3, 0, 0, 0);
-    LDST(savedState);   /* Return control to the Current Process to retry the instruction that caused the TLB-Refill event */
-}
 
 void ph3programTrapHandler(){
     debugVM(0x4, 0, 0, 0);

@@ -437,21 +437,20 @@ void tlbExceptionHandler() {
     passUpOrDie(PGFAULTEXCEPT);
 }
 
-void excuTLB_RefillHandler(){
-	/* declaring local variables */
+void uTLB_RefillHandler(){
+    support_t *sPtr = (support_t *) SYSCALL (GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
+    state_PTR savedState = (state_PTR) BIOSDATAPAGE; /* Get the saved exception state from the BIOS Data Page */
+    /*savedState = &(sPtr->sup_exceptState[PGFAULTEXCEPT]);  update to the state from the Current Process' Support Structure  */
+    int missingPN = ((savedState->s_entryHI & VPNMASK) >> VPNSHIFT) % PGTBLSIZE; /* Extract the missing page number from Entry HI */
+    debugVM(0x2, missingPN, savedState->s_entryHI, sPtr->sup_privatePgTbl[missingPN].entryHI);
+    pte_entry_t entry = sPtr->sup_privatePgTbl[missingPN];  /* Get the Page Table entry for page number of the Current Process */
+    /* Write this Page Table entry into the TLB */
+    /*debugVM(0xCAFE, entry.entryHI, savedState->s_entryHI, entry.entryLO);*/
 
-	state_PTR oldState; /* a pointer to the saved exception state at the start of the BIOS Data Page */
-	int missingPgNo; /* the page number of the missing TLB entry */
+    setENTRYHI(entry.entryHI);
+    setENTRYLO(entry.entryLO);
 
-	/* initializing local variables */
-	oldState = (state_t *) BIOSDATAPAGE; /* initializing oldState to the saved exception state at the start of the BIOS Data Page */
-	missingPgNo = ((oldState->s_entryHI) & 0xFFFFF000) >> VPNSHIFT; /* initializing the missing page number to the VPN specified in the EntryHI field of the saved exception state */
-	missingPgNo = missingPgNo % 32; /* using the hash function to determine the page number of the missing TLB entry from the VPN calculated in the previous line */
-
-	setENTRYHI(currentProcess->p_supportStruct->sup_privatePgTbl[missingPgNo].entryHI); /* writing EntryHI of the missing page table entry into the TLB */
-	setENTRYLO(currentProcess->p_supportStruct->sup_privatePgTbl[missingPgNo].entryLO); /* writing EntryLO of the missing page table entry into the TLB */
-
-	TLBWR(); /* finalizing the writing of the missing page table entry into the TLB */
-    debugExc(0xBEEF, 0xBEEF, 0xBEEF, 0xBEEF);
-	LDST(oldState); /* returning control back to the Current Proccess to retry the instruction that caused the TLB-Refill event */
+    TLBWR();
+    debugVM(0x3, 0, 0, 0);
+    LDST(savedState);   /* Return control to the Current Process to retry the instruction that caused the TLB-Refill event */
 }
