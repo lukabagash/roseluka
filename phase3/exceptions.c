@@ -443,8 +443,8 @@ void uTLB_RefillHandler(){
     /*savedState = &(sPtr->sup_exceptState[PGFAULTEXCEPT]);  update to the state from the Current Process' Support Structure  */
     int missingPN = ((savedState->s_entryHI & VPNMASK) >> VPNSHIFT) % PGTBLSIZE; /* Extract the missing page number from Entry HI */
     int missingPgNo;
-    missingPgNo = ((oldState->s_entryHI) & GETVPN) >> VPNSHIFT; /* initializing the missing page number to the VPN specified in the EntryHI field of the saved exception state */
-	missingPgNo = missingPgNo % ENTRIESPERPG; /* using the hash function to determine the page number of the missing TLB entry from the VPN calculated in the previous line */
+    missingPgNo = ((savedState->s_entryHI) & VPNMASK) >> VPNSHIFT; /* initializing the missing page number to the VPN specified in the EntryHI field of the saved exception state */
+	missingPgNo = missingPgNo % 32; /* using the hash function to determine the page number of the missing TLB entry from the VPN calculated in the previous line */
     debugExc(0x2, missingPN, savedState->s_entryHI, sPtr->sup_privatePgTbl[missingPN].entryHI);
     pte_entry_t entry = sPtr->sup_privatePgTbl[missingPN];  /* Get the Page Table entry for page number of the Current Process */
     /* Write this Page Table entry into the TLB */
