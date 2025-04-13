@@ -447,8 +447,8 @@ void uTLB_RefillHandler(){
     /* Write this Page Table entry into the TLB */
     /*debugVM(0xCAFE, entry.entryHI, savedState->s_entryHI, entry.entryLO);*/
 
-    setENTRYHI(entry.entryHI);
-    setENTRYLO(entry.entryLO);
+    setENTRYHI(currentProcess->p_supportStruct->sup_privatePgTbl[missingPN].entryHI);
+    setENTRYLO(currentProcess->p_supportStruct->sup_privatePgTbl[missingPN].entryLO);
 
     TLBWR();
     debugExc(0x3, 0, 0, 0);
