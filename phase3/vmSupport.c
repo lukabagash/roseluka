@@ -40,11 +40,11 @@ void mutex(int *sem, int acquire) {
  *   Turn off or on the IE bit in the Status register (Pandos 4.5.3).
  *   This ensures TLB updates and Page Table changes happen atomically.
  * ---------------------------------------------------------------------------*/
-HIDDEN void disableInterrupts() {
+void disableInterrupts() {
     setSTATUS(getSTATUS() & IECOFF);  /* Clear the IE bit */
 }
 
-HIDDEN inline void enableInterrupts() {
+void enableInterrupts() {
     setSTATUS(getSTATUS() | IECON);   /* Set the IE bit */
 }
 
@@ -55,7 +55,7 @@ HIDDEN inline void enableInterrupts() {
  *   - occupant’s device is identified by occupantAsid; occupant’s block = occupantVPN.
  *   - Occupant’s page table is invalidated atomically with TLBCLR (4.5.3).
  * ---------------------------------------------------------------------------*/
-static void occupantSwapOut(int frameNo) {
+HIDDEN void occupantSwapOut(int frameNo) {
     if (swapPool[frameNo].asid == -1) {
         /* Frame is free; nothing to swap out */
         return;
@@ -98,7 +98,7 @@ static void occupantSwapOut(int frameNo) {
  *   - Read the newly missing page from the current process’s backing store 
  *     into frame <frameNo> (Step 9 in *Pandos*, Section 4.4.2).
  * ---------------------------------------------------------------------------*/
-static void newPageSwapIn(support_t *sPtr, int frameNo, int missingPN) {
+HIDDEN void newPageSwapIn(support_t *sPtr, int frameNo, int missingPN) {
     /* current process info */
     int curAsid = sPtr->sup_asid;
     int curDevNum = (FLASHINT - OFFSET) * DEVPERINT + (curAsid - 1);
@@ -127,7 +127,7 @@ static void newPageSwapIn(support_t *sPtr, int frameNo, int missingPN) {
  *   - Mark page as valid and dirty (ensuring R/W access).
  *   - Atomically update TLB (Step 12).
  * ---------------------------------------------------------------------------*/
-static void updateSwapPoolAndPageTable(support_t *sPtr, int frameNo, int missingPN) {
+HIDDEN void updateSwapPoolAndPageTable(support_t *sPtr, int frameNo, int missingPN) {
     swapPool[frameNo].VPN  = missingPN;
     swapPool[frameNo].asid = sPtr->sup_asid;
     swapPool[frameNo].pte  = &(sPtr->sup_privatePgTbl[missingPN]);
