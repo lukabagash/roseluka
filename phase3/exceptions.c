@@ -109,6 +109,7 @@ HIDDEN void createNewProcess(state_PTR stateSys, support_t *supportPtr) {
         /* Populate fields of the new PCB */
         debugExc(0x60d, stateSys->s_entryHI, 0x60d, 0x60d);
         moveState(stateSys, &(newPcb->p_s));
+        debugExc(0x60d, newPcb->p_s.s_entryHI, 0x60d, 0x60d);
         newPcb->p_supportStruct = supportPtr;
         insertProcQ(&readyQueue, newPcb);
 
