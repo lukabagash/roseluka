@@ -60,8 +60,7 @@ static void performRW(int asid, int pageBlock, int frameNo, unsigned int operati
     if ((operation == WRITEBLK && status == WRITEERR) || (operation == READBLK  && status == READERR))
     {
         /* Release the swap pool semaphore so we don't deadlock. */
-        mutex(&swapPoolSemaphore, FALSE);
-        schizoUserProcTerminate(NULL); 
+        schizoUserProcTerminate(&swapPoolSemaphore); 
     }
 }
 
