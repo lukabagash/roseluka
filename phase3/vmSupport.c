@@ -2,6 +2,7 @@
 #include "../h/initial.h"
 #include "../h/types.h"
 #include "../h/sysSupport.h"
+#include "../h/exceptions.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
 HIDDEN swap_t swapPool[2 * UPROCMAX]; /* Swap Pool table: 2 entries for 1 page each (assuming 1 page per process) */
@@ -100,8 +101,8 @@ void uTLB_RefillHandler(){
     /* Write this Page Table entry into the TLB */
     /*debugVM(0xCAFE, entry.entryHI, savedState->s_entryHI, entry.entryLO);*/
 
-    setENTRYHI(entry.entryHI);
-    setENTRYLO(entry.entryLO);
+    setENTRYHI(currentProcess->p_supportStruct->sup_privatePgTbl[missingPN].entryHI);
+    setENTRYLO(currentProcess->p_supportStruct->sup_privatePgTbl[missingPN].entryLO);
 
     TLBWR();
     debugVM(0x3, 0, 0, 0);
