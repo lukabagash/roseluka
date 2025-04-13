@@ -56,6 +56,7 @@ void enableInterrupts() {
  *   - Occupant’s page table is invalidated atomically with TLBCLR (4.5.3).
  * ---------------------------------------------------------------------------*/
 HIDDEN void occupantSwapOut(int frameNo) {
+    debugVM(0x2, 0xBADBABE, 0xBEEF, 0xDEADBEEF);
     if (swapPool[frameNo].asid == -1) {
         /* Frame is free; nothing to swap out */
         return;
@@ -99,6 +100,7 @@ HIDDEN void occupantSwapOut(int frameNo) {
  *     into frame <frameNo> (Step 9 in *Pandos*, Section 4.4.2).
  * ---------------------------------------------------------------------------*/
 HIDDEN void newPageSwapIn(support_t *sPtr, int frameNo, int missingPN) {
+    debugVM(0x3, 0xBADBABE, 0xBEEF, 0xDEADBEEF);
     /* current process info */
     int curAsid = sPtr->sup_asid;
     int curDevNum = (FLASHINT - OFFSET) * DEVPERINT + (curAsid - 1);
@@ -128,6 +130,7 @@ HIDDEN void newPageSwapIn(support_t *sPtr, int frameNo, int missingPN) {
  *   - Atomically update TLB (Step 12).
  * ---------------------------------------------------------------------------*/
 HIDDEN void updateSwapPoolAndPageTable(support_t *sPtr, int frameNo, int missingPN) {
+    debugVM(0x4, 0xBADBABE, 0xBEEF, 0xDEADBEEF);
     swapPool[frameNo].VPN  = missingPN;
     swapPool[frameNo].asid = sPtr->sup_asid;
     swapPool[frameNo].pte  = &(sPtr->sup_privatePgTbl[missingPN]);
@@ -194,12 +197,10 @@ void uTLB_RefillHandler() {
     setENTRYLO(currentProcess->p_supportStruct->sup_privatePgTbl[missingPN].entryLO);
 
     TLBWR();
-    debugVM(0x3, 0, 0, 0);
     LDST(savedState);
 }
 
 /* Program Trap Handler */
 void ph3programTrapHandler() {
-    debugVM(0x4, 0, 0, 0);
     schizoUserProcTerminate(NULL); 
 }
