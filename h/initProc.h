@@ -4,7 +4,7 @@
 #include "types.h"
 
 /* External semaphore array for devices */
-extern int devSemaphore[MAXDEVICECNT - 1];
+extern int p3devSemaphore[MAXDEVICECNT - 1];
 
 /* External master semaphore for synchronization */
 extern int masterSemaphore;
