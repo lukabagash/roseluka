@@ -42,15 +42,18 @@ static void performFlashOperation(int asid, int pageBlock, int frameNo, unsigned
     int devIndex = (FLASHINT - OFFSET)*DEVPERINT + (asid - 1);
     int *devSem  = &p3devSemaphore[devIndex];
     int frameAddr = FRAMEPOOLSTART + (frameNo * PAGESIZE);
-
+    debugVM(0x1, 0x60D, 0x60D, 0x60D);
     devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;
     device_t *flashDev   = &(devReg->devreg[devIndex]);
     mutex(devSem, TRUE);
     flashDev->d_data0 = frameAddr;
     disableInterrupts(); 
     flashDev->d_command = (pageBlock << FLASCOMHSHIFT) | operation;
+    debugVM(0x2, 0x60D, 0x60D, 0x60D);
 
     SYSCALL(WAITIO, FLASHINT, (asid - 1), (operation == READBLK));
+    debugVM(0x3, 0x60D, 0x60D, 0x60D);
+
     enableInterrupts();
     int status = flashDev->d_status;
     mutex(devSem, FALSE);
