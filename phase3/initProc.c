@@ -6,8 +6,6 @@
 #include "../h/sysSupport.h" /* For the syscall support functions */
 #include "/usr/include/umps3/umps/libumps.h"
 
-HIDDEN void initProcessorState(state_PTR newState);
-
 int p3devSemaphore[PERIPHDEVCNT]; /* Sharable peripheral I/O device, (Disk, Flash, Network, Printer): 4 classes × 8 devices = 32 semaphores 
                                                          (Terminal devices): 8 terminals × 2 semaphores = 16 semaphores*/
 int masterSemaphore; /* Private semaphore for graceful conclusion/termination of test */
@@ -17,12 +15,6 @@ void debugFR(int a, int b, int c, int d) {
     int i;
     i = 42;
     i++;
-}
-
-void initProcessorState(state_PTR newState){
-	newState->s_pc = newState->s_t9 = (memaddr) TEXTAREASTART; /* initializing the U-proc's PC (and the contents of the U-proc's t9 register) to 0x800000B0 */
-	newState->s_sp = (memaddr) STCKTOPEND; /* initializing the U-proc's stack pointer to 0xC0000000 */
-	newState->s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON | PANDOS_CAUSEINTMASK; /* initializing the U-procs' status register so that interrupts are enabled, user-mode is on and the PLT is enabled */
 }
 
 
@@ -37,11 +29,16 @@ void test() {
     int res; /* Result of the SYSCALL */
     debugFR(0x1, 0,0,0);
     /* The Swap Pool table and Swap Pool semaphore. [Section 4.4.1] */
+    initSwapStructs(); /* Initialize the swap structures for paging */
     for(j = 0; j < MAXDEVICECNT - 1; j++) {
         p3devSemaphore[j] = 1; /* Initialize the semaphores to 1 indicating the I/O devices are available, for mutual exclusion */
     }
-    initSwapStructs(); /* Initialize the swap structures for paging */
-    initProcessorState(&u_procState);
+    /* Set the program counter and s_t9 to the logical address for the start of the .text area */
+    u_procState.s_pc = (memaddr) TEXTAREASTART;
+    u_procState.s_t9 = (memaddr) TEXTAREASTART; 
+    /* Set the status to enable Interrupts, enable PLT, User-mode */
+    u_procState.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON | PANDOS_CAUSEINTMASK;
+    u_procState.s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
     debugFR(0x2, 0,0,0);
     /* Initialize and launch (SYS1) between 1 and 8 U-procs */
     for(pid = 1; pid < UPROCMAX + 1; pid++) {
@@ -59,7 +56,7 @@ void test() {
             supportStruct[pid].sup_privatePgTbl[i].entryLO = ALLOFF | (i << PFNSHIFT) | 0x00000400 | VALIDOFF | GLOBALOFF; /* Set entryLO with the frame number and write enabled, private to the specific ASID, and not valid */
         } 
 
-        u_procState.s_entryHI = (pid << ASIDSHIFT) | ALLOFF;  /* Set the entry HI for the user process */
+        u_procState.s_entryHI = KUSEG | (pid << ASIDSHIFT) | ALLOFF;  /* Set the entry HI for the user process */
         debugFR(0x4, u_procState.s_entryHI, 0, 0);
 
         supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | STCKPGVPN; /* Set the entry HI for the Page Table entry 31 */

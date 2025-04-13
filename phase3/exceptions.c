@@ -107,6 +107,7 @@ HIDDEN void createNewProcess(state_PTR stateSys, support_t *supportPtr) {
     if (newPcb != NULL) {
         debugExc(4,4,4,4);
         /* Populate fields of the new PCB */
+        debugExc(0x60d, stateSys->s_entryHI, 0x60d, 0x60d);
         moveState(stateSys, &(newPcb->p_s));
         newPcb->p_supportStruct = supportPtr;
         insertProcQ(&readyQueue, newPcb);
@@ -361,7 +362,9 @@ void syscallExceptionHandler() {
     debugExc(0xB16BEEF, syscallNumber, 0, 0);
 
     /* Update the Current Process's PCB to reflect the saved state */
+    debugExc(0xBEEF, savedExceptState->s_entryHI, 0xBEEF, 0xBEEF);
     updateCurrentProcessState();
+    debugExc(0xCAFE, savedExceptState->s_entryHI, 0xCAFE, 0xCAFE);
 
     switch (syscallNumber) {
         case CREATEPROCESS:    /* SYS1 */
