@@ -39,27 +39,25 @@ void enableInterrupts() {
 static void performFlashOperation(int asid, int pageBlock, int frameNo, unsigned int operation)
 {
     int devIndex = (FLASHINT - OFFSET)*DEVPERINT + (asid - 1);
-
+    int *devSem  = &p3devSemaphore[devIndex];
     int frameAddr = FRAMEPOOLSTART + (frameNo * PAGESIZE);
 
     devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;
     device_t *flashDev   = &(devReg->devreg[devIndex]);
-
+    mutex(devSem, TRUE);
     flashDev->d_data0 = frameAddr;
-
+    disableInterrupts(); 
     flashDev->d_command = (pageBlock << FLASCOMHSHIFT) | operation;
 
     SYSCALL(WAITIO, FLASHINT, (asid - 1), (operation == READBLK));
-
-    /* 4. Check for error */
-    if (operation == WRITEBLK) {
-        if (flashDev->d_status == WRITEERR) {
-            schizoUserProcTerminate(&swapPoolSemaphore);
-        }
-    } else {
-        if (flashDev->d_status == READERR) {
-            schizoUserProcTerminate(&swapPoolSemaphore);
-        }
+    enableInterrupts();
+    int status = flashDev->d_status;
+    mutex(devSem, FALSE);
+    if ((operation == WRITEBLK && status == WRITEERR) || (operation == READBLK  && status == READERR))
+    {
+        /* Release the swap pool semaphore so we don't deadlock. */
+        mutex(&swapPoolSemaphore, FALSE);
+        schizoUserProcTerminate(NULL); 
     }
 }
 
