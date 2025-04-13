@@ -40,11 +40,11 @@ void mutex(int *sem, int acquire) {
  *   Turn off or on the IE bit in the Status register (Pandos 4.5.3).
  *   This ensures TLB updates and Page Table changes happen atomically.
  * ---------------------------------------------------------------------------*/
-static inline void disableInterrupts() {
+HIDDEN void disableInterrupts() {
     setSTATUS(getSTATUS() & IECOFF);  /* Clear the IE bit */
 }
 
-static inline void enableInterrupts() {
+HIDDEN inline void enableInterrupts() {
     setSTATUS(getSTATUS() | IECON);   /* Set the IE bit */
 }
 
