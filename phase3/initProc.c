@@ -52,14 +52,15 @@ void test() {
         supportStruct[pid].sup_exceptContext[1].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON; /* Enable Interrupts, enable PLT, Kernel-mode */
         debugFR(0x3, supportStruct[pid].sup_exceptContext[0].c_pc,supportStruct[pid].sup_exceptContext[1].c_pc, supportStruct[pid].sup_exceptContext[0].c_stackPtr);
         for (i = 0; i < PGTBLSIZE; i++) {
-            supportStruct[pid].sup_privatePgTbl[i].entryHI = ALLOFF | (((KUSEG >> VPNSHIFT) + i) << VPNSHIFT) | (pid << ASIDSHIFT); /* Set entryHI with the page number and asid */
-            supportStruct[pid].sup_privatePgTbl[i].entryLO = ALLOFF | (i << PFNSHIFT) | 0x00000400 | VALIDOFF | GLOBALOFF; /* Set entryLO with the frame number and write enabled, private to the specific ASID, and not valid */
+
+            supportStruct[pid].sup_privatePgTbl[i].entryHI = ALLOFF | ((0x80000 + i) << VPNSHIFT) | (pid << ASIDSHIFT);
+			supportStruct[pid].sup_privatePgTbl[i].entryLO = ALLOFF | 0x00000400; 
         } 
 
         u_procState.s_entryHI = KUSEG | (pid << ASIDSHIFT) | ALLOFF;  /* Set the entry HI for the user process */
         debugFR(0x4, u_procState.s_entryHI, 0, 0);
 
-        supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | STCKPGVPN; /* Set the entry HI for the Page Table entry 31 */
+        supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | (0xBFFFF << VPNSHIFT); /* Set the entry HI for the Page Table entry 31 */
 
         res = SYSCALL(CREATEPROCESS, (unsigned int) &(u_procState), (unsigned int) &(supportStruct[pid]), 0); /* Call SYS1 to create a new process with the processor state and support structure */
         if(res != OK) {
