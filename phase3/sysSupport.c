@@ -7,6 +7,8 @@
 #include "../h/vmSupport.h"
 #include "../h/initial.h"
 #include "../h/types.h"
+#include "../h/const.h"
+#include "../h/initProc.h"
 #include "../h/exceptions.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
@@ -87,32 +89,39 @@ HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnu
 
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
-    device_t *terminaldev = &(reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]); /* Get the terminal device register */
-    illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
-    
+    device_t *terminaldev = &(reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]);
+
+    illegalCheck(len); /* Ensure the length is valid (0 to MAXSTRINGLEN) */
+
+    /* Lock the device semaphore */
+    mutex(&(p3devSemaphore[((TERMINT - OFFSET) * DEVPERINT) + dnum + DEVPERINT]), TRUE); /* NOTE: +DEVPERINT to select transmitter */
+
     while (len > 0) {
-        /* Write printer device's DATA0 field with printer device address (i.e., address of printer device)*/
-        /* terminaldev.d_status = ALLOFF | terminaldev.d_status | (virtAddr[i] << 8); */
-        debugSYS(0xACE55, 0xACE55, 0xACE55, 0xACE55);
         disableInterrupts();
-        terminaldev->t_transm_command = ((*virtAddr) << 8) | TRANSMITCHAR; /* Send the character */
-        SYSCALL(WAITIO, TERMINT, dnum, FALSE);  /* suspend u_proc */
+        terminaldev->t_transm_command = ((*virtAddr) << 8) | TRANSMITCHAR; /* Issue transmit command */
+
+        /* Capture the return value from SYS5 */
+        unsigned int status = SYSCALL(WAITIO, TERMINT, dnum, FALSE);
         enableInterrupts();
 
-        /* if not successfully written Receive Error status code */
-        if ((terminaldev->t_transm_status & TERMSTATUSMASK) != CHARTRANSMITTED) {
-            debugSYS(0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD);
-            savedState->s_v0 = 0 - (terminaldev->d_status & TERMSTATUSMASK); /* Return negative error code */
+        unsigned int statusCode = status & TERMSTATUSMASK; /* Mask to extract only the status bits */
+
+        if (statusCode != CHARTRANSMITTED) {
+            savedState->s_v0 = 0 - statusCode; /* Negative error code */
+            mutex(&(devSemaphores[((TERMINT - OFFSET) * DEVPERINT) + dnum + DEVPERINT]), FALSE);
             LDST(savedState);
         }
-        virtAddr++;  /* Move to next character in user buffer */
+
+        virtAddr++;  /* Move to next character */
         charNum++;
         len--;       /* Decrement remaining length */
-    } 
-    /*Resume back to user mode with v0 updated accordingly:*/
-    currentProcess->p_s.s_v0 = charNum;
+    }
+
+    savedState->s_v0 = charNum; /* Return number of characters successfully transmitted */
+    mutex(&(devSemaphores[((TERMINT - OFFSET) * DEVPERINT) + dnum + DEVPERINT]), FALSE);
     LDST(savedState);
 }
+
 
 HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
     /*
