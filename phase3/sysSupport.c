@@ -60,7 +60,7 @@ HIDDEN void writePrinter(state_PTR savedState, char *virtAddr, int len, int dnum
     illegalCheck(len); /* Validate length (0 to MAXSTRINGLEN) */
 
     /* Lock the printer device semaphore */
-    mutex(&(devSemaphores[((PRNTINT - OFFSET) * DEVPERINT) + dnum]), TRUE);
+    mutex(&(p3devSemaphore[((PRNTINT - OFFSET) * DEVPERINT) + dnum]), TRUE);
 
     while (len > 0) {
         disableInterrupts();
@@ -73,7 +73,7 @@ HIDDEN void writePrinter(state_PTR savedState, char *virtAddr, int len, int dnum
 
         if ((status & TERMSTATUSMASK) != DEVREDY) {
             savedState->s_v0 = 0 - (status & TERMSTATUSMASK); /* Return negative error code */
-            mutex(&(devSemaphores[((PRNTINT - OFFSET) * DEVPERINT) + dnum]), FALSE);
+            mutex(&(p3devSemaphore[((PRNTINT - OFFSET) * DEVPERINT) + dnum]), FALSE);
             LDST(savedState);
         }
 
@@ -83,7 +83,7 @@ HIDDEN void writePrinter(state_PTR savedState, char *virtAddr, int len, int dnum
     }
 
     savedState->s_v0 = charNum; /* Number of characters printed */
-    mutex(&(devSemaphores[((PRNTINT - OFFSET) * DEVPERINT) + dnum]), FALSE);
+    mutex(&(p3devSemaphore[((PRNTINT - OFFSET) * DEVPERINT) + dnum]), FALSE);
     LDST(savedState);
 }
 
