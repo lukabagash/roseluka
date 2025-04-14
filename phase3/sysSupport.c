@@ -136,39 +136,45 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
     debugSYS(0x13, 0x60D,0x60D,0x60D );
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
-    device_t *terminaldev = &(reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]); /* Get the terminal device register */
-    debugSYS(0xACE55, 0xACE55, 0xACE55, 0xACE55);
-       
-    while(1){
-        /* Write printer device's DATA0 field with printer device address (i.e., address of printer device)*/
+    device_t *terminaldev = &(reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]); /* Get the terminal device */
 
+    /* Lock the device semaphore */
+    mutex(&(devSemaphores[((TERMINT - OFFSET) * DEVPERINT) + dnum]), TRUE); /* NOTE: no +DEVPERINT because it's receiver (t_recv) */
+
+    while (1) {
         disableInterrupts();
-        terminaldev->t_recv_command = RECEIVECHAR;
-        
-        SYSCALL(WAITIO, TERMINT, dnum, TRUE);
+        terminaldev->t_recv_command = RECEIVECHAR; /* Issue receive command */
         enableInterrupts();
 
-        /* if not successfully written Transmission Error status code */
-        if ((terminaldev->t_recv_status & TERMSTATUSMASK) != CHARRECIVED) {
-            savedState->s_v0 = 0 - (terminaldev->d_status & TERMSTATUSMASK); /* Return negative error code */
+        /* Capture the return value from SYS5 */
+        unsigned int status = SYSCALL(WAITIO, TERMINT, dnum, TRUE);
+
+        unsigned int statusCode = status & TERMSTATUSMASK; /* Mask to extract status bits */
+
+        if (statusCode != CHARRECIVED) {
+            savedState->s_v0 = 0 - statusCode; /* Return negative error code */
+            mutex(&(devSemaphores[((TERMINT - OFFSET) * DEVPERINT) + dnum]), FALSE);
             LDST(savedState);
         }
-        /* Retrieve the received character */
-        char receivedChar = (terminaldev->t_recv_status >> 8) & 0xFF; /* Upper byte contains the character */
+
+        /* Retrieve received character */
+        char receivedChar = (status >> 8) & 0xFF; /* Upper byte contains the character */
 
         *virtAddr = receivedChar; /* Store into user buffer */
         virtAddr++;
         charNum++;
-    
+
         /* Stop reading if newline (ENDOFLINE) received */
         if (receivedChar == ENDOFLINE) {
             break;
         }
-    } 
-    /* Return the number of char read */
-    savedState->s_v0 = charNum;
+    }
+
+    savedState->s_v0 = charNum; /* Number of characters received */
+    mutex(&(devSemaphores[((TERMINT - OFFSET) * DEVPERINT) + dnum]), FALSE);
     LDST(savedState);
 }
+
 
 void supLvlGenExceptionHandler() {
     /*
