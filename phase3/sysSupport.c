@@ -40,11 +40,12 @@ void schizoUserProcTerminate(int *address) {
 }
 
 
-HIDDEN void getTOD() {
-    /*
-     * Returns the number of microseconds since the system was last booted/reset. 
-     */
-    currentProcess->p_s.s_v0 = startTOD;
+HIDDEN void getTOD(state_PTR savedState) {
+    cpu_t currTOD; 
+
+    STCK(currTOD); /* storing the current value on the Time of Day clock into currTOD */
+    savedState->s_v0 = currTOD; /* placing the current system time (since last reboot) in v0 */
+    switchUContext(savedState);
 }
 
 HIDDEN void writePrinter(state_PTR savedState, char *virtAddr, int len, int dnum) {
@@ -196,7 +197,7 @@ void supLvlGenExceptionHandler() {
             break;
 
         case GETTOD:               /* SYS10 */
-            getTOD(); /* Get the current time of day */
+            getTOD(savedState); /* Get the current time of day */
             break;
 
         case WRITEPRINTER:         /* SYS11 */
