@@ -144,10 +144,11 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
     while (1) {
         disableInterrupts();
         terminaldev->t_recv_command = RECEIVECHAR; /* Issue receive command */
-        enableInterrupts();
 
         /* Capture the return value from SYS5 */
         unsigned int status = SYSCALL(WAITIO, TERMINT, dnum, TRUE);
+        enableInterrupts();
+
 
         unsigned int statusCode = status & TERMSTATUSMASK; /* Mask to extract status bits */
 
