@@ -76,6 +76,7 @@ void test() {
         SYSCALL(PASSEREN, (unsigned int) &masterSemaphore, 0, 0);
     }
     debugFR(0x5, masterSemaphore, 0, 0);
+    
     /* Terminate (SYS2) after all of its U-proc “children” processes conclude. 
     This will drive Process Count to zero, triggering the Nucleus to invoke HALT. [Section 3.2] */
     SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* After all processes conclude, HALT by the Nucleus */

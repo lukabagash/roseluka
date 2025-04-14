@@ -158,8 +158,8 @@ HIDDEN void terminateProcessAndProgeny(pcb_PTR proc) {
         outBlocked(proc);
         /* If it wasn’t a device semaphore, increment it. Otherwise, 
            device semaphores get incremented by the eventual device interrupt. */
-        if (!(semAddr >= &devSemaphore[FIRSTDEVINDEX] && 
-              semAddr <= &devSemaphore[PCLOCKIDX])) {
+        if (!(semAddr >= &p3devSemaphore[FIRSTDEVINDEX] && 
+              semAddr <= &p3devSemaphore[PCLOCKIDX])) {
             (*semAddr)++;
         } else {
             softBlockedCount--;
@@ -236,9 +236,9 @@ HIDDEN void waitIODevice(int lineNum, int devNum, int isReadOperation) {
     }
 
     softBlockedCount++;
-    devSemaphore[devIndex]--;
-    blockCurrentProcess(&devSemaphore[devIndex]);
-    debugExc(0x5, devIndex, devSemaphore[devIndex], softBlockedCount);
+    p3devSemaphore[devIndex]--;
+    blockCurrentProcess(&p3devSemaphore[devIndex]);
+    debugExc(0x5, devIndex, p3devSemaphore[devIndex], devIndex);
     switchProcess();  /* Never returns here */
 }
 
@@ -267,8 +267,8 @@ HIDDEN void getCpuTimeSyscall() {
  * then the Scheduler is invoked.
  ************************************************************************/
 HIDDEN void waitForClockSyscall() {
-    devSemaphore[PCLOCKIDX]--;
-    blockCurrentProcess(&devSemaphore[PCLOCKIDX]);
+    p3devSemaphore[PCLOCKIDX]--;
+    blockCurrentProcess(&p3devSemaphore[PCLOCKIDX]);
     softBlockedCount++;
     switchProcess();  /* Never returns here */
 }
