@@ -55,6 +55,12 @@ static void performRW(int asid, int pageBlock, int frameNo, unsigned int operati
     debugVM(0x3, 0x60D, 0x60D, 0x60D);
 
     enableInterrupts();
+
+    unsigned int *frameContents = (unsigned int *) frameAddr;
+    int l;
+    for (l = 0; i < 8; i++) {   // print first 8 words (32 bytes)
+        debugVM(i, frameContents[i], frameAddr, 0xDEADBEEF);
+    }
     int status = flashDev->d_status;
     mutex(devSem, FALSE);
     if ((operation == WRITEBLK && status == WRITEERR) || (operation == READBLK  && status == READERR))
@@ -112,6 +118,7 @@ void supLvlTlbExceptionHandler()
         frameNo,          /* chosen frame index */
         READBLK           /* operation = read */
     );
+
 
     swapPool[frameNo].asid = sPtr->sup_asid;
     swapPool[frameNo].VPN  = missingPN;
