@@ -63,13 +63,12 @@ HIDDEN void writePrinter(state_PTR savedState, char *virtAddr, int len, int dnum
     mutex(&(p3devSemaphore[((PRNTINT - OFFSET) * DEVPERINT) + dnum]), TRUE);
 
     while (len > 0) {
+        debugExc(processCount, softBlockedCount, 0xBABE, 0xBEEF);
         disableInterrupts();
         printerdev->d_data0 = *virtAddr; /* Put character into DATA0 */
         printerdev->d_command = PRINTCHR; /* Issue PRINTCHR command */
-        enableInterrupts();
-
-        /* Capture the return value from SYS5 */
         unsigned int status = SYSCALL(WAITIO, PRNTINT, dnum, FALSE);
+        enableInterrupts();
 
         if ((status & TERMSTATUSMASK) != DEVREDY) {
             savedState->s_v0 = 0 - (status & TERMSTATUSMASK); /* Return negative error code */
@@ -81,7 +80,7 @@ HIDDEN void writePrinter(state_PTR savedState, char *virtAddr, int len, int dnum
         charNum++;
         len--;
     }
-
+    debugSYS(0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD);
     savedState->s_v0 = charNum; /* Number of characters printed */
     mutex(&(p3devSemaphore[((PRNTINT - OFFSET) * DEVPERINT) + dnum]), FALSE);
     LDST(savedState);
