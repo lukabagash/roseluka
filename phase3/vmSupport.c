@@ -39,7 +39,7 @@ void enableInterrupts() {
 
 static void performRW(int asid, int pageBlock, int frameNo, unsigned int operation)
 {
-    int devIndex = (FLASHINT - OFFSET)*DEVPERINT + (asid - 1);
+    int devIndex = ((FLASHINT - OFFSET) * DEVPERINT) + (asid - 1);
     int *devSem  = &p3devSemaphore[devIndex];
     int frameAddr = FRAMEPOOLSTART + (frameNo * PAGESIZE);
     debugVM(0x1, *devSem, devIndex, frameAddr);
