@@ -144,10 +144,12 @@ void supLvlGenExceptionHandler() {
      * value for its Support Structure.
      * This function handles non-TLB exceptions, for all SYSCALL exceptions numbered 9 and above, and all Program Trap exceptions.
      */
-    support_t *sPtr = (support_t *) SYSCALL (GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
+    support_t *sPtr = (support_t *) SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+    state_PTR savedState = &(sPtr->sup_exceptState[1]);
+
+    unsigned int cause    = savedState->s_cause;
+    unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT;
     int dnum = sPtr->sup_asid - 1; /*Each U-proc is associated with its own flash and terminal device. The ASID uniquely identifies the process and by extension, its devices*/
-    unsigned int cause = sPtr->sup_exceptState[1].s_cause; /* Get the cause of the TLB exception */
-    unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
     debugSYS(0x1, exc_code, dnum, 0);
     if (exc_code != SYSCALLEXCPT) /* TLB-Modification Exception */
     {
