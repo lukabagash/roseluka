@@ -87,7 +87,6 @@ HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnu
 
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
-    int i; /* For loop index */
     device_t *terminaldev = &(reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]); /* Get the terminal device register */
     illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
     debugSYS(0xACE55, 0xACE55, 0xACE55, 0xACE55);
@@ -102,6 +101,7 @@ HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnu
 
         /* if not successfully written Receive Error status code */
         if ((terminaldev->t_transm_status & TERMSTATUSMASK) != CHARTRANSMITTED) {
+            debugSYS(0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD);
             savedState->s_v0 = 0 - (terminaldev->d_status & TERMSTATUSMASK); /* Return negative error code */
             LDST(savedState);
         }
