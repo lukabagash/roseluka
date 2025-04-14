@@ -118,9 +118,9 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
     debugSYS(0x13, 0x60D,0x60D,0x60D );
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
-    device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
+    device_t *terminaldev = &(reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]); /* Get the terminal device register */
        
-    while(*virtAddr != ENDOFLINE){
+    while(1){
         /* Write printer device's DATA0 field with printer device address (i.e., address of printer device)*/
     debugSYS(0xACE55, 0xACE55, 0xACE55, 0xACE55);
 
@@ -131,12 +131,21 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
         enableInterrupts();
 
         /* if not successfully written Transmission Error status code */
-        if ((terminaldev.t_recv_status & TERMSTATUSMASK) != CHARRECIVED) {
-            charNum = 0 - (terminaldev.d_status & TERMSTATUSMASK); /* Set charNum to negative of the status code to indicate an error */
+        if ((terminaldev->t_recv_status & TERMSTATUSMASK) != CHARRECIVED) {
+            savedState->s_v0 = 0 - (terminaldev->d_status & TERMSTATUSMASK); /* Return negative error code */
+            LDST(savedState);
+        }
+        /* Retrieve the received character */
+        char receivedChar = (terminaldev->t_recv_status >> 8) & 0xFF; /* Upper byte contains the character */
+
+        *virtAddr = receivedChar; /* Store into user buffer */
+        virtAddr++;
+        charNum++;
+    
+        /* Stop reading if newline (ENDOFLINE) received */
+        if (receivedChar == ENDOFLINE) {
             break;
         }
-        charNum++;
-        virtAddr++; /* Move to the next character in the buffer */
     } 
     /* Return the number of char read */
     savedState->s_v0 = charNum;
