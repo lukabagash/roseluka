@@ -58,7 +58,7 @@ static void performRW(int asid, int pageBlock, int frameNo, unsigned int operati
 
     unsigned int *frameContents = (unsigned int *) frameAddr;
     int l;
-    for (l = 0; i < 8; i++) {   // print first 8 words (32 bytes)
+    for (l = 0; l < 8; l++) {   // print first 8 words (32 bytes)
         debugVM(i, frameContents[i], frameAddr, 0xDEADBEEF);
     }
     int status = flashDev->d_status;
