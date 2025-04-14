@@ -157,8 +157,7 @@ void supLvlGenExceptionHandler() {
     }
     
     /* Handle other general exceptions */
-    state_PTR savedExceptState = (state_PTR) BIOSDATAPAGE;
-    int syscallNumber = savedExceptState->s_a0;
+    int syscallNumber = savedState->s_a0;
     debugSYS(0x2, syscallNumber, dnum, 0);
     switch (syscallNumber) {
         case TERMINATE:            /* SYS9 */
@@ -171,23 +170,23 @@ void supLvlGenExceptionHandler() {
 
         case WRITEPRINTER:         /* SYS11 */
             writePrinter(
-                (char *) (savedExceptState->s_a1), /* virtual address of the string to print */
-                (int) (savedExceptState->s_a2)    /* length of the string */
+                (char *) (savedState->s_a1), /* virtual address of the string to print */
+                (int) (savedState->s_a2)    /* length of the string */
                 , dnum
             );
             break;
 
         case WRITETERMINAL:        /* SYS12 */
             writeTerminal(
-                (char *) (savedExceptState->s_a1), /* virtual address of the string to print */
-                (int) (savedExceptState->s_a2)    /* length of the string */
+                (char *) (savedState->s_a1), /* virtual address of the string to print */
+                (int) (savedState->s_a2)    /* length of the string */
                 , dnum
             );
             break;
 
         case READTERMINAL:         /* SYS13 */
             readTerminal(
-                (char *) (savedExceptState->s_a1) /* virtual address of the buffer to store the read characters */
+                (char *) (savedState->s_a1) /* virtual address of the buffer to store the read characters */
                 , dnum
             ); 
             break;
