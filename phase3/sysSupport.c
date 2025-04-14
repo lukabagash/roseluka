@@ -110,7 +110,7 @@ HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnu
         if (statusCode != CHARTRANSMITTED) {
             debugSYS(0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD);
             savedState->s_v0 = 0 - statusCode; /* Negative error code */
-            mutex(&(devSemaphores[((TERMINT - OFFSET) * DEVPERINT) + dnum + DEVPERINT]), FALSE);
+            mutex(&(p3devSemaphore[((TERMINT - OFFSET) * DEVPERINT) + dnum + DEVPERINT]), FALSE);
             LDST(savedState);
         }
 
