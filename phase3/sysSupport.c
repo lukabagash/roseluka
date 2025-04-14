@@ -45,7 +45,7 @@ HIDDEN void getTOD(state_PTR savedState) {
 
     STCK(currTOD); /* storing the current value on the Time of Day clock into currTOD */
     savedState->s_v0 = currTOD; /* placing the current system time (since last reboot) in v0 */
-    switchUContext(savedState);
+    LDST(savedState);
 }
 
 HIDDEN void writePrinter(state_PTR savedState, char *virtAddr, int len, int dnum) {
