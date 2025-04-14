@@ -44,7 +44,7 @@ static void performRW(int asid, int pageBlock, int frameNo, unsigned int operati
     int frameAddr = FRAMEPOOLSTART + (frameNo * PAGESIZE);
     debugVM(0x1, *devSem, devIndex, frameAddr);
     devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;
-    device_t *flashDev   = &(devReg->devreg[devIndex]);
+    device_t *flashDev = &(devReg->devreg[devIndex]);
     mutex(devSem, TRUE);
     flashDev->d_data0 = frameAddr;
     disableInterrupts(); 

@@ -229,7 +229,7 @@ HIDDEN void verhogenSyscall(int *semAddr) {
  * handler.
  ************************************************************************/
 HIDDEN void waitIODevice(int lineNum, int devNum, int isReadOperation) {
-    int devIndex = (lineNum - OFFSET) * DEVPERINT + devNum;
+    int devIndex = ((lineNum - OFFSET) * DEVPERINT) + devNum;
 
     if (lineNum == LINE7 && (isReadOperation == FALSE)) {
         /* Terminal write sub-device is offset by DEVPERINT from read sub-device */
