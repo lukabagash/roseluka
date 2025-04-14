@@ -44,7 +44,7 @@ HIDDEN void getTOD() {
     currentProcess->p_s.s_v0 = startTOD;
 }
 
-HIDDEN void writePrinter(char *virtAddr, int len, int dnum) {
+HIDDEN void writePrinter(state_PTR savedState, char *virtAddr, int len, int dnum) {
     /*
      * Causes the requesting U-proc to be suspended until a line of output (string of characters) has been transmitted 
      * to the printer device associated with the U-proc. 
@@ -77,7 +77,7 @@ HIDDEN void writePrinter(char *virtAddr, int len, int dnum) {
     currentProcess->p_s.s_v0 = charNum;
 }
 
-HIDDEN void writeTerminal(char *virtAddr, int len, int dnum) {
+HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnum) {
     /* 
      * Causes the requesting U-proc to be suspended until a line of output (string of characters) has been transmitted 
      * to the terminal device associated with the U-proc.
@@ -109,7 +109,7 @@ HIDDEN void writeTerminal(char *virtAddr, int len, int dnum) {
     currentProcess->p_s.s_v0 = charNum;
 }
 
-HIDDEN void readTerminal(char *virtAddr, int dnum) {
+HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
     /*
      * Causes the requesting U-proc to be suspended until a line of input (string of characters) has been transmitted 
      * from the terminal device associated with the U-proc.
@@ -122,9 +122,13 @@ HIDDEN void readTerminal(char *virtAddr, int dnum) {
        
     while(*virtAddr != ENDOFLINE){
         /* Write printer device's DATA0 field with printer device address (i.e., address of printer device)*/
-        terminaldev.t_recv_command = RECEIVECHAR;;
+    debugVM(0xACE55, 0xACE55, 0xACE55, 0xACE55);
+
+        disableInterrupts();
+        terminaldev.t_recv_command = RECEIVECHAR;
         
         SYSCALL(WAITIO, TERMINT, dnum, TRUE);
+        enableInterrupts();
 
         /* if not successfully written Transmission Error status code */
         if ((terminaldev.t_recv_status & TERMSTATUSMASK) != CHARRECIVED) {
@@ -135,7 +139,8 @@ HIDDEN void readTerminal(char *virtAddr, int dnum) {
         virtAddr++; /* Move to the next character in the buffer */
     } 
     /* Return the number of char read */
-    currentProcess->p_s.s_v0 = charNum;
+    savedState->s_v0 = charNum;
+    LDST(savedState);
 }
 
 void supLvlGenExceptionHandler() {
@@ -170,6 +175,7 @@ void supLvlGenExceptionHandler() {
 
         case WRITEPRINTER:         /* SYS11 */
             writePrinter(
+                savedState,
                 (char *) (savedState->s_a1), /* virtual address of the string to print */
                 (int) (savedState->s_a2)    /* length of the string */
                 , dnum
@@ -178,6 +184,7 @@ void supLvlGenExceptionHandler() {
 
         case WRITETERMINAL:        /* SYS12 */
             writeTerminal(
+                savedState,
                 (char *) (savedState->s_a1), /* virtual address of the string to print */
                 (int) (savedState->s_a2)    /* length of the string */
                 , dnum
@@ -186,6 +193,7 @@ void supLvlGenExceptionHandler() {
 
         case READTERMINAL:         /* SYS13 */
             readTerminal(
+                savedState,
                 (char *) (savedState->s_a1) /* virtual address of the buffer to store the read characters */
                 , dnum
             ); 

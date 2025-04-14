@@ -17,4 +17,10 @@ extern void uTLB_RefillHandler(void);
 
 extern void ph3programTrapHandler(void);
 
+/* Disable interrupts */
+extern void disableInterrupts(void);
+
+/* Enable interrupts */
+extern void enableInterrupts(void);
+
 #endif /* VMSUPPORT_H */
