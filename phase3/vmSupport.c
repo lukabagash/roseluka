@@ -129,7 +129,7 @@ void supLvlTlbExceptionHandler()
     enableInterrupts();
 
     mutex(&swapPoolSemaphore, FALSE);
-
+    debugVM(0xACE55,0xACE55, 0xACE55, 0xACE55);
     LDST(savedState);
 }
 
