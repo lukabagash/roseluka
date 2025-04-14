@@ -50,7 +50,7 @@ HIDDEN void writePrinter(state_PTR savedState, char *virtAddr, int len, int dnum
      * to the printer device associated with the U-proc. 
      * If the write was successful, returns the number of characters transmitted. Otherwise, returns the negative of the device’s status value.
      */
-    debugSYS(0x13, 0x60D,0x60D,0x60D );
+    debugSYS(0x11, 0x60D,0x60D,0x60D );
 
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
@@ -83,7 +83,7 @@ HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnu
      * to the terminal device associated with the U-proc.
      * If the write was successful, returns the number of characters transmitted. Otherwise, returns the negative of the device’s status value.
      */
-    debugSYS(0x13, 0x60D,0x60D,0x60D );
+    debugSYS(0x12, 0x60D,0x60D,0x60D );
 
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
@@ -119,10 +119,10 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     device_t *terminaldev = &(reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]); /* Get the terminal device register */
+    debugSYS(0xACE55, 0xACE55, 0xACE55, 0xACE55);
        
     while(1){
         /* Write printer device's DATA0 field with printer device address (i.e., address of printer device)*/
-    debugSYS(0xACE55, 0xACE55, 0xACE55, 0xACE55);
 
         disableInterrupts();
         terminaldev->t_recv_command = RECEIVECHAR;
