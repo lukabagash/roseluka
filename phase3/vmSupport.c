@@ -49,7 +49,7 @@ static void performRW(int asid, int pageBlock, int frameNo, unsigned int operati
     flashDev->d_data0 = frameAddr;
     disableInterrupts(); 
     flashDev->d_command = (pageBlock << FLASCOMHSHIFT) | operation;
-    debugVM(0x2, operation, devSem, flashDev->d_command);
+    debugVM(0x2, operation, *devSem, flashDev->d_command);
 
     SYSCALL(WAITIO, FLASHINT, (asid - 1), (operation == READBLK));
     debugVM(0x3, 0x60D, 0x60D, 0x60D);
