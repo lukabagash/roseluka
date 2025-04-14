@@ -139,7 +139,7 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
     device_t *terminaldev = &(reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]); /* Get the terminal device */
 
     /* Lock the device semaphore */
-    mutex(&(devSemaphores[((TERMINT - OFFSET) * DEVPERINT) + dnum]), TRUE); /* NOTE: no +DEVPERINT because it's receiver (t_recv) */
+    mutex(&(p3devSemaphore[((TERMINT - OFFSET) * DEVPERINT) + dnum]), TRUE); /* NOTE: no +DEVPERINT because it's receiver (t_recv) */
 
     while (1) {
         disableInterrupts();
@@ -154,7 +154,7 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
 
         if (statusCode != CHARRECIVED) {
             savedState->s_v0 = 0 - statusCode; /* Return negative error code */
-            mutex(&(devSemaphores[((TERMINT - OFFSET) * DEVPERINT) + dnum]), FALSE);
+            mutex(&(p3devSemaphore[((TERMINT - OFFSET) * DEVPERINT) + dnum]), FALSE);
             LDST(savedState);
         }
 
@@ -172,7 +172,7 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
     }
 
     savedState->s_v0 = charNum; /* Number of characters received */
-    mutex(&(devSemaphores[((TERMINT - OFFSET) * DEVPERINT) + dnum]), FALSE);
+    mutex(&(p3devSemaphore[((TERMINT - OFFSET) * DEVPERINT) + dnum]), FALSE);
     LDST(savedState);
 }
 
