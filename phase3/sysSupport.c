@@ -67,8 +67,8 @@ HIDDEN void writePrinter(state_PTR savedState, char *virtAddr, int len, int dnum
         disableInterrupts();
         printerdev->d_data0 = *virtAddr; /* Put character into DATA0 */
         printerdev->d_command = PRINTCHR; /* Issue PRINTCHR command */
-        unsigned int status = SYSCALL(WAITIO, PRNTINT, dnum, FALSE);
         enableInterrupts();
+        unsigned int status = SYSCALL(WAITIO, PRNTINT, dnum, FALSE);
 
         if ((status & TERMSTATUSMASK) != DEVREDY) {
             savedState->s_v0 = 0 - (status & TERMSTATUSMASK); /* Return negative error code */
