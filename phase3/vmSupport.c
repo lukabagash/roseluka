@@ -9,11 +9,6 @@
 HIDDEN swap_t swapPool[2 * UPROCMAX];  /* Swap Pool table */
 int swapPoolSemaphore;                /* Controls mutual exclusion over swapPool */
 
-void debugVM(int a, int b, int c, int d) {
-    int x = 0;
-    x++;
-}
-
 void initSwapStructs() {
     int i;
     for (i = 0; i < 2 * UPROCMAX; i++) {
@@ -41,25 +36,17 @@ static void performRW(int asid, int pageBlock, int frameAddr, unsigned int opera
 {
     int devIndex = ((FLASHINT - OFFSET) * DEVPERINT) + (asid - 1);
     int *devSem  = &p3devSemaphore[devIndex];
-    debugVM(0x1, p3devSemaphore[devIndex], devIndex, frameAddr);
     devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;
     device_t *flashDev = &(devReg->devreg[devIndex]);
     mutex(devSem, TRUE);
     flashDev->d_data0 = frameAddr;
     disableInterrupts(); 
     flashDev->d_command = (pageBlock << FLASCOMHSHIFT) | operation;
-    debugVM(0x2, operation, *devSem, flashDev->d_command);
 
     SYSCALL(WAITIO, FLASHINT, (asid - 1), (operation == READBLK));
-    debugVM(0x3, 0x60D, 0x60D, 0x60D);
 
     enableInterrupts();
 
-    unsigned int * frameContents = (unsigned int *) frameAddr;
-    int l;
-    for (l = 0; l < 8; l++) {
-        debugVM(l, frameContents[l], frameAddr, 0xDEADBEEF);
-    }
     int status = flashDev->d_status;
     mutex(devSem, FALSE);
     if ((operation == WRITEBLK && status == WRITEERR) || (operation == READBLK  && status == READERR))
@@ -131,7 +118,6 @@ void supLvlTlbExceptionHandler()
     enableInterrupts();
 
     mutex(&swapPoolSemaphore, FALSE);
-    debugVM(0xACE55, 0xACE55, 0xACE55, 0xACE55);
     LDST(savedState);
 }
 

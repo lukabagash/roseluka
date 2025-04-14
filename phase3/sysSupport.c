@@ -12,12 +12,6 @@
 #include "../h/exceptions.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
-void debugSYS(int a, int b, int c, int d) {
-    /* Debugging function to print values */
-    int i;
-    i = 42;
-    i++;
-}
 
 HIDDEN void illegalCheck(int len) {
     /*
@@ -63,7 +57,6 @@ HIDDEN void writePrinter(state_PTR savedState, char *virtAddr, int len, int dnum
     mutex(&(p3devSemaphore[((PRNTINT - OFFSET) * DEVPERINT) + dnum]), TRUE);
 
     while (len > 0) {
-        debugSYS(processCount, softBlockedCount, 0xBABE, 0xBEEF);
         disableInterrupts();
         printerdev->d_data0 = *virtAddr; /* Put character into DATA0 */
         printerdev->d_command = PRINTCHR; /* Issue PRINTCHR command */
@@ -80,7 +73,6 @@ HIDDEN void writePrinter(state_PTR savedState, char *virtAddr, int len, int dnum
         charNum++;
         len--;
     }
-    debugSYS(0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD);
     savedState->s_v0 = charNum; /* Number of characters printed */
     mutex(&(p3devSemaphore[((PRNTINT - OFFSET) * DEVPERINT) + dnum]), FALSE);
     LDST(savedState);
@@ -92,8 +84,6 @@ HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnu
      * to the terminal device associated with the U-proc.
      * If the write was successful, returns the number of characters transmitted. Otherwise, returns the negative of the device’s status value.
      */
-    debugSYS(0x12, 0x60D,0x60D,0x60D );
-
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     device_t *terminaldev = &(reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]);
@@ -104,7 +94,6 @@ HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnu
     mutex(&(p3devSemaphore[((TERMINT - OFFSET) * DEVPERINT) + dnum + DEVPERINT]), TRUE); /* NOTE: +DEVPERINT to select transmitter */
 
     while (len > 0) {
-        debugSYS(0xACE55, 0xACE55, 0xACE55, 0xACE55);
         disableInterrupts();
         terminaldev->t_transm_command = ((*virtAddr) << 8) | TRANSMITCHAR; /* Issue transmit command */
 
@@ -115,7 +104,6 @@ HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnu
         unsigned int statusCode = status & TERMSTATUSMASK; /* Mask to extract only the status bits */
 
         if (statusCode != CHARTRANSMITTED) {
-            debugSYS(0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD);
             savedState->s_v0 = 0 - statusCode; /* Negative error code */
             mutex(&(p3devSemaphore[((TERMINT - OFFSET) * DEVPERINT) + dnum + DEVPERINT]), FALSE);
             LDST(savedState);
@@ -138,7 +126,6 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
      * from the terminal device associated with the U-proc.
      * If the read was successful, returns the number of characters transmitted. Otherwise, returns the negative of the device’s status value.
      */
-    debugSYS(0x13, 0x60D,0x60D,0x60D );
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     device_t *terminaldev = &(reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]); /* Get the terminal device */
@@ -194,7 +181,7 @@ void supLvlGenExceptionHandler() {
     unsigned int cause    = savedState->s_cause;
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT;
     int dnum = sPtr->sup_asid - 1; /*Each U-proc is associated with its own flash and terminal device. The ASID uniquely identifies the process and by extension, its devices*/
-    debugSYS(0x1, exc_code, dnum, 0);
+
     if (exc_code != SYSCALLEXCPT) /* TLB-Modification Exception */
     {
         ph3programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
@@ -202,7 +189,7 @@ void supLvlGenExceptionHandler() {
     
     /* Handle other general exceptions */
     int syscallNumber = savedState->s_a0;
-    debugSYS(0x2, syscallNumber, dnum, 0);
+    
     switch (syscallNumber) {
         case TERMINATE:            /* SYS9 */
             schizoUserProcTerminate(NULL); /* Terminate the current process */

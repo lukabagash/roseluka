@@ -56,7 +56,6 @@ HIDDEN void getSupportDataSyscall();
 int   syscallNumber;   /* Holds the system call code (a0) from the saved state */
 cpu_t currentTOD;      /* Used to track CPU usage for the Current Process */
 
-
 /************************************************************************
  * updateCurrentProcessState
  * 
@@ -67,14 +66,6 @@ cpu_t currentTOD;      /* Used to track CPU usage for the Current Process */
 void updateCurrentProcessState() {
     moveState(savedExceptState, &(currentProcess->p_s));
 }
-
-void debugExc(int a, int b, int c, int d) {
-    /* Debugging function to print values */
-    int i;
-    i = 42;
-    i++;
-}
-
 
 /************************************************************************
  * blockCurrentProcess
@@ -91,7 +82,6 @@ HIDDEN void blockCurrentProcess(int *semAddr) {
     currentProcess = NULL; 
 }
 
-
 /************************************************************************
  * createNewProcess (SYS1 - CREATEPROCESS)
  *
@@ -102,14 +92,10 @@ HIDDEN void blockCurrentProcess(int *semAddr) {
  * v0; otherwise returns 0.
  ************************************************************************/
 HIDDEN void createNewProcess(state_PTR stateSys, support_t *supportPtr) {
-    debugExc(0x60D, 0x60D, 0x60D, 0x60D);
     pcb_PTR newPcb = allocPcb();
     if (newPcb != NULL) {
-        debugExc(4,4,4,4);
         /* Populate fields of the new PCB */
-        debugExc(0x60d, stateSys->s_entryHI, 0x60d, 0x60d);
         moveState(stateSys, &(newPcb->p_s));
-        debugExc(0x60d, newPcb->p_s.s_entryHI, 0x60d, 0x60d);
         newPcb->p_supportStruct = supportPtr;
         insertProcQ(&readyQueue, newPcb);
 
@@ -121,7 +107,6 @@ HIDDEN void createNewProcess(state_PTR stateSys, support_t *supportPtr) {
         processCount++;
         currentProcess->p_s.s_v0 = OK;  /* success */
     } else {
-        debugExc(9,9,9,9);
         currentProcess->p_s.s_v0 = FAIL; /* error (no more PCBs) */
     }
 
@@ -238,7 +223,6 @@ HIDDEN void waitIODevice(int lineNum, int devNum, int isReadOperation) {
     softBlockedCount++;
     devSemaphore[devIndex]--;
     blockCurrentProcess(&devSemaphore[devIndex]);
-    debugExc(0x5, devIndex, devSemaphore[devIndex], softBlockedCount);
     switchProcess();  /* Never returns here */
 }
 
@@ -282,7 +266,6 @@ HIDDEN void waitForClockSyscall() {
  * Resumes execution afterward.
  ************************************************************************/
 HIDDEN void getSupportDataSyscall() {
-    debugExc(currentProcess->p_supportStruct->sup_privatePgTbl[0].entryHI, currentProcess->p_supportStruct->sup_privatePgTbl[0].entryLO, 0xDEADBEEF, 0);
     currentProcess->p_s.s_v0 = (int) currentProcess->p_supportStruct;
 
     STCK(currentTOD);
@@ -301,10 +284,7 @@ HIDDEN void getSupportDataSyscall() {
  * Otherwise, the Current Process is terminated.
  ************************************************************************/
 void passUpOrDie(int exceptionType) {
-    debugExc(0xBABE, 0xBEEF, 0xDEAD, 0xF00D);
     if (currentProcess->p_supportStruct != NULL) {
-        debugExc(savedExceptState->s_pc, savedExceptState->s_entryHI, currentProcess->p_supportStruct->sup_privatePgTbl[0].entryHI, savedExceptState->s_cause);
-
         moveState(savedExceptState, 
                   &(currentProcess->p_supportStruct->sup_exceptState[exceptionType]));
 
@@ -347,22 +327,18 @@ void syscallExceptionHandler() {
     /* If the calling process was in user-mode, treat this request as illegal */
     if ((savedExceptState->s_status & USERPON) != ALLOFF) {
         /* Force a Program Trap by setting Cause.ExcCode = RI */
-        debugExc(0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD);
         savedExceptState->s_cause = (savedExceptState->s_cause & RESINSTRCODE);
         programTrapHandler();
 		return; /* Ensures no return to the killed process */
     }
-    debugExc(0x515, syscallNumber, savedExceptState->s_entryHI, 0);
     /* If SYSCALL code is outside 1..8, handle as Program Trap (illegal) */
     if (syscallNumber < CREATEPROCESS || syscallNumber > GETSUPPORTPTR) {
-        debugExc(0xBEEF, 0xBEEF, 0xBEEF, 0xBEEF);
         programTrapHandler();
 		return; /* Same reason as above */
     }
 
     /* Update the Current Process's PCB to reflect the saved state */
     updateCurrentProcessState();
-    debugExc(0x5152, savedExceptState->s_entryHI, savedExceptState->s_status, savedExceptState->s_cause);
 
     switch (syscallNumber) {
         case CREATEPROCESS:    /* SYS1 */
