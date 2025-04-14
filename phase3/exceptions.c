@@ -39,7 +39,6 @@
 #include "../h/exceptions.h"
 #include "../h/interrupts.h"
 #include "../h/initial.h"
-#include "../h/initProc.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
 /* Function Prototypes (local to this module) */
@@ -159,8 +158,8 @@ HIDDEN void terminateProcessAndProgeny(pcb_PTR proc) {
         outBlocked(proc);
         /* If it wasn’t a device semaphore, increment it. Otherwise, 
            device semaphores get incremented by the eventual device interrupt. */
-        if (!(semAddr >= &p3devSemaphore[FIRSTDEVINDEX] && 
-              semAddr <= &p3devSemaphore[PCLOCKIDX])) {
+        if (!(semAddr >= &devSemaphore[FIRSTDEVINDEX] && 
+              semAddr <= &devSemaphore[PCLOCKIDX])) {
             (*semAddr)++;
         } else {
             softBlockedCount--;
@@ -229,7 +228,7 @@ HIDDEN void verhogenSyscall(int *semAddr) {
  * handler.
  ************************************************************************/
 HIDDEN void waitIODevice(int lineNum, int devNum, int isReadOperation) {
-    int devIndex = ((lineNum - OFFSET) * DEVPERINT) + devNum;
+    int devIndex = (lineNum - OFFSET) * DEVPERINT + devNum;
 
     if (lineNum == LINE7 && (isReadOperation == FALSE)) {
         /* Terminal write sub-device is offset by DEVPERINT from read sub-device */
@@ -237,9 +236,9 @@ HIDDEN void waitIODevice(int lineNum, int devNum, int isReadOperation) {
     }
 
     softBlockedCount++;
-    p3devSemaphore[devIndex]--;
-    blockCurrentProcess(&p3devSemaphore[devIndex]);
-    debugExc(0x5, devIndex, p3devSemaphore[devIndex], devIndex);
+    devSemaphore[devIndex]--;
+    blockCurrentProcess(&devSemaphore[devIndex]);
+    debugExc(0x5, devIndex, devSemaphore[devIndex], softBlockedCount);
     switchProcess();  /* Never returns here */
 }
 
@@ -268,8 +267,8 @@ HIDDEN void getCpuTimeSyscall() {
  * then the Scheduler is invoked.
  ************************************************************************/
 HIDDEN void waitForClockSyscall() {
-    p3devSemaphore[PCLOCKIDX]--;
-    blockCurrentProcess(&p3devSemaphore[PCLOCKIDX]);
+    devSemaphore[PCLOCKIDX]--;
+    blockCurrentProcess(&devSemaphore[PCLOCKIDX]);
     softBlockedCount++;
     switchProcess();  /* Never returns here */
 }
