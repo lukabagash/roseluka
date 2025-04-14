@@ -37,11 +37,10 @@ void enableInterrupts() {
     setSTATUS(getSTATUS() | IECON);
 }
 
-static void performRW(int asid, int pageBlock, int frameNo, unsigned int operation)
+static void performRW(int asid, int pageBlock, int frameAddr, unsigned int operation)
 {
     int devIndex = ((FLASHINT - OFFSET) * DEVPERINT) + (asid - 1);
     int *devSem  = &p3devSemaphore[devIndex];
-    int frameAddr = SWAPPOOLADDR + (frameNo * PAGESIZE);
     debugVM(0x1, p3devSemaphore[devIndex], devIndex, frameAddr);
     devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;
     device_t *flashDev = &(devReg->devreg[devIndex]);
@@ -90,6 +89,7 @@ void supLvlTlbExceptionHandler()
     static int frameNo;
     frameNo = (frameNo + 1) % (2 * UPROCMAX);
 
+    int frameAddr = SWAPPOOLADDR + (frameNo * PAGESIZE);
 
     if (swapPool[frameNo].asid != -1) {
         /* occupant info */
@@ -107,7 +107,7 @@ void supLvlTlbExceptionHandler()
         performRW(
             occupantAsid,       /* occupant process ID */
             occupantVPN,        /* occupant’s block number */
-            frameNo,            /* frame index in swap pool */
+            frameAddr,            /* frame index in swap pool */
             WRITEBLK            /* operation = write */
         );
     }
@@ -115,7 +115,7 @@ void supLvlTlbExceptionHandler()
     performRW(
         sPtr->sup_asid,   /* current process ID */
         missingPN,        /* the missing page block # */
-        frameNo,          /* chosen frame index */
+        frameAddr,          /* chosen frame index */
         READBLK           /* operation = read */
     );
 
@@ -126,7 +126,7 @@ void supLvlTlbExceptionHandler()
 
     /* Atomically set V + D bits in the page table entry, then TLBCLR */
     disableInterrupts();
-    sPtr->sup_privatePgTbl[missingPN].entryLO = ((frameNo << PFNSHIFT) | VALIDON | DIRTYON);
+    sPtr->sup_privatePgTbl[missingPN].entryLO = ((frameAddr << PFNSHIFT) | VALIDON | DIRTYON);
     TLBCLR();
     enableInterrupts();
 
