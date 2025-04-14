@@ -50,35 +50,41 @@ HIDDEN void getTOD(state_PTR savedState) {
 
 HIDDEN void writePrinter(state_PTR savedState, char *virtAddr, int len, int dnum) {
     /*
-     * Causes the requesting U-proc to be suspended until a line of output (string of characters) has been transmitted 
-     * to the printer device associated with the U-proc. 
-     * If the write was successful, returns the number of characters transmitted. Otherwise, returns the negative of the device’s status value.
+     * Writes a line of output from the user buffer to the printer device.
+     * Returns the number of characters successfully transmitted, or a negative error code.
      */
-    debugSYS(0x11, 0x60D,0x60D,0x60D );
-
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
-    int i; /* For loop index */
-    device_t printerdev = reg->devreg[(PRNTINT - DISKINT) * DEVPERINT + dnum]; /* Get the printer device register */
+    device_t *printerdev = &(reg->devreg[(PRNTINT - DISKINT) * DEVPERINT + dnum]); /* Get the printer device */
 
-    illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
-       
-    for (i = 0; i < len; i++) {
-        /* Write printer device's DATA0 field with printer device address (i.e., address of printer device) */
-        printerdev.d_data0 = virtAddr[i];
-        printerdev.d_command = PRINTCHR; /* PRINTCHR command code */
-        
-        SYSCALL(WAITIO, PRNTINT, dnum, FALSE); /* Suspend u_proc, wait for I/O to complete */
+    illegalCheck(len); /* Validate length (0 to MAXSTRINGLEN) */
 
-        /* if not successfully written*/
-        if (printerdev.d_status != DEVREDY) {
-            charNum = 0 - printerdev.d_status;
-            break;
+    /* Lock the printer device semaphore */
+    mutex(&(devSemaphores[((PRNTINT - OFFSET) * DEVPERINT) + dnum]), TRUE);
+
+    while (len > 0) {
+        disableInterrupts();
+        printerdev->d_data0 = *virtAddr; /* Put character into DATA0 */
+        printerdev->d_command = PRINTCHR; /* Issue PRINTCHR command */
+        enableInterrupts();
+
+        /* Capture the return value from SYS5 */
+        unsigned int status = SYSCALL(WAITIO, PRNTINT, dnum, FALSE);
+
+        if ((status & TERMSTATUSMASK) != DEVREDY) {
+            savedState->s_v0 = 0 - (status & TERMSTATUSMASK); /* Return negative error code */
+            mutex(&(devSemaphores[((PRNTINT - OFFSET) * DEVPERINT) + dnum]), FALSE);
+            LDST(savedState);
         }
+
+        virtAddr++;
         charNum++;
-    } 
-    /* Resume back to user mode with v0 updated accordingly */
-    currentProcess->p_s.s_v0 = charNum;
+        len--;
+    }
+
+    savedState->s_v0 = charNum; /* Number of characters printed */
+    mutex(&(devSemaphores[((PRNTINT - OFFSET) * DEVPERINT) + dnum]), FALSE);
+    LDST(savedState);
 }
 
 HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnum) {
