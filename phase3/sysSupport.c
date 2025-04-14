@@ -89,11 +89,11 @@ HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnu
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     device_t *terminaldev = &(reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]); /* Get the terminal device register */
     illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
-    debugSYS(0xACE55, 0xACE55, 0xACE55, 0xACE55);
     
     while (len > 0) {
         /* Write printer device's DATA0 field with printer device address (i.e., address of printer device)*/
         /* terminaldev.d_status = ALLOFF | terminaldev.d_status | (virtAddr[i] << 8); */
+        debugSYS(0xACE55, 0xACE55, 0xACE55, 0xACE55);
         disableInterrupts();
         terminaldev->t_transm_command = ((*virtAddr) << 8) | TRANSMITCHAR; /* Send the character */
         SYSCALL(WAITIO, TERMINT, dnum, FALSE);  /* suspend u_proc */
