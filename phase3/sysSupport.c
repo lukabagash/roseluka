@@ -125,7 +125,7 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
     debugSYS(0xACE55, 0xACE55, 0xACE55, 0xACE55);
 
         disableInterrupts();
-        terminaldev.t_recv_command = RECEIVECHAR;
+        terminaldev->t_recv_command = RECEIVECHAR;
         
         SYSCALL(WAITIO, TERMINT, dnum, TRUE);
         enableInterrupts();
