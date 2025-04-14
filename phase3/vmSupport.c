@@ -75,6 +75,8 @@ void supLvlTlbExceptionHandler()
     if (exc_code == TLBMODEXC) {
         ph3programTrapHandler();
     }
+    mutex(&swapPoolSemaphore, TRUE);
+
 
     unsigned int entryHI = savedState->s_entryHI;
     int missingPN = ((entryHI & VPNMASK) >> VPNSHIFT) % 32;
@@ -82,7 +84,6 @@ void supLvlTlbExceptionHandler()
     static int frameNo;
     frameNo = (frameNo + 1) % (2 * UPROCMAX);
 
-    mutex(&swapPoolSemaphore, TRUE);
 
     if (swapPool[frameNo].asid != -1) {
         /* occupant info */
