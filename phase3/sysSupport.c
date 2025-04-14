@@ -88,25 +88,30 @@ HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnu
     int charNum = 0;
     devregarea_t *reg = (devregarea_t *) RAMBASEADDR;
     int i; /* For loop index */
-    device_t terminaldev = reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]; /* Get the terminal device register */
+    device_t *terminaldev = &(reg->devreg[(TERMINT - DISKINT) * DEVPERINT + dnum]); /* Get the terminal device register */
     illegalCheck(len); /* Ensure the length is valid, this should be in the range of 0 to 128. */
-       
-    for (i = 0; i < len; i++) {
+    debugSYS(0xACE55, 0xACE55, 0xACE55, 0xACE55);
+    
+    while (len > 0) {
         /* Write printer device's DATA0 field with printer device address (i.e., address of printer device)*/
         /* terminaldev.d_status = ALLOFF | terminaldev.d_status | (virtAddr[i] << 8); */
-        terminaldev.t_transm_command = (virtAddr[i] << 8) | TRANSMITCHAR; /* PRINTCHR command code */
-
+        disableInterrupts();
+        terminaldev->t_transm_command = ((*virtAddr) << 8) | TRANSMITCHAR; /* Send the character */
         SYSCALL(WAITIO, TERMINT, dnum, FALSE);  /* suspend u_proc */
+        enableInterrupts();
 
         /* if not successfully written Receive Error status code */
-        if ((terminaldev.t_transm_status & TERMSTATUSMASK) != CHARTRANSMITTED) {
-            charNum = 0 - terminaldev.d_status;
-            break;
+        if ((terminaldev->t_transm_status & TERMSTATUSMASK) != CHARTRANSMITTED) {
+            savedState->s_v0 = 0 - (terminaldev->d_status & TERMSTATUSMASK); /* Return negative error code */
+            LDST(savedState);
         }
+        virtAddr++;  /* Move to next character in user buffer */
         charNum++;
+        len--;       /* Decrement remaining length */
     } 
     /*Resume back to user mode with v0 updated accordingly:*/
     currentProcess->p_s.s_v0 = charNum;
+    LDST(savedState);
 }
 
 HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
