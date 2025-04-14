@@ -56,7 +56,7 @@ static void performRW(int asid, int pageBlock, int frameNo, unsigned int operati
 
     enableInterrupts();
 
-    (unsigned int *) frameContents = (unsigned int *) frameAddr;
+    unsigned int * frameContents = (unsigned int *) frameAddr;
     int l;
     for (l = 0; l < 8; l++) {
         debugVM(l, frameContents[l], frameAddr, 0xDEADBEEF);
