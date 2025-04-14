@@ -303,8 +303,7 @@ HIDDEN void getSupportDataSyscall() {
 void passUpOrDie(int exceptionType) {
     debugExc(0xBABE, 0xBEEF, 0xDEAD, 0xF00D);
     if (currentProcess->p_supportStruct != NULL) {
-        debugExc(savedExceptState->s_pc, savedExceptState->s_entryHI, savedExceptState->s_cause, 0xBABE);
-        debugExc(0xB16BEEF, currentProcess->p_supportStruct->sup_privatePgTbl[0].entryHI, currentProcess->p_supportStruct->sup_privatePgTbl[0].entryLO, 0);
+        debugExc(savedExceptState->s_pc, savedExceptState->s_entryHI, currentProcess->p_supportStruct->sup_privatePgTbl[0].entryHI, savedExceptState->s_cause);
 
         moveState(savedExceptState, 
                   &(currentProcess->p_supportStruct->sup_exceptState[exceptionType]));
@@ -353,20 +352,17 @@ void syscallExceptionHandler() {
         programTrapHandler();
 		return; /* Ensures no return to the killed process */
     }
-
+    debugExc(0x515, syscallNumber, savedExceptState->s_entryHI, 0);
     /* If SYSCALL code is outside 1..8, handle as Program Trap (illegal) */
     if (syscallNumber < CREATEPROCESS || syscallNumber > GETSUPPORTPTR) {
         debugExc(0xBEEF, 0xBEEF, 0xBEEF, 0xBEEF);
         programTrapHandler();
 		return; /* Same reason as above */
     }
-    debugExc(0xEEFEFEF, 0xA55555, 0xBEEEEEEF, 0xBAAAAAD);
-    debugExc(0xB16BEEF, syscallNumber, 0, 0);
 
     /* Update the Current Process's PCB to reflect the saved state */
-    debugExc(0xBEEF, savedExceptState->s_entryHI, 0xBEEF, 0xBEEF);
     updateCurrentProcessState();
-    debugExc(0xCAFE, savedExceptState->s_entryHI, 0xCAFE, 0xCAFE);
+    debugExc(0x5152, savedExceptState->s_entryHI, savedExceptState->s_status, savedExceptState->s_cause);
 
     switch (syscallNumber) {
         case CREATEPROCESS:    /* SYS1 */
