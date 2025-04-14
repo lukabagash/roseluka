@@ -42,7 +42,7 @@ static void performRW(int asid, int pageBlock, int frameNo, unsigned int operati
     int devIndex = ((FLASHINT - OFFSET) * DEVPERINT) + (asid - 1);
     int *devSem  = &p3devSemaphore[devIndex];
     int frameAddr = FRAMEPOOLSTART + (frameNo * PAGESIZE);
-    debugVM(0x1, *devSem, devIndex, frameAddr);
+    debugVM(0x1, p3devSemaphore[devIndex], devIndex, frameAddr);
     devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;
     device_t *flashDev = &(devReg->devreg[devIndex]);
     mutex(devSem, TRUE);
