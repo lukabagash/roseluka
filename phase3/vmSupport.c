@@ -50,8 +50,13 @@ static void performRW(int asid, int pageBlock, int frameNo, unsigned int operati
     disableInterrupts(); 
     flashDev->d_command = (pageBlock << FLASCOMHSHIFT) | operation;
     debugVM(0x2, operation, *devSem, flashDev->d_command);
-
-    SYSCALL(WAITIO, FLASHINT, (asid - 1), (operation == READBLK));
+    if (operation == READBLK){ /* if the caller wishes to read from the flash device */
+        SYSCALL(WAITIO, FLASHINT, (asid - 1), TRUE);
+	}
+	else{ /* the caller wishes to write to the flash device */
+        SYSCALL(WAITIO, FLASHINT, (asid - 1), FALSE);
+	}
+    
     debugVM(0x3, 0x60D, 0x60D, 0x60D);
 
     enableInterrupts();
