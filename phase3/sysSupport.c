@@ -146,7 +146,7 @@ void supLvlGenExceptionHandler() {
      */
     support_t *sPtr = (support_t *) SYSCALL (GETSUPPORTPTR, 0, 0, 0); /* Get the pointer to the Current Process’s Support Structure */
     int dnum = sPtr->sup_asid - 1; /*Each U-proc is associated with its own flash and terminal device. The ASID uniquely identifies the process and by extension, its devices*/
-    unsigned int cause = sPtr->sup_exceptState[0].s_cause; /* Get the cause of the TLB exception */
+    unsigned int cause = sPtr->sup_exceptState[1].s_cause; /* Get the cause of the TLB exception */
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT; /* Extract the exception code from the cause register */
     debugSYS(0x1, exc_code, dnum, 0);
     if (exc_code != SYSCALLEXCPT) /* TLB-Modification Exception */
