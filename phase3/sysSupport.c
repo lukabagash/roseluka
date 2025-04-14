@@ -35,6 +35,7 @@ void schizoUserProcTerminate(int *address) {
     if (address != NULL) {
         mutex(address, FALSE);  /* Release the mutex if address is given */
     }
+    SYSCALL(SYS4NUM, (unsigned int) &masterSemaphore, 0, 0); /* performing a V operation on masterSemaphore, to come to a more graceful conclusion */
     SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* Mentally unstable uproc calls sys2 */
 }
 
