@@ -56,10 +56,10 @@ static void performRW(int asid, int pageBlock, int frameNo, unsigned int operati
 
     enableInterrupts();
 
-    unsigned int *frameContents = (unsigned int *) frameAddr;
+    (unsigned int) *frameContents = (unsigned int *) frameAddr;
     int l;
-    for (l = 0; l < 8; l++) {   // print first 8 words (32 bytes)
-        debugVM(i, frameContents[i], frameAddr, 0xDEADBEEF);
+    for (l = 0; l < 8; l++) {
+        debugVM(l, frameContents[l], frameAddr, 0xDEADBEEF);
     }
     int status = flashDev->d_status;
     mutex(devSem, FALSE);
