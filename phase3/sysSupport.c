@@ -122,7 +122,7 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
        
     while(*virtAddr != ENDOFLINE){
         /* Write printer device's DATA0 field with printer device address (i.e., address of printer device)*/
-    debugVM(0xACE55, 0xACE55, 0xACE55, 0xACE55);
+    debugSYS(0xACE55, 0xACE55, 0xACE55, 0xACE55);
 
         disableInterrupts();
         terminaldev.t_recv_command = RECEIVECHAR;
