@@ -97,6 +97,7 @@ HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnu
     mutex(&(p3devSemaphore[((TERMINT - OFFSET) * DEVPERINT) + dnum + DEVPERINT]), TRUE); /* NOTE: +DEVPERINT to select transmitter */
 
     while (len > 0) {
+        debugSYS(0xACE55, 0xACE55, 0xACE55, 0xACE55);
         disableInterrupts();
         terminaldev->t_transm_command = ((*virtAddr) << 8) | TRANSMITCHAR; /* Issue transmit command */
 
@@ -107,6 +108,7 @@ HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnu
         unsigned int statusCode = status & TERMSTATUSMASK; /* Mask to extract only the status bits */
 
         if (statusCode != CHARTRANSMITTED) {
+            debugSYS(0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD);
             savedState->s_v0 = 0 - statusCode; /* Negative error code */
             mutex(&(devSemaphores[((TERMINT - OFFSET) * DEVPERINT) + dnum + DEVPERINT]), FALSE);
             LDST(savedState);
@@ -118,7 +120,7 @@ HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnu
     }
 
     savedState->s_v0 = charNum; /* Return number of characters successfully transmitted */
-    mutex(&(devSemaphores[((TERMINT - OFFSET) * DEVPERINT) + dnum + DEVPERINT]), FALSE);
+    mutex(&(p3devSemaphore[((TERMINT - OFFSET) * DEVPERINT) + dnum + DEVPERINT]), FALSE);
     LDST(savedState);
 }
 
