@@ -126,7 +126,7 @@ void supLvlTlbExceptionHandler()
 
     /* Atomically set V + D bits in the page table entry, then TLBCLR */
     disableInterrupts();
-    sPtr->sup_privatePgTbl[missingPN].entryLO = ((frameAddr << PFNSHIFT) | VALIDON | DIRTYON);
+    sPtr->sup_privatePgTbl[missingPN].entryLO = frameAddr | VALIDON | DIRTYON;
     TLBCLR();
     enableInterrupts();
 
