@@ -27,6 +27,7 @@
 #include "../h/scheduler.h"
 #include "../h/interrupts.h"
 #include "../h/initial.h"
+#include "../h/initProc.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
 
