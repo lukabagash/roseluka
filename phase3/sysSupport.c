@@ -63,7 +63,7 @@ HIDDEN void writePrinter(state_PTR savedState, char *virtAddr, int len, int dnum
     mutex(&(p3devSemaphore[((PRNTINT - OFFSET) * DEVPERINT) + dnum]), TRUE);
 
     while (len > 0) {
-        debugExc(processCount, softBlockedCount, 0xBABE, 0xBEEF);
+        debugSYS(processCount, softBlockedCount, 0xBABE, 0xBEEF);
         disableInterrupts();
         printerdev->d_data0 = *virtAddr; /* Put character into DATA0 */
         printerdev->d_command = PRINTCHR; /* Issue PRINTCHR command */
