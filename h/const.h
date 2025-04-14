@@ -35,7 +35,7 @@ the Pseudo-clock */
 #define VALIDON             0x00000200
 #define GLOBALOFF           0x0         /* Global */
 
-#define UPROCMAX            1           /* User process count */          
+#define UPROCMAX            8           /* User process count */          
 #define PGTBLSIZE           32          /* Array size of page table */
 #define SUPSTCKTOP          499         /* Top of the stack area for the process' exception handlers */
  
