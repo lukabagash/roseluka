@@ -110,8 +110,15 @@ void supLvlTlbExceptionHandler()
 
         /* Atomically invalidate occupant’s PTE & TLB */
         disableInterrupts();
-        occPTEntry->entryLO &= VALIDOFFTLB;  /* turn off V bit */
-        TLBCLR();
+        occPTEntry->entryLO &= VALIDOFFTLB;
+            
+        /* Selectively update TLB if entry is cached */
+        setENTRYHI(occPTEntry->entryHI);
+        TLBP();
+        if ((getINDEX() & 0x80000000) == 0) { // Match found
+            setENTRYLO(occPTEntry->entryLO);
+            TLBWI();
+        }
         enableInterrupts();
 
         /* Write occupant’s page out */
@@ -134,11 +141,18 @@ void supLvlTlbExceptionHandler()
     swapPool[frameNo].VPN  = missingPN;
     swapPool[frameNo].pte  = &(sPtr->sup_privatePgTbl[missingPN]);
 
-    /* Disable interrupts to atomically set Valid, Dirty bits in the page table entry and TLBCLR */
     disableInterrupts();
     sPtr->sup_privatePgTbl[missingPN].entryLO = frameAddr | VALIDON | DIRTYON;
-    TLBCLR(); /* Update the TLB by erasing ALL the entries */
+
+    /* Try to update existing TLB entry instead of clearing all */
+    setENTRYHI(sPtr->sup_privatePgTbl[missingPN].entryHI);
+    TLBP();
+    if ((getINDEX() & 0x80000000) == 0) {
+        setENTRYLO(sPtr->sup_privatePgTbl[missingPN].entryLO);
+        TLBWI();
+    }
     enableInterrupts();
+
 
     mutex(&swapPoolSemaphore, FALSE);
     LDST(savedState);
