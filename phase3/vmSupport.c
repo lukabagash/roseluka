@@ -111,11 +111,11 @@ void supLvlTlbExceptionHandler()
         /* Atomically invalidate occupant’s PTE & TLB */
         disableInterrupts();
         occPTEntry->entryLO &= VALIDOFFTLB;
-            
+
         /* Selectively update TLB if entry is cached */
         setENTRYHI(occPTEntry->entryHI);
         TLBP();
-        if ((getINDEX() & 0x80000000) == 0) { // Match found
+        if ((getINDEX() & 0x80000000) == 0) { 
             setENTRYLO(occPTEntry->entryLO);
             TLBWI();
         }
