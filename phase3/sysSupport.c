@@ -1,7 +1,7 @@
 /******************************** sysSupport.c **********************************
- * Support Level's general exception handler. 
- * Support Level's SYSCALL exception handler. 
- * Support Level's Program Trap exception handler.
+ * This file implements user-mode support-level system services (from SYS9–SYS13) 
+ * for processes that have been assigned a support structure.
+ * 
  * Written by Rosalie Lee, Luka Bagashvili
  **************************************************************************/
 

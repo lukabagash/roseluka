@@ -1,14 +1,26 @@
 /******************************** initProc.c **********************************
- *
- *  Written by Rosalie Lee, Luka Bagashvili
+ * This file launches user-mode processes and gets placed on the Ready Queue.
+ * 
+ * Initialization:
+ * The device semaphores for peripheral I/O devices.
+ * The masterSemaphore for termination of user processes.
+ * The Swap Pool table for paging.
+ * 
+ * Each new process gets:
+ * A support structure with TLB and general exception contexts to handle TLB-refill and general exceptions. 
+ * A private page table initialized for each user process’s address translation. 
+ * A processor state set to user-mode with interrupts and the processor local timer enabled. 
+ * 
+ * Written by Rosalie Lee, Luka Bagashvili
  **************************************************************************/
 
+ 
 #include "../h/const.h"
 #include "../h/types.h"
 #include "../h/pcb.h"
-#include "../h/exceptions.h"  /* For the exception handler */
-#include "../h/vmSupport.h" /* For the initSwapStructs function */
-#include "../h/sysSupport.h" /* For the syscall support functions */
+#include "../h/exceptions.h"  
+#include "../h/vmSupport.h" 
+#include "../h/sysSupport.h" 
 #include "/usr/include/umps3/umps/libumps.h"
 
 int p3devSemaphore[PERIPHDEVCNT]; /* Sharable peripheral I/O device, (Disk, Flash, Network, Printer): 4 classes × 8 devices = 32 semaphores 
