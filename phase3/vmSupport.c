@@ -1,3 +1,9 @@
+/******************************** vmSupport.c **********************************
+ * 
+ * Written by Rosalie Lee, Luka Bagashvili
+ **************************************************************************/
+
+
 #include "../h/vmSupport.h"
 #include "../h/initial.h"
 #include "../h/types.h"
@@ -9,6 +15,10 @@
 HIDDEN swap_t swapPool[2 * UPROCMAX];  /* Swap Pool table */
 int swapPoolSemaphore;                /* Controls mutual exclusion over swapPool */
 
+/************************************************************************
+ * Helper Function
+ * Initialize both the Swap Pool table and accompanying semaphore.
+ ************************************************************************/
 void initSwapStructs() {
     int i;
     for (i = 0; i < 2 * UPROCMAX; i++) {
@@ -17,14 +27,25 @@ void initSwapStructs() {
     swapPoolSemaphore = 1;
 }
 
+/************************************************************************
+ * Helper Function
+ * Gain/Release mutual exclusion from the designated semaphore.
+ ************************************************************************/
 void mutex(int *sem, int acquire) {
+    /* If 1 is passed into the acquire, call SYS3 to gain mutex */
     if (acquire) {
         SYSCALL(PASSEREN, (unsigned int)sem, 0, 0);
-    } else {
+    } 
+    /* If 0 is passed into the acquire, call SYS4 to release mutex */
+    else {
         SYSCALL(VERHOGEN, (unsigned int)sem, 0, 0);
     }
 }
 
+/************************************************************************
+ * Helper Functions
+ * Disable/Enable interrupts to process atomically.
+ ************************************************************************/
 void disableInterrupts() {
     setSTATUS(getSTATUS() & IECOFF);
 }
@@ -56,12 +77,16 @@ static void performRW(int asid, int pageBlock, int frameAddr, unsigned int opera
     }
 }
 
+/************************************************************************
+ * TLB exception handler – the Pager:
+ * handle TLB Invalid exceptions (page fault).
+ ************************************************************************/
 void supLvlTlbExceptionHandler() 
 {
     support_t *sPtr = (support_t *) SYSCALL(GETSUPPORTPTR, 0, 0, 0);
     state_PTR savedState = &(sPtr->sup_exceptState[0]);
 
-    unsigned int cause    = savedState->s_cause;
+    unsigned int cause = savedState->s_cause;
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT;
 
     if (exc_code == TLBMODEXC) {
@@ -69,9 +94,8 @@ void supLvlTlbExceptionHandler()
     }
     mutex(&swapPoolSemaphore, TRUE);
 
-
-    unsigned int entryHI = savedState->s_entryHI;
-    int missingPN = ((entryHI & VPNMASK) >> VPNSHIFT) % 32;
+    unsigned int entryHI = savedState->s_entryHI; /*  */
+    int missingPN = ((entryHI & VPNMASK) >> VPNSHIFT) % 32; /* Hash the page number from the VPN of the missing TLB entry */
 
     static int frameNo;
     frameNo = (frameNo + 1) % (2 * UPROCMAX);
@@ -84,17 +108,17 @@ void supLvlTlbExceptionHandler()
         int occupantVPN  = swapPool[frameNo].VPN;
         pte_entry_t *occPTEntry = swapPool[frameNo].pte;
 
-        /* (a) Atomically invalidate occupant’s PTE & TLB */
+        /* Atomically invalidate occupant’s PTE & TLB */
         disableInterrupts();
         occPTEntry->entryLO &= VALIDOFFTLB;  /* turn off V bit */
         TLBCLR();
         enableInterrupts();
 
-        /* (b) Write occupant’s page out */
+        /* Write occupant’s page out */
         performRW(
             occupantAsid,       /* occupant process ID */
             occupantVPN,        /* occupant’s block number */
-            frameAddr,            /* frame index in swap pool */
+            frameAddr,          /* frame index in swap pool */
             WRITEBLK            /* operation = write */
         );
     }
@@ -106,15 +130,14 @@ void supLvlTlbExceptionHandler()
         READBLK           /* operation = read */
     );
 
-
     swapPool[frameNo].asid = sPtr->sup_asid;
     swapPool[frameNo].VPN  = missingPN;
     swapPool[frameNo].pte  = &(sPtr->sup_privatePgTbl[missingPN]);
 
-    /* Atomically set V + D bits in the page table entry, then TLBCLR */
+    /* Disable interrupts to atomically set Valid, Dirty bits in the page table entry and TLBCLR */
     disableInterrupts();
     sPtr->sup_privatePgTbl[missingPN].entryLO = frameAddr | VALIDON | DIRTYON;
-    TLBCLR();
+    TLBCLR(); /* Update the TLB by erasing ALL the entries */
     enableInterrupts();
 
     mutex(&swapPoolSemaphore, FALSE);
@@ -131,7 +154,7 @@ void uTLB_RefillHandler()
     setENTRYHI(currentProcess->p_supportStruct->sup_privatePgTbl[missingPN].entryHI);
     setENTRYLO(currentProcess->p_supportStruct->sup_privatePgTbl[missingPN].entryLO);
 
-    TLBWR();       /* Write random entry to TLB */
+    TLBWR(); /* Write random entry to TLB */
     LDST(savedState);
 }
 

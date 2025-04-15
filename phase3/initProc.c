@@ -1,3 +1,8 @@
+/******************************** initProc.c **********************************
+ *
+ *  Written by Rosalie Lee, Luka Bagashvili
+ **************************************************************************/
+
 #include "../h/const.h"
 #include "../h/types.h"
 #include "../h/pcb.h"
@@ -20,10 +25,12 @@ void test() {
     int pid; /* Set the process ID (asid of u_proc) */
     masterSemaphore = 0;    
     int res; /* Result of the SYSCALL */
-    /* The Swap Pool table and Swap Pool semaphore. [Section 4.4.1] */
-    initSwapStructs(); /* Initialize the swap structures for paging */
+
+    initSwapStructs(); /* Initialize the Swap Pool table structures for paging */
+
+    /* Initialize the semaphores to 1 indicating the I/O devices are available, for mutual exclusion */
     for(j = 0; j < MAXDEVICECNT - 1; j++) {
-        p3devSemaphore[j] = 1; /* Initialize the semaphores to 1 indicating the I/O devices are available, for mutual exclusion */
+        p3devSemaphore[j] = 1; 
     }
     /* Set the program counter and s_t9 to the logical address for the start of the .text area */
     u_procState.s_pc = (memaddr) TEXTAREASTART;
@@ -31,7 +38,8 @@ void test() {
     /* Set the status to enable Interrupts, enable PLT, User-mode */
     u_procState.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON | PANDOS_CAUSEINTMASK;
     u_procState.s_sp = (memaddr) STCKTOPEND; /* Set the stack pointer for the user process */
-    /* Initialize and launch (SYS1) between 1 and 8 U-procs */
+
+    /* Initialize and launch (SYS1) between 1 to 8 U-procs */
     for(pid = 1; pid < UPROCMAX + 1; pid++) {
         supportStruct[pid].sup_asid = pid; /* Assign process ID to asid of each u_proc */
         supportStruct[pid].sup_exceptContext[0].c_pc = (memaddr) supLvlTlbExceptionHandler; /* Set the TLB exception handler address for page fault exceptions */
@@ -43,7 +51,6 @@ void test() {
         supportStruct[pid].sup_exceptContext[1].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON; /* Enable Interrupts, enable PLT, Kernel-mode */
 
         for (i = 0; i < PGTBLSIZE; i++) {
-
             supportStruct[pid].sup_privatePgTbl[i].entryHI = ALLOFF | ((0x80000 + i) << VPNSHIFT) | (pid << ASIDSHIFT);
 			supportStruct[pid].sup_privatePgTbl[i].entryLO = ALLOFF | 0x00000400; 
         } 
@@ -52,19 +59,19 @@ void test() {
 
         supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | (0xBFFFF << VPNSHIFT); /* Set the entry HI for the Page Table entry 31 */
 
-        res = SYSCALL(CREATEPROCESS, (unsigned int) &(u_procState), (unsigned int) &(supportStruct[pid]), 0); /* Call SYS1 to create a new process with the processor state and support structure */
+        res = SYSCALL(CREATEPROCESS, (unsigned int) &(u_procState), (unsigned int) &(supportStruct[pid]), 0); /* Create a new process with the processor state and support structure */
+        
+        /* If the process creation failed, terminate the process */
         if(res != OK) {
-            SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* If the process creation failed, terminate the process */
-            /* SYSCALL(VERHOGEN, (unsigned int) &masterSemaphore, 0, 0);  Nucleus terminate them instead of blocking test on a semaphore and forcing a PANIC */
+            SYSCALL(TERMINATEPROCESS, 0, 0, 0); 
         }
     }
-    /* After launching all the U-procs, the Nucleus scheduler will detect deadlock and invoke PANIC. [Section 3.2] */
+    /* After launching all the U-procs, the Nucleus scheduler will detect deadlock and invoke PANIC */
+    /* Perform a P operation on the master semaphores for each U-proc */
     for(k = 0; k < UPROCMAX; k++) {
-        /* Perform a P operation on the master semaphore */
         SYSCALL(PASSEREN, (unsigned int) &masterSemaphore, 0, 0);
     }
 
-    /* Terminate (SYS2) after all of its U-proc “children” processes conclude. 
-    This will drive Process Count to zero, triggering the Nucleus to invoke HALT. [Section 3.2] */
-    SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* After all processes conclude, HALT by the Nucleus */
+    /* Terminate after all of its U-proc “children” processes conclude. Process Count becomes zero, trigger HALT by Nucleus */
+    SYSCALL(TERMINATEPROCESS, 0, 0, 0); 
 }
