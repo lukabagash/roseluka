@@ -27,12 +27,6 @@ void initSwapStructs() {
     swapPoolSemaphore = 1;
 }
 
-void debugVM(int a, int b, int c, int d)
-{
-    int i = 40;
-    i++;
-}
-
 /************************************************************************
  * Helper Function
  * Gain/Release mutual exclusion from the designated semaphore.
@@ -116,15 +110,8 @@ void supLvlTlbExceptionHandler()
 
         /* Atomically invalidate occupant’s PTE & TLB */
         disableInterrupts();
-        occPTEntry->entryLO &= VALIDOFFTLB;
-
-        /* Selectively update TLB if entry is cached */
-        setENTRYHI(occPTEntry->entryHI);
-        TLBP();
-        if ((getINDEX() & 0x80000000) == 0) { 
-            setENTRYLO(occPTEntry->entryLO);
-            TLBWI();
-        }
+        occPTEntry->entryLO &= VALIDOFFTLB;  /* turn off V bit */
+        TLBCLR();
         enableInterrupts();
 
         /* Write occupant’s page out */
@@ -147,19 +134,11 @@ void supLvlTlbExceptionHandler()
     swapPool[frameNo].VPN  = missingPN;
     swapPool[frameNo].pte  = &(sPtr->sup_privatePgTbl[missingPN]);
 
+    /* Disable interrupts to atomically set Valid, Dirty bits in the page table entry and TLBCLR */
     disableInterrupts();
     sPtr->sup_privatePgTbl[missingPN].entryLO = frameAddr | VALIDON | DIRTYON;
-
-    /* Try to update existing TLB entry instead of clearing all */
-    setENTRYHI(sPtr->sup_privatePgTbl[missingPN].entryHI);
-    TLBP();
-    debugVM(getINDEX(), 0xDEAD, 0xDEAD, 0xDEAD);
-    if ((getINDEX() & 0x80000000) == 0) {
-        setENTRYLO(sPtr->sup_privatePgTbl[missingPN].entryLO);
-        TLBWI();
-    }
+    TLBCLR(); /* Update the TLB by erasing ALL the entries */
     enableInterrupts();
-
 
     mutex(&swapPoolSemaphore, FALSE);
     LDST(savedState);
