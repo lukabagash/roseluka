@@ -153,7 +153,7 @@ void supLvlTlbExceptionHandler()
     /* Try to update existing TLB entry instead of clearing all */
     setENTRYHI(sPtr->sup_privatePgTbl[missingPN].entryHI);
     TLBP();
-    debugVM(getINDEX(), 0xDEAD, 0xDEAD, 0xDEAD);
+    debugVM(getINDEX().P, 0xDEAD, 0xDEAD, 0xDEAD);
     if ((getINDEX() & 0x80000000) == 0) {
         setENTRYLO(sPtr->sup_privatePgTbl[missingPN].entryLO);
         TLBWI();
