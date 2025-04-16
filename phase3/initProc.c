@@ -63,13 +63,13 @@ void test() {
         supportStruct[pid].sup_exceptContext[1].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON; /* Enable Interrupts, enable PLT, Kernel-mode */
 
         for (i = 0; i < PGTBLSIZE; i++) {
-            supportStruct[pid].sup_privatePgTbl[i].entryHI = ALLOFF | ((0x80000 + i) << VPNSHIFT) | (pid << ASIDSHIFT);
-			supportStruct[pid].sup_privatePgTbl[i].entryLO = ALLOFF | 0x00000400; 
+            supportStruct[pid].sup_privatePgTbl[i].entryHI = ALLOFF | ((KVSBEGIN + i) << VPNSHIFT) | (pid << ASIDSHIFT);
+			supportStruct[pid].sup_privatePgTbl[i].entryLO = ALLOFF | DIRTYON; 
         } 
 
         u_procState.s_entryHI = KUSEG | (pid << ASIDSHIFT) | ALLOFF;  /* Set the entry HI for the user process */
 
-        supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | (0xBFFFF << VPNSHIFT); /* Set the entry HI for the Page Table entry 31 */
+        supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | STCKPGVPN; /* Set the entry HI for the Page Table entry 31 */
 
         res = SYSCALL(CREATEPROCESS, (unsigned int) &(u_procState), (unsigned int) &(supportStruct[pid]), 0); /* Create a new process with the processor state and support structure */
         

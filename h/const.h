@@ -226,6 +226,7 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define RECCHARSTATSHIFT    8
 #define RECCHARSTATMASK     0xFF /* Mask to extract the received character from the terminal device's status field */
 #define TRANSCHARSTATSHIFT  8 /* Shift to get the transmitted character from the terminal device's status field */
+#define KVSBEGIN            0x80000 
 
 /* operations */
 #define	MIN(A,B)		    ((A) < (B) ? A : B)
