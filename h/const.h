@@ -222,6 +222,10 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define DEVREDY             1          /* Device is ready for I/O operations */
 #define PERIPHDEVCNT        48         /* Total number of peripheral devices (Disk, Flash, Network, Printer): 4 classes × 8 devices = 32 semaphores and (Terminal devices): 8 terminals × 2 semaphores = 16 semaphores */
 #define	SWAPPOOLADDR	    0x20020000
+#define INDEXPMASK          0x80000000 /* Index p for tlb */
+#define RECCHARSTATSHIFT    8
+#define RECCHARSTATMASK     0xFF /* Mask to extract the received character from the terminal device's status field */
+#define TRANSCHARSTATSHIFT  8 /* Shift to get the transmitted character from the terminal device's status field */
 
 /* operations */
 #define	MIN(A,B)		    ((A) < (B) ? A : B)

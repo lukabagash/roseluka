@@ -33,8 +33,7 @@ void initSwapStructs() {
 
 /************************************************************************
  * Helper Function
- * Atomically update or invalidate a TLB entry if it exists in the TLB.
- * Used when updating a PTE after loading or evicting a page.
+ * Surgically update TLB.
  ************************************************************************/
 void updateTLBIfCached(unsigned int entryHI, unsigned int *entryLOptr, unsigned int newEntryLO) {
     disableInterrupts();
@@ -43,7 +42,7 @@ void updateTLBIfCached(unsigned int entryHI, unsigned int *entryLOptr, unsigned 
 
     setENTRYHI(entryHI);
     TLBP();
-    if ((getINDEX() & 0x80000000) == 0) {
+    if ((getINDEX() & INDEXPMASK) == 0) {
         setENTRYLO(entryLOptr ? *entryLOptr : newEntryLO);
         TLBWI();
     }
@@ -124,7 +123,7 @@ void supLvlTlbExceptionHandler() {
     mutex(&swapPoolSemaphore, TRUE);
 
     unsigned int entryHI = savedState->s_entryHI;
-    int missingPN = ((entryHI & VPNMASK) >> VPNSHIFT) % 32; /* Hash the page number from the VPN of the missing TLB entry */
+    int missingPN = ((entryHI & VPNMASK) >> VPNSHIFT) % PGTBLSIZE; /* Hash the page number from the VPN of the missing TLB entry */
 
     static int frameNo;
     frameNo = (frameNo + 1) % (2 * UPROCMAX);

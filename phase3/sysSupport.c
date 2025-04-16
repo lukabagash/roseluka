@@ -109,7 +109,7 @@ HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnu
 
     while (len > 0) {
         disableInterrupts(); /* Disable interrupts to atomically write command field and call SYS5 */
-        terminaldev->t_transm_command = ((*virtAddr) << 8) | TRANSMITCHAR; /* Issue transmit command */
+        terminaldev->t_transm_command = ((*virtAddr) << TRANSCHARSTATSHIFT) | TRANSMITCHAR; /* Issue transmit command */
         unsigned int status = SYSCALL(WAITIO, TERMINT, dnum, FALSE); /* Capture the return value from SYS5 */
         enableInterrupts();
 
@@ -163,7 +163,7 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
         }
 
         /* If the read was successful, etrieve received character */
-        char receivedChar = (status >> 8) & 0xFF; /* Upper byte contains the character */
+        char receivedChar = (status >> RECCHARSTATSHIFT) & RECCHARSTATMASK; /* Upper byte contains the character */
         *virtAddr = receivedChar; /* Store into user buffer */
         virtAddr++;
         charNum++;
