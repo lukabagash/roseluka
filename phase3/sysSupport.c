@@ -163,12 +163,13 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
         }
 
         /* If the read was successful, etrieve received character */
-        
+        char receivedChar = (status >> RECCHARSTATSHIFT) & RECCHARSTATMASK; /* Upper byte contains the character */
+        *virtAddr = receivedChar; /* Store into user buffer */
         virtAddr++;
         charNum++;
 
         /* Stop reading if newline (ENDOFLINE) received */
-        if (*virtAddr == ENDOFLINE) {
+        if (receivedChar == ENDOFLINE) {
             break;
         }
     }
