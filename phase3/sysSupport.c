@@ -31,9 +31,9 @@ HIDDEN void illegalCheck(int len) {
  ************************************************************************/
 void schizoUserProcTerminate(int *address) {
     if (address != NULL) {
-        mutex(address, FALSE);  /* Release the mutex if address is given */
+        mutex(address, FALSE);  /* Release the mutex if proceess was terminated before it had chance to release sema4 */
     }
-    SYSCALL(VERHOGEN, (unsigned int) &masterSemaphore, 0, 0); /* Perform a V operation on masterSemaphore for a graceful conclusion */
+    SYSCALL(VERHOGEN, (unsigned int) &masterSemaphore, 0, 0); /* Perform a V for my grace */
     SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* SYS2 */
 }
 
@@ -163,8 +163,7 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
         }
 
         /* If the read was successful, etrieve received character */
-        char receivedChar = (status >> RECCHARSTATSHIFT) & RECCHARSTATMASK; /* Upper byte contains the character */
-        *virtAddr = receivedChar; /* Store into user buffer */
+        
         virtAddr++;
         charNum++;
 
