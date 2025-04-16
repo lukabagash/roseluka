@@ -168,7 +168,7 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
         charNum++;
 
         /* Stop reading if newline (ENDOFLINE) received */
-        if (receivedChar == ENDOFLINE) {
+        if (virtAddr == ENDOFLINE) {
             break;
         }
     }
