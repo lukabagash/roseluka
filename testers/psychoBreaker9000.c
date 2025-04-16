@@ -14,8 +14,7 @@ void main() {
     print(WRITETERMINAL, "=== psychSwapstorm.c initiating ===\n");
 
     for (i = 0; i < ITERATIONS; i++) {
-        print(WRITETERMINAL, "Swap iteration cycle: ");
-        printInt(WRITETERMINAL, i);
+        print(WRITETERMINAL, "Swap iteration cycle");
         print(WRITETERMINAL, "\n");
 
         for (j = START_PAGE; j < START_PAGE + NUM_PAGES; j++) {
@@ -39,8 +38,7 @@ void main() {
     for (j = START_PAGE; j < START_PAGE + NUM_PAGES; j++) {
         pagePtr = (char *)(SEG2 + j * PAGESIZE);
         if (pagePtr[(ITERATIONS - 1) * 17 % PAGESIZE] != j + ITERATIONS - 1) {
-            print(WRITETERMINAL, "Data corrupted at page: ");
-            printInt(WRITETERMINAL, j);
+            print(WRITETERMINAL, "Data corrupted");
             print(WRITETERMINAL, "\n");
             corrupt = 1;
         }
