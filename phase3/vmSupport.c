@@ -31,6 +31,25 @@ void initSwapStructs() {
     swapPoolSemaphore = 1;
 }
 
+/************************************************************************
+ * Helper Function
+ * Atomically update or invalidate a TLB entry if it exists in the TLB.
+ * Used when updating a PTE after loading or evicting a page.
+ ************************************************************************/
+void updateTLBIfCached(unsigned int entryHI, unsigned int *entryLOptr, unsigned int newEntryLO) {
+    disableInterrupts();
+
+    *entryLOptr = newEntryLO;
+
+    setENTRYHI(entryHI);
+    TLBP();
+    if ((getINDEX() & 0x80000000) == 0) {
+        setENTRYLO(entryLOptr ? *entryLOptr : newEntryLO);
+        TLBWI();
+    }
+
+    enableInterrupts();
+}
 
 /************************************************************************
  * Helper Function
@@ -118,18 +137,7 @@ void supLvlTlbExceptionHandler() {
         int occupantVPN  = swapPool[frameNo].VPN;
         pte_entry_t *occPTEntry = swapPool[frameNo].pte;
 
-        /* Atomically invalidate occupant’s PTE & TLB */
-        disableInterrupts();
-        occPTEntry->entryLO &= VALIDOFFTLB;
-
-        /* Selectively update TLB if entry is cached */
-        setENTRYHI(occPTEntry->entryHI);
-        TLBP();
-        if ((getINDEX() & 0x80000000) == 0) { 
-            setENTRYLO(occPTEntry->entryLO);
-            TLBWI();
-        }
-        enableInterrupts();
+        updateTLBIfCached(occPTEntry->entryHI, &occPTEntry->entryLO, occPTEntry->entryLO & VALIDOFFTLB);
 
         /* Write occupant’s page out */
         performRW(
@@ -151,18 +159,11 @@ void supLvlTlbExceptionHandler() {
     swapPool[frameNo].VPN  = missingPN;
     swapPool[frameNo].pte  = &(sPtr->sup_privatePgTbl[missingPN]);
 
-    disableInterrupts();
-    sPtr->sup_privatePgTbl[missingPN].entryLO = frameAddr | VALIDON | DIRTYON;
-
-    /* Try to update existing TLB entry instead of clearing all */
-    setENTRYHI(sPtr->sup_privatePgTbl[missingPN].entryHI);
-    TLBP();
-
-    if ((getINDEX() & 0x80000000) == 0) {
-        setENTRYLO(sPtr->sup_privatePgTbl[missingPN].entryLO);
-        TLBWI();
-    }
-    enableInterrupts();
+    updateTLBIfCached(
+        sPtr->sup_privatePgTbl[missingPN].entryHI,
+        &sPtr->sup_privatePgTbl[missingPN].entryLO,
+        frameAddr | VALIDON | DIRTYON
+    );
 
 
     mutex(&swapPoolSemaphore, FALSE);
