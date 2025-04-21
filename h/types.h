@@ -99,6 +99,13 @@ typedef struct support_t {
 	int				sup_stackGen[500];		/* the stack area for the process' general exception handler */
 } support_t;
 
+/* Delay structure type */
+typedef struct delayd_t {
+	struct delayd_t *d_next; 		/* next element on the ADL */
+	int 			d_wakeTime; 	/* field to record the time of day */
+	support_t 		*d_supStruct; 	/* pointer to a Support Structure, denoting the sleeping U-proc’s identity */
+} delayd_t;
+
 /* process control block type */
 typedef struct pcb_t {
     /* Process queue fields */
