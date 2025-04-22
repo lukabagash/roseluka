@@ -150,9 +150,8 @@ void initADL(void) {
 }
 
 /* SYS18 support‐level handler */
-void delaySyscall(state_t *savedState) {
+void delaySyscall(state_t *savedState, int secs) {
     support_t *sPtr = (support_t *) SYSCALL(GETSUPPORTPTR, 0, 0, 0);
-    int secs = savedState->s_a1;
 
     /* invalid → terminate */
     if (secs < 0) {
