@@ -147,7 +147,7 @@ void initADL(void) {
         st.s_t9     = (memaddr) delayDaemon;
         st.s_entryHI = ALLOFF | (0 << ASIDSHIFT);
         /* no support struct → runs in kernel ASID */
-        SYSCALL(CREATEPROCESS, (unsigned int)&st, 0, 0);
+        SYSCALL(CREATEPROCESS, (unsigned int)&st, NULL, 0);
     }
 }
 
