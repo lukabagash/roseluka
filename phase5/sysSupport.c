@@ -238,11 +238,11 @@ void supLvlGenExceptionHandler() {
             ); 
             break;
         case DELAY:          /* SYS18 */
-+            delaySyscall(
+            delaySyscall(
                 savedState
-                , (int) (savedState->s_a1) /* number of seconds to delay */;
+                , (int) (savedState->s_a1) /* number of seconds to delay */
             );
-+           break;
+           break;
 
         default:
             /* Should never enter if the syscallexc checks out */
