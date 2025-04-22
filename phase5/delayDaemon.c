@@ -136,7 +136,7 @@ void initADL(void) {
 
     /* launch the Delay Daemon (kernel ASID) */
     {
-        state_t st = { 0 };
+        state_t st;
         devregarea_t *devArea = (devregarea_t *) RAMBASEADDR;
         memaddr ramTop = devArea->rambase + devArea->ramsize;
 

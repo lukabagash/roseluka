@@ -31,7 +31,7 @@ int masterSemaphore; /* Private semaphore for graceful conclusion/termination of
 
 void test() {
     static support_t supportStruct[UPROCMAX + 1]; /* Initialize the support structure for the process */
-    state_t u_procState = { 0 };
+    state_t u_procState; /* Pointer to the processor state for u_proc */
     int i; /* For Page table */
     int j; /* Set dev sema4 to 1*/
     int k; /* Perform P after launching all the U-procs*/
