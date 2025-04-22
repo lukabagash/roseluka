@@ -30,7 +30,7 @@ int masterSemaphore; /* Private semaphore for graceful conclusion/termination of
 
 
 void test() {
-    support_t supportStruct[UPROCMAX + 1]; /* Initialize the support structure for the process */
+    static support_t supportStruct[UPROCMAX + 1]; /* Initialize the support structure for the process */
     state_t u_procState; /* Pointer to the processor state for u_proc */
     int i; /* For Page table */
     int j; /* Set dev sema4 to 1*/
@@ -73,7 +73,7 @@ void test() {
 
         supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | STCKPGVPN; /* Set the entry HI for the Page Table entry 31 */
         /* Phase 5: private semaphore starts at 0 */
-+       supportStruct[pid].sup_delaySem = 0;
+       supportStruct[pid].sup_delaySem = 0;
 
         res = SYSCALL(CREATEPROCESS, (unsigned int) &(u_procState), (unsigned int) &(supportStruct[pid]), 0); /* Create a new process with the processor state and support structure */
         
