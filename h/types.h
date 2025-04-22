@@ -97,6 +97,7 @@ typedef struct support_t {
 	pte_entry_t		sup_privatePgTbl[32];	/* the user process's page table */
 	int				sup_stackTLB[500];		/* the stack area for the process' TLB exception handler, an integer array of 500 is a 2Kb area. */
 	int				sup_stackGen[500];		/* the stack area for the process' general exception handler */
+	int             sup_delaySem;           /* private semaphore for SYS18 */
 } support_t;
 
 /* Delay structure type */

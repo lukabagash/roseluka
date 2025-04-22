@@ -13,6 +13,7 @@
 #include "../h/const.h"
 #include "../h/initProc.h"
 #include "../h/exceptions.h"
+#include "../h/delayDaemon.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
 /************************************************************************
@@ -236,6 +237,12 @@ void supLvlGenExceptionHandler() {
                 , dnum
             ); 
             break;
+        case DELAY:          /* SYS18 */
++            delaySyscall(
+                savedState
+                , (int) (savedState->s_a1) /* number of seconds to delay */;
+            );
++           break;
 
         default:
             /* Should never enter if the syscallexc checks out */

@@ -21,6 +21,7 @@
 #include "../h/exceptions.h"  
 #include "../h/vmSupport.h" 
 #include "../h/sysSupport.h" 
+#include "../h/delayDaemon.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
 int p3devSemaphore[PERIPHDEVCNT]; /* Sharable peripheral I/O device, (Disk, Flash, Network, Printer): 4 classes × 8 devices = 32 semaphores 
@@ -39,6 +40,7 @@ void test() {
     int res; /* Result of the SYSCALL */
 
     initSwapStructs(); /* Initialize the Swap Pool table structures for paging */
+    initADL();
 
     /* Initialize the semaphores to 1 indicating the I/O devices are available, for mutual exclusion */
     for(j = 0; j < MAXDEVICECNT - 1; j++) {
@@ -70,6 +72,8 @@ void test() {
         u_procState.s_entryHI = KUSEG | (pid << ASIDSHIFT) | ALLOFF;  /* Set the entry HI for the user process */
 
         supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | STCKPGVPN; /* Set the entry HI for the Page Table entry 31 */
+        /* Phase 5: private semaphore starts at 0 */
++       supportStruct[pid].sup_delaySem = 0;
 
         res = SYSCALL(CREATEPROCESS, (unsigned int) &(u_procState), (unsigned int) &(supportStruct[pid]), 0); /* Create a new process with the processor state and support structure */
         

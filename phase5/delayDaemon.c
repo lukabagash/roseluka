@@ -87,158 +87,134 @@ whose wake up time has passed:
 4. Release mutual exclusion over the ADL: SYS4/V on the ADL semaphore.
 */
 
-#include "../h/const.h"  
-#include "../h/types.h"  
-#include <umps/libumps.h>
+#include "../h/types.h"
+#include "../h/const.h"
+#include "../h/delayDaemon.h"
+#include "/usr/include/umps3/umps/libumps.h"
 
-static delayd_t delayd_pool[64]; /* not sure if the size is 64, not given in pandos */
-static delayd_t *delayd_h = NULL;        
-static delayd_t *delaydFree_h = NULL;        
-static int ADLsem = 0; 
+/* --- ADL globals --- */
+static delayd_t delaydArray[UPROCMAX];   /* pool of descriptors */
+static delayd_t *delaydFree_h;           /* head of free list */
+static delayd_t *delayd_h;               /* head of active (sorted) list */
+static int       semDelay;               /* mutex for ADL */
 
+/* allocate a descriptor from free list */
+static delayd_t *allocDelay(void) {
+    if (!delaydFree_h) return NULL;
+    delayd_t *node = delaydFree_h;
+    delaydFree_h = node->d_next;
+    return node;
+}
 
- /* Forward declarations */
- static delayd_t *alloc_delay_node(void);
- static void       free_delay_node(delayd_t *n);
- static void       insert_delay_node(delayd_t *n);
- static inline int tod_now(void);
- static inline support_t *cur_sup(void);
- 
- /* -------------------------------------------------------------------------
-  *  initADL  ▸  Initialise delay descriptor lists and semaphore
-  * -------------------------------------------------------------------------*/
- void initADL(void) {
-     /* 1. Build the free list from the static pool */
-     for (int i = 0; i < 64; ++i) { 
-         delayd_pool[i].d_next = delaydFree_h;   /* EN: push node ▸ KR: 노드를 free 리스트에 삽입 */
-         delaydFree_h = &delayd_pool[i];
-     }
- 
-     /* 2. Create a dummy tail node for the active list (sentinel) */
-     delayd_h            = alloc_delay_node();       /* Should never fail – pool fresh */
-     delayd_h->d_next    = NULL;                     /* Active list initially empty   */
-     delayd_h->d_supStruct = NULL;
-     delayd_h->d_wakeTime  = INT_MAX;                /* Sentinel has max wake time    */
- 
-     /* 3. ADLsem initialize to 1 (binary semaphore unlocked) */
-     SYSCALL(4, (int)&ADLsem, 0, 0);     /* Unlock */
- }
- 
- /* -------------------------------------------------------------------------
-  *  SYSCALL 18 handler – delay current U‑proc for a1 seconds
-  *  NOTE: called from Support Level exception handler while current context
-  *        is the requesting U‑proc.
-  * -------------------------------------------------------------------------*/
- void syscall_delay(void) {
-     int secCnt = (int) GET_SYSBK_PARAM1();          /* a1 holds seconds ▸ 딜레이 초수 읽기 */
- 
-     if (secCnt < 0) {                              /* Negative delay ➜ error */
-         SYSCALL(SYSCALL_TERMINATEPROCESS, 0, 0, 0); /* SYS9 – kill U‑proc     */
-         /* Not reached */
-     }
- 
-     /* Compute absolute wake‑up time in µs */
-     int wakeTime = tod_now() + (secCnt * 1000000); /* one second = 1000000 micro‑seconds */
- 
-     /* ─── Enter critical section on ADL (P(ADLsem)) ─── */
-     SYSCALL(3, (int)&ADLsem, 0, 0);   /* Binary semaphore lock */
- 
-     /* Allocate a descriptor node */
-     delayd_t *newN = alloc_delay_node();
-     if (newN == NULL) {
-         /* Out of descriptors – release lock then terminate */
-         SYSCALL(4, (int)&ADLsem, 0, 0);     /* Unlock */
-         SYSCALL(SYSCALL_TERMINATEPROCESS, 0, 0, 0); /* Die    */
-     }
- 
-     /* Populate and insert into ADL */
-     newN->d_supStruct = cur_sup();  /* Pointer to caller's support structure */
-     newN->d_wakeTime  = wakeTime;
-     insert_delay_node(newN);        /* Ordered insertion */
- 
-     /* Combined atomic sequence: V(ADLsem) + P(privSem) ------------------ */
-     support_t *sup = newN->d_supStruct;            /* Current U‑proc support */
- 
-     /* Unlock ADL */
-     SYSCALL(SYSCALL_V, (int)&ADLsem, 0, 0);
- 
-     /* Block on private semaphore (sup->sup_sem) – the Delay‑Daemon will V() */
-     SYSCALL(SYSCALL_P, (int)&(sup->sup_sem), 0, 0);
- 
-     /* ── When execution resumes here, the process has been woken up ── */
-     return; /* Execution returns to user at LDST in caller’s exception handler */
- }
- 
- /* -------------------------------------------------------------------------
-  *  delay_daemon  ▸  special kernel ASID = 0 process, endless loop
-  * -------------------------------------------------------------------------*/
- void delay_daemon(void) {
-     while (TRUE) {
-         /* Wait for next pseudo‑clock tick (100 ms) */
-         SYSCALL(SYSCALL_WAITCLOCK, 0, 0, 0);
- 
-         /* Lock ADL */
-         SYSCALL(SYSCALL_P, (int)&ADLsem, 0, 0);
- 
-         int now = tod_now();
-         /* Examine list from head (sentinel is delayd_h) */
-         while (delayd_h->d_next != NULL && delayd_h->d_next->d_wakeTime <= now) {
-             delayd_t *expired = delayd_h->d_next;        /* First real node */
-             delayd_h->d_next  = expired->d_next;         /* Remove from list */
- 
-             /* Un‑block the sleeping U‑proc */
-             SYSCALL(SYSCALL_V, (int)&(expired->d_supStruct->sup_sem), 0, 0);
- 
-             /* Return descriptor to free list */
-             free_delay_node(expired);
-         }
- 
-         /* Unlock ADL */
-         SYSCALL(SYSCALL_V, (int)&ADLsem, 0, 0);
-     }
- }
- 
- /* =====================  Helper Routines  ===================== */
- 
- /* alloc_delay_node ▸ Pop head of free list */
- static delayd_t *alloc_delay_node(void) {
-     delayd_t *n = delaydFree_h;             /* EN: take first free node ▸ KR: free 리스트 첫 노드 할당 */
-     if (n != NULL) {
-         delaydFree_h = n->d_next;           /* Remove from free list */
-         n->d_next    = NULL;                /* Clean pointer          */
-     }
-     return n;                               /* May be NULL if pool exhausted */
- }
- 
- /* free_delay_node ▸ Push node back onto free list */
- static void free_delay_node(delayd_t *n) {
-     if (n == NULL) return;
-     n->d_next    = delaydFree_h;
-     delaydFree_h = n;
- }
- 
- /* insert_delay_node ▸ ordered insert by d_wakeTime ascending */
- static void insert_delay_node(delayd_t *n) {
-     delayd_t *prev = delayd_h;
-     delayd_t *cur  = delayd_h->d_next;
- 
-     while (cur != NULL && cur->d_wakeTime <= n->d_wakeTime) {
-         prev = cur;
-         cur  = cur->d_next;
-     }
-     /* Insert n between prev and cur */
-     n->d_next = cur;
-     prev->d_next = n;
- }
- 
- /* tod_now ▸ get current TOD in µs (lower 32‑bits are enough here) */
- static inline int tod_now(void) {
-     unsigned int now;
-     STCK(now);                    /* MIPS uMPS STCK macro – TOD low loaded */
-     return (int) now;             /* Cast to signed 32‑bit */
- }
- 
- /* cur_sup ▸ obtain pointer to current support structure (SYS1) */
- static inline support_t *cur_sup(void) {
-     return (support_t *) SYSCALL(SYSCALL_GETSUPPORTPTR, 0, 0, 0);
- }
+/* return a descriptor to free list */
+static void freeDelay(delayd_t *node) {
+    node->d_next = delaydFree_h;
+    delaydFree_h = node;
+}
+
+/* insert node into active list sorted by d_wakeTime */
+static void insertDelay(delayd_t *node) {
+    delayd_t **pp = &delayd_h;
+    while (*pp && (*pp)->d_wakeTime <= node->d_wakeTime)
+        pp = &(*pp)->d_next;
+    node->d_next = *pp;
+    *pp = node;
+}
+
+/* Called once at system startup (by test()) */
+void initADL(void) {
+    int i;
+    /* build free list */
+    for (i = 0; i < UPROCMAX - 1; i++) {
+        delaydArray[i].d_next = &delaydArray[i + 1];
+    }
+    delaydArray[UPROCMAX - 1].d_next = NULL;
+    delaydFree_h = &delaydArray[0];
+    delayd_h      = NULL;
+    semDelay      = 1;
+
+    /* launch the Delay Daemon (kernel ASID) */
+    {
+        state_t st;
+        devregarea_t *devArea = (devregarea_t *) RAMBASEADDR;
+        memaddr ramTop = devArea->rambase + devArea->ramsize;
+
+        /* kernel mode, interrupts on */
+        st.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | PANDOS_CAUSEINTMASK;
+        st.s_sp     = ramTop - PAGESIZE;         /* penultimate frame */
+        st.s_pc     = (memaddr) delayDaemon;
+        st.s_t9    ­= (memaddr) delayDaemon;  
+        /* no support struct → runs in kernel ASID */
+        SYSCALL(CREATEPROCESS, (unsigned int)&st, 0, 0);
+    }
+}
+
+/* SYS18 support‐level handler */
+void delaySyscall(state_t *savedState, int secs) {
+    support_t *sPtr = (support_t *) SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+
+    /* invalid → terminate */
+    if (secs < 0) {
+        SYSCALL(TERMINATE, 0, 0, 0);
+        return;
+    }
+
+    /* P on ADL mutex */
+    SYSCALL(PASSEREN, (unsigned int)&semDelay, 0, 0);
+
+    delayd_t *node = allocDelay();
+    if (!node) {
+        /* release ADL, then die */
+        SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);
+        SYSCALL(TERMINATE, 0, 0, 0);
+        return;
+    }
+
+    /* set up wake time & link to this support struct */
+    {
+        cpu_t now;
+        STCK(now);
+        node->d_wakeTime   = now + (cpu_t)secs * 1000000UL;
+        node->d_supStruct  = sPtr;
+    }
+    insertDelay(node);
+
+    /* V on ADL mutex, then P on this proc’s private sem */
+    SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);
+    SYSCALL(PASSEREN, (unsigned int)&(sPtr->sup_delaySem), 0, 0);
+
+    /* when woken, return here */
+    LDST(savedState);
+}
+
+/* the daemon that wakes up sleeping U‑procs */
+void delayDaemon(void) {
+    while (1) {
+        /* sleep until next 100 ms tick */
+        SYSCALL(WAITCLOCK, 0, 0, 0);
+
+        /* lock ADL */
+        SYSCALL(PASSEREN, (unsigned int)&semDelay, 0, 0);
+
+        /* awaken anyone whose wakeTime has passed */
+        {
+            cpu_t now;
+            STCK(now);
+            while (delayd_h && delayd_h->d_wakeTime <= now) {
+                delayd_t *n = delayd_h;
+                delayd_h = n->d_next;
+
+                /* V on that proc’s private sem */
+                SYSCALL(VERHOGEN,
+                        (unsigned int)&(n->d_supStruct->sup_delaySem),
+                        0, 0);
+
+                /* recycle node */
+                freeDelay(n);
+            }
+        }
+
+        /* release ADL */
+        SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);
+    }
+}
