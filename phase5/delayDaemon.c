@@ -99,6 +99,11 @@ static delayd_t *delaydFree_h;           /* head of free list */
 static delayd_t *delayd_h;               /* head of active (sorted) list */
 static int       semDelay;               /* mutex for ADL */
 
+void debugDaemon(int a, int b, int c, int d) {
+    int i =0;
+    i++;
+}
+
 /* allocate a descriptor from free list */
 static delayd_t *allocDelay(void) {
     if (!delaydFree_h) return NULL;
@@ -167,6 +172,7 @@ void delaySyscall(state_t *savedState, int secs) {
     delayd_t *node = allocDelay();
     if (!node) {
         /* release ADL, then die */
+        debugDaemon(0xDEAD, 0xBEEF, 0xBEEF, 0xBEEF);
         SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);
         SYSCALL(TERMINATE, 0, 0, 0);
         return;
