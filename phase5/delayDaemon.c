@@ -90,6 +90,7 @@ whose wake up time has passed:
 #include "../h/types.h"
 #include "../h/const.h"
 #include "../h/delayDaemon.h"
+#include "../h/vmSupport.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
 /* --- ADL globals --- */
@@ -143,7 +144,8 @@ void initADL(void) {
         st.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | PANDOS_CAUSEINTMASK;
         st.s_sp     = ramTop - PAGESIZE;         /* penultimate frame */
         st.s_pc     = (memaddr) delayDaemon;
-        st.s_t9     = (memaddr) delayDaemon;  
+        st.s_t9     = (memaddr) delayDaemon;
+        st.s_entryHI = ALLOFF | (0 << ASIDSHIFT);
         /* no support struct → runs in kernel ASID */
         SYSCALL(CREATEPROCESS, (unsigned int)&st, 0, 0);
     }
@@ -179,9 +181,11 @@ void delaySyscall(state_t *savedState, int secs) {
     }
     insertDelay(node);
 
+    disableInterrupts(); /* disable interrupts */
     /* V on ADL mutex, then P on this proc’s private sem */
     SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);
     SYSCALL(PASSEREN, (unsigned int)&(sPtr->sup_delaySem), 0, 0);
+    enableInterrupts();  /* re-enable interrupts */
 
     /* when woken, return here */
     LDST(savedState);
