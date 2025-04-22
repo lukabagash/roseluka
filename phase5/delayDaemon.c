@@ -217,14 +217,18 @@ void delayDaemon(void) {
             while (delayd_h && delayd_h->d_wakeTime <= now) {
                 delayd_t *n = delayd_h;
                 delayd_h = n->d_next;
+                debugDaemon(0x6, 0xBEEF, 0xBEEF, 0xBEEF);
 
                 /* V on that proc’s private sem */
                 SYSCALL(VERHOGEN,
                         (unsigned int)&(n->d_supStruct->sup_delaySem),
                         0, 0);
+                debugDaemon(0x7, 0xBEEF, 0xBEEF, 0xBEEF);
 
                 /* recycle node */
                 freeDelay(n);
+                debugDaemon(0x8, 0xBEEF, 0xBEEF, 0xBEEF);
+                
             }
         }
         debugDaemon(0x4, 0xBEEF, 0xBEEF, 0xBEEF);
