@@ -8,7 +8,7 @@
 void initADL(void);
 
 /* Implements the support‐level handler for SYS18 */
-void delaySyscall(state_t *savedState, int secs);
+void delaySyscall(state_t *savedState);
 
 /* The Daemon process itself (infinite loop) */
 void delayDaemon(void);

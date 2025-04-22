@@ -240,7 +240,6 @@ void supLvlGenExceptionHandler() {
         case DELAY:          /* SYS18 */
             delaySyscall(
                 savedState
-                , (int) (savedState->s_a1) /* number of seconds to delay */
             );
            break;
 
