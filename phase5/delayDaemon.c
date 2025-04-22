@@ -134,19 +134,21 @@ void initADL(void) {
     delayd_h      = NULL;
     semDelay      = 1;
 
-    state_t st;
-    devregarea_t *devArea = (devregarea_t *) RAMBASEADDR;
-    memaddr ramTop = devArea->rambase + devArea->ramsize;
+    /* launch the Delay Daemon (kernel ASID) */
+    {
+        state_t st = { 0 };
+        devregarea_t *devArea = (devregarea_t *) RAMBASEADDR;
+        memaddr ramTop = devArea->rambase + devArea->ramsize;
 
-    /* kernel mode, interrupts on */
-    st.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | PANDOS_CAUSEINTMASK;
-    st.s_sp     = ramTop - PAGESIZE;         /* penultimate frame */
-    st.s_pc     = (memaddr) delayDaemon;
-    st.s_t9     = (memaddr) delayDaemon;
-    st.s_entryHI = ALLOFF | (0 << ASIDSHIFT);
-    /* no support struct → runs in kernel ASID */
-    SYSCALL(CREATEPROCESS, (unsigned int)&st, 0, 0);
-    
+        /* kernel mode, interrupts on */
+        st.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | PANDOS_CAUSEINTMASK;
+        st.s_sp     = ramTop - PAGESIZE;         /* penultimate frame */
+        st.s_pc     = (memaddr) delayDaemon;
+        st.s_t9     = (memaddr) delayDaemon;
+        st.s_entryHI = ALLOFF | (0 << ASIDSHIFT);
+        /* no support struct → runs in kernel ASID */
+        SYSCALL(CREATEPROCESS, (unsigned int)&st, 0, 0);
+    }
 }
 
 /* SYS18 support‐level handler */
