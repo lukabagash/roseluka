@@ -152,6 +152,8 @@ void initADL(void) {
         st.s_t9     = (memaddr) delayDaemon;
         st.s_entryHI = ALLOFF | (0 << ASIDSHIFT);
         /* no support struct → runs in kernel ASID */
+        debugDaemon(0x5, 0xBEEF, 0xBEEF, 0xBEEF);
+
         SYSCALL(CREATEPROCESS, (unsigned int)&st, (unsigned int)(NULL), 0);
     }
 }
@@ -172,11 +174,12 @@ void delaySyscall(state_t *savedState, int secs) {
     delayd_t *node = allocDelay();
     if (!node) {
         /* release ADL, then die */
-        debugDaemon(0xDEAD, 0xBEEF, 0xBEEF, 0xBEEF);
+        debugDaemon(0x1, 0xBEEF, 0xBEEF, 0xBEEF);
         SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);
         SYSCALL(TERMINATE, 0, 0, 0);
         return;
     }
+    debugDaemon(0x2, 0xBEEF, 0xBEEF, 0xBEEF);
 
     /* set up wake time & link to this support struct */
     {
@@ -205,6 +208,7 @@ void delayDaemon(void) {
 
         /* lock ADL */
         SYSCALL(PASSEREN, (unsigned int)&semDelay, 0, 0);
+        debugDaemon(0x3, 0xBEEF, 0xBEEF, 0xBEEF);
 
         /* awaken anyone whose wakeTime has passed */
         {
@@ -223,6 +227,7 @@ void delayDaemon(void) {
                 freeDelay(n);
             }
         }
+        debugDaemon(0x4, 0xBEEF, 0xBEEF, 0xBEEF);
 
         /* release ADL */
         SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);
