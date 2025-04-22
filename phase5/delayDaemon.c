@@ -143,7 +143,7 @@ void initADL(void) {
         st.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | PANDOS_CAUSEINTMASK;
         st.s_sp     = ramTop - PAGESIZE;         /* penultimate frame */
         st.s_pc     = (memaddr) delayDaemon;
-        st.s_t9    ­= (memaddr) delayDaemon;  
+        st.s_t9     = (memaddr) delayDaemon;  
         /* no support struct → runs in kernel ASID */
         SYSCALL(CREATEPROCESS, (unsigned int)&st, 0, 0);
     }
