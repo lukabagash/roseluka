@@ -16,6 +16,11 @@
 #include "../h/delayDaemon.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
+void debugSys(int a, int b, int c, int d) {
+    int i =0;
+    i++;
+}
+
 /************************************************************************
  * Helper Function
  * Ensure the length is valid, this should be in the range of 0 to 12(MAXSTRINGLEN).
@@ -195,7 +200,7 @@ void supLvlGenExceptionHandler() {
     unsigned int cause    = savedState->s_cause;
     unsigned int exc_code = (cause & PANDOS_CAUSEMASK) >> EXCCODESHIFT;
     int dnum = sPtr->sup_asid - 1; /* Each U-proc is associated with its own flash and terminal device. The ASID uniquely identifies the process and by extension, its devices*/
-
+    debugSys(3, exc_code, savedState->s_a0, 0)
     if (exc_code != SYSCALLEXCPT) /* TLB-Modification Exception */
     {
         ph3programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
