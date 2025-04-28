@@ -41,6 +41,11 @@
 #include "../h/initial.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
+void debugExc(int a, int b, int c, int d) {
+    int i =0;
+    i++;
+}
+
 /* Function Prototypes (local to this module) */
 HIDDEN void blockCurrentProcess(int *semAddr);
 HIDDEN void createNewProcess(state_PTR stateSys, support_t *supportPtr);
@@ -284,6 +289,7 @@ HIDDEN void getSupportDataSyscall() {
  * Otherwise, the Current Process is terminated.
  ************************************************************************/
 void passUpOrDie(int exceptionType) {
+    debugExc(1, exceptionType, 0, 0);
     if (currentProcess->p_supportStruct != NULL) {
         moveState(savedExceptState, 
                   &(currentProcess->p_supportStruct->sup_exceptState[exceptionType]));
@@ -320,7 +326,7 @@ void syscallExceptionHandler() {
     savedExceptState = (state_PTR) BIOSDATAPAGE;
     syscallNumber = savedExceptState->s_a0;
     
-
+    debugExc(2, syscallNumber, 0, 0);
     /* Avoid an infinite loop of re-executing SYSCALL */
     savedExceptState->s_pc += WORDLEN;
 
