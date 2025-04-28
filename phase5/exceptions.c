@@ -334,7 +334,6 @@ void syscallExceptionHandler() {
     if ((savedExceptState->s_status & USERPON) != ALLOFF) {
         /* Force a Program Trap by setting Cause.ExcCode = RI */
         savedExceptState->s_cause = (savedExceptState->s_cause & RESINSTRCODE);
-        debugExc(3, savedExceptState->s_cause, 0, 0);
         programTrapHandler();
 		return; /* Ensures no return to the killed process */
     }
@@ -391,6 +390,7 @@ void syscallExceptionHandler() {
 
         default:
             /* Should never get here if [1..8] was properly checked */
+            debugExc(0xdd, syscallNumber, 0, 0);
             programTrapHandler();
             return;;
     }
