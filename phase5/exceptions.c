@@ -334,6 +334,7 @@ void syscallExceptionHandler() {
     if ((savedExceptState->s_status & USERPON) != ALLOFF) {
         /* Force a Program Trap by setting Cause.ExcCode = RI */
         savedExceptState->s_cause = (savedExceptState->s_cause & RESINSTRCODE);
+        debugExc(3, savedExceptState->s_cause, 0, 0);
         programTrapHandler();
 		return; /* Ensures no return to the killed process */
     }
@@ -342,7 +343,7 @@ void syscallExceptionHandler() {
         programTrapHandler();
 		return; /* Same reason as above */
     }
-
+    debugExc(4, savedExceptState->s_pc, 0, 0);
     /* Update the Current Process's PCB to reflect the saved state */
     updateCurrentProcessState();
 
@@ -403,6 +404,7 @@ void syscallExceptionHandler() {
  * instructions, etc.). Invokes passUpOrDie with GENERALEXCEPT.
  ************************************************************************/
 void programTrapHandler() {
+    debugExc(d, 0, 0, 0);
     passUpOrDie(GENERALEXCEPT);
 }
 
