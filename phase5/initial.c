@@ -21,6 +21,7 @@
 #include "../h/exceptions.h"
 #include "../h/interrupts.h"
 #include "../h/vmSupport.h"
+#include "../h/delayDaemon.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
 /* External function declarations */
