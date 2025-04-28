@@ -101,6 +101,7 @@ int main() {
     /* Init Phase 1 structures (pcbFree list & ASL) */
     initPcbs();
     initASL();
+    initADL();
 
     /* Init Phase 2 global variables */
     processCount = INITPROCCOUNT;
