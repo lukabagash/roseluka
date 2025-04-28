@@ -40,6 +40,7 @@ void test() {
     int res; /* Result of the SYSCALL */
 
     initSwapStructs(); /* Initialize the Swap Pool table structures for paging */
+    initADL();
 
     /* Initialize the semaphores to 1 indicating the I/O devices are available, for mutual exclusion */
     for(j = 0; j < MAXDEVICECNT - 1; j++) {
@@ -86,7 +87,7 @@ void test() {
     for(k = 0; k < UPROCMAX; k++) {
         SYSCALL(PASSEREN, (unsigned int) &masterSemaphore, 0, 0);
     }
-
+ 
     /* Terminate after all of its U-proc “children” processes conclude. Process Count becomes zero, trigger HALT by Nucleus */
     SYSCALL(TERMINATEPROCESS, 0, 0, 0); 
 }
