@@ -154,7 +154,7 @@ void initADL(void) {
         /* no support struct → runs in kernel ASID */
         debugDaemon(0x5, 0xBEEF, 0xBEEF, 0xBEEF);
 
-        SYSCALL(CREATEPROCESS, (unsigned int)&st, (unsigned int)(NULL), 0);
+        SYSCALL(CREATEPROCESS, (unsigned int)&st, NULL, 0);
     }
 }
 

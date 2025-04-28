@@ -126,8 +126,8 @@ int main() {
         /* Initialize p's processor state */ 
         p->p_s.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | PANDOS_CAUSEINTMASK;   /* Enabling interrupts and PLT, and setting kernel-mode to on */
         p->p_s.s_sp = ramTop;
-        p->p_s.s_pc = (memaddr) initADL;
-        p->p_s.s_t9 = (memaddr) initADL;
+        p->p_s.s_pc = (memaddr) test;
+        p->p_s.s_t9 = (memaddr) test;
 
         insertProcQ(&readyQueue, p);
         processCount++;
