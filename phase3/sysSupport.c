@@ -15,6 +15,11 @@
 #include "../h/exceptions.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
+void debugSys(int a, int b, int c, int d) {
+    int i =0;
+    i++;
+}
+
 /************************************************************************
  * Helper Function
  * Ensure the length is valid, this should be in the range of 0 to 12(MAXSTRINGLEN).
@@ -116,6 +121,7 @@ HIDDEN void writeTerminal(state_PTR savedState, char *virtAddr, int len, int dnu
         unsigned int statusCode = status & TERMSTATUSMASK; /* Extract the status bits */
         /* If the write was not successful */
         if (statusCode != CHARTRANSMITTED) {
+            debugSys(0x1, 0xBEEF, 0xBEEF, 0xBEEF);
             savedState->s_v0 = 0 - statusCode; /* Return negative error code */
             mutex(&(p3devSemaphore[((TERMINT - OFFSET) * DEVPERINT) + dnum + DEVPERINT]), FALSE); /* Release mutual exclusion from the terminal device semaphore */
             LDST(savedState);
