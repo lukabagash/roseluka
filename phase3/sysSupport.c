@@ -204,6 +204,7 @@ void supLvlGenExceptionHandler() {
 
     if (exc_code != SYSCALLEXCPT) /* TLB-Modification Exception */
     {
+        debugSys(0x1, 0xDEAD, 0xDEAD, 0xDEAD);
         ph3programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
     }
     
