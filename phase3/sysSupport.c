@@ -163,6 +163,7 @@ HIDDEN void readTerminal(state_PTR savedState, char *virtAddr, int dnum) {
         unsigned int statusCode = status & TERMSTATUSMASK; /* Mask to extract status bits */
         /* If the read was not successful */
         if (statusCode != CHARRECIVED) {
+            debugSys(0x1, 0xDEAD, 0xDEAD, 0xDEAD);
             savedState->s_v0 = 0 - statusCode; /* Return negative error code */
             mutex(&(p3devSemaphore[((TERMINT - OFFSET) * DEVPERINT) + dnum]), FALSE); /* Release mutual exclusion from the terminal device semaphore */
             LDST(savedState);
