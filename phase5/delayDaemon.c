@@ -97,7 +97,7 @@ whose wake up time has passed:
 static delayd_t delaydArray[UPROCMAX];   /* static array of delay event descriptor nodes (Active Delay List (ADL) to keep track of sleeping U-procs) */
 static delayd_t *delaydFree_h;           /* head of free list for unused delay event descriptor nodes */
 static delayd_t *delayd_h;               /* head of active (sorted) list for delay event descriptor nodes */
-static int       semDelay;               /* mutex for ADL */
+int       semDelay = 1;               /* mutex for ADL */
 
 void debugDaemon(int a, int b, int c, int d) {
     int i =0;
@@ -138,7 +138,6 @@ void initADL(void) {
     delaydArray[UPROCMAX - 1].d_next = NULL;    /* a dummy node at the tail */
     delayd_h      = NULL;           /* initialize head of delaydArray to NULL */
     delaydFree_h = &delaydArray[0]; /* just like delaydArray list but will hold unused delay event descriptor nodes */
-    semDelay      = 1;
 
     /* launch the Delay Daemon (kernel ASID) */
     {
