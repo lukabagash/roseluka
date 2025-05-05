@@ -170,7 +170,7 @@ void delaySyscall(state_t *savedState, int secs) {
     }
 
     /* P on ADL mutex */
-    debugDaemon(0x9, 0xDEAD, 0xDEAD, 0xDEAD);
+    debugDaemon(0x9, 0xDEAD, semDelay, 0xDEAD);
     SYSCALL(PASSEREN, (unsigned int)&semDelay, 0, 0);
     debugDaemon(0xa, 0xDEAD, 0xDEAD, 0xDEAD);
     delayd_t *node = allocDelay();  /* Allocate a delay event descriptor node from the free list and store the descriptor */
