@@ -120,7 +120,7 @@ static void freeDelay(delayd_t *node) {
 /* insert node into active list sorted by d_wakeTime */
 static void insertDelay(delayd_t *node) {
     delayd_t **pp = &delayd_h;
-    while (*pp && (*pp)->d_wakeTime <= node->d_wakeTime)
+    while (*pp != NULL && (*pp)->d_wakeTime <= node->d_wakeTime)
         pp = &(*pp)->d_next;
     node->d_next = *pp;
     *pp = node;
@@ -171,7 +171,6 @@ void delaySyscall(state_t *savedState, int secs) {
     debugDaemon(0x9, 0xDEAD, semDelay, 0xDEAD);
     /*SYSCALL(PASSEREN, (unsigned int)&semDelay, 0, 0);*/
     mutex(&semDelay, TRUE); /* Gain mutual exclusion over the ADL semaphore */
-    debugDaemon(0xa, 0xDEAD, 0xDEAD, 0xDEAD);
     delayd_t *node = allocDelay();  /* Allocate a delay event descriptor node from the free list and store the descriptor */
     debugDaemon(0xb, 0xDEAD, 0xDEAD, 0xDEAD);
     if (!node) {
@@ -200,6 +199,7 @@ void delaySyscall(state_t *savedState, int secs) {
     SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);               /* release ADL*/
     SYSCALL(PASSEREN, (unsigned int)&(sPtr->sup_delaySem), 0, 0);   /* put a U-proc to sleep(block) */
     enableInterrupts();  /* re-enable interrupts */
+    debugDaemon(0xa, 0xDEAD, 0xDEAD, 0xDEAD);
 
     /* when woken, return here */
     LDST(savedState);
