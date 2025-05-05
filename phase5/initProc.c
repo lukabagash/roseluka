@@ -40,7 +40,7 @@ void test() {
     int res; /* Result of the SYSCALL */
 
     initSwapStructs(); /* Initialize the Swap Pool table structures for paging */
-    initADL();
+    initADL();  /* ADL is facilitated by the InstantiatorProcess */
 
     /* Initialize the semaphores to 1 indicating the I/O devices are available, for mutual exclusion */
     for(j = 0; j < MAXDEVICECNT - 1; j++) {

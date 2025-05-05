@@ -242,6 +242,14 @@ void supLvlGenExceptionHandler() {
                 , dnum
             ); 
             break;
+        
+        case DELAY:                 /* SYS18 */
+            delaySyscall(
+                savedState,
+                secs
+            );
+            break;
+        
         default:
             /* Should never enter if the syscallexc checks out */
             ph3programTrapHandler();
