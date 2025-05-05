@@ -105,7 +105,9 @@ void debugDaemon(int a, int b, int c, int d) {
 }
 
 static delayd_t *allocDelay(void) {
+    debugDaemon(0xc, 0xDEAD, 0xDEAD, 0xDEAD);
     if (!delaydFree_h) return NULL; /* no delay event descriptor node if free list is empty */
+    debugDaemon(0xd, 0xDEAD, 0xDEAD, 0xDEAD);
     delayd_t *node = delaydFree_h; /* allocate a descriptor node from free list */
     delaydFree_h = node->d_next;    /* update the head pointer to the next available node */
     return node;
@@ -159,7 +161,6 @@ void initADL(void) {
 /* SYS18 support‐level handler 
 Insert a delay event descriptor node to proper location on ADL from the free list */
 void delaySyscall(state_t *savedState, int secs) {
-    debugDaemon(0x9, secs, 0xDEAD, 0xDEAD);
     support_t *sPtr = (support_t *) SYSCALL(GETSUPPORTPTR, 0, 0, 0);
 
     /* terminate if invalid*/
@@ -169,9 +170,11 @@ void delaySyscall(state_t *savedState, int secs) {
     }
 
     /* P on ADL mutex */
+    debugDaemon(0x9, 0xDEAD, 0xDEAD, 0xDEAD);
     SYSCALL(PASSEREN, (unsigned int)&semDelay, 0, 0);
-
+    debugDaemon(0xa, 0xDEAD, 0xDEAD, 0xDEAD);
     delayd_t *node = allocDelay();  /* Allocate a delay event descriptor node from the free list and store the descriptor */
+    debugDaemon(0xb, 0xDEAD, 0xDEAD, 0xDEAD);
     if (!node) {
         /* release ADL, then die */
         debugDaemon(0x1, 0xBEEF, 0xBEEF, 0xBEEF);
