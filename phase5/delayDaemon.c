@@ -105,9 +105,7 @@ void debugDaemon(int a, int b, int c, int d) {
 }
 
 static delayd_t *allocDelay(void) {
-    debugDaemon(0xc, 0xDEAD, 0xDEAD, 0xDEAD);
     if (!delaydFree_h) return NULL; /* no delay event descriptor node if free list is empty */
-    debugDaemon(0xd, 0xDEAD, 0xDEAD, 0xDEAD);
     delayd_t *node = delaydFree_h; /* allocate a descriptor node from free list */
     delaydFree_h = node->d_next;    /* update the head pointer to the next available node */
     return node;
@@ -192,7 +190,10 @@ void delaySyscall(state_t *savedState, int secs) {
         node->d_wakeTime   = now + (cpu_t)secs * 1000000UL;
         node->d_supStruct  = sPtr;
     }
+    debugDaemon(0xc, 0xDEAD, 0xDEAD, 0xDEAD);
+
     insertDelay(node);  /* insert the discriptor from free list into its proper location on ADL */
+    debugDaemon(0xd, semDelay, 0xDEAD, 0xDEAD);
 
     /* V on ADL mutex, then P on this proc’s private semaphore atomically */
     disableInterrupts(); /* disable interrupts */
