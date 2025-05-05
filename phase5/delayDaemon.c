@@ -219,6 +219,7 @@ void delayDaemon(void) {
             cpu_t now;
             STCK(now);
             /* When ADL is not empty and wakeTime has passed */
+            debugDaemon(0xe, 0xBEEF, 0xBEEF, 0xBEEF);
             while (delayd_h && delayd_h->d_wakeTime <= now) {
                 /* Unblock the U-proc */
                 debugDaemon(0x7, 0xBEEF, 0xBEEF, 0xBEEF);
@@ -237,7 +238,5 @@ void delayDaemon(void) {
         /* release mutex on ADL semaphore */
         debugDaemon(0xd, 0xBEEF, 0xBEEF, 0xBEEF);
         SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);
-        debugDaemon(0xe, 0xBEEF, 0xBEEF, 0xBEEF);
-
     }
 }
