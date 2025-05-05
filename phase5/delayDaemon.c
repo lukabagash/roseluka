@@ -98,7 +98,6 @@ static delayd_t delaydArray[UPROCMAX];   /* static array of delay event descript
 static delayd_t *delaydFree_h;           /* head of free list for unused delay event descriptor nodes */
 static delayd_t *delayd_h;               /* head of active (sorted) list for delay event descriptor nodes */
 static int       semDelay;               /* mutex for ADL */
-sPtr->sup_delaySem = 0;                  /* initialize u-proc's private semaphore for a synchronization */
 
 void debugDaemon(int a, int b, int c, int d) {
     int i =0;
@@ -150,7 +149,7 @@ void initADL(void) {
         st.s_sp     = ramTop - PAGESIZE;         /* an unused(penultimate) frame of RAM */
         st.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | PANDOS_CAUSEINTMASK; /* Status register is set to kernel-mode with all interrupts enabled */
         st.s_entryHI = ALLOFF | (0 << ASIDSHIFT);   /* how does this EntryHi.ASID is set to the kernel ASID: zero*/
-        /* no support struct → runs in kernel ASID */
+        /* no support struct, runs in kernel ASID */
         debugDaemon(0x5, 0xBEEF, 0xBEEF, 0xBEEF);
 
         SYSCALL(CREATEPROCESS, (unsigned int)&st, (unsigned int)(NULL), 0); /* the Support Structure SYS1 parameter should be NULL */
