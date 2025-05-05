@@ -97,7 +97,7 @@ whose wake up time has passed:
 static delayd_t delaydArray[UPROCMAX];   /* static array of delay event descriptor nodes (Active Delay List (ADL) to keep track of sleeping U-procs) */
 static delayd_t *delaydFree_h;           /* head of free list for unused delay event descriptor nodes */
 static delayd_t *delayd_h;               /* head of active (sorted) list for delay event descriptor nodes */
-int       semDelay = 1;               /* mutex for ADL */
+int       semDelay;               /* mutex for ADL */
 
 void debugDaemon(int a, int b, int c, int d) {
     int i =0;
@@ -138,6 +138,7 @@ void initADL(void) {
     delaydArray[UPROCMAX - 1].d_next = NULL;    /* a dummy node at the tail */
     delayd_h      = NULL;           /* initialize head of delaydArray to NULL */
     delaydFree_h = &delaydArray[0]; /* just like delaydArray list but will hold unused delay event descriptor nodes */
+    semDelay      = 1;
 
     /* launch the Delay Daemon (kernel ASID) */
     {
@@ -151,7 +152,7 @@ void initADL(void) {
         st.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | PANDOS_CAUSEINTMASK; /* Status register is set to kernel-mode with all interrupts enabled */
         st.s_entryHI = ALLOFF | (0 << ASIDSHIFT);   /* how does this EntryHi.ASID is set to the kernel ASID: zero*/
         /* no support struct, runs in kernel ASID */
-        debugDaemon(0x5, 0xBEEF, 0xBEEF, 0xBEEF);
+        debugDaemon(0x5, semDelay, 0xBEEF, 0xBEEF);
 
         SYSCALL(CREATEPROCESS, (unsigned int)&st, (unsigned int)(NULL), 0); /* the Support Structure SYS1 parameter should be NULL */
     }
@@ -169,8 +170,9 @@ void delaySyscall(state_t *savedState, int secs) {
     }
 
     /* P on ADL mutex */
-    debugDaemon(0x9, 0xDEAD, semDelay, &semDelay);
-    SYSCALL(PASSEREN, (unsigned int)&semDelay, 0, 0);
+    debugDaemon(0x9, 0xDEAD, semDelay, 0xDEAD);
+    /*SYSCALL(PASSEREN, (unsigned int)&semDelay, 0, 0);*/
+    mutex(&semDelay, TRUE); /* Gain mutual exclusion over the ADL semaphore */
     debugDaemon(0xa, 0xDEAD, 0xDEAD, 0xDEAD);
     delayd_t *node = allocDelay();  /* Allocate a delay event descriptor node from the free list and store the descriptor */
     debugDaemon(0xb, 0xDEAD, 0xDEAD, 0xDEAD);
