@@ -220,7 +220,8 @@ void delayDaemon(void) {
             STCK(now);
             /* When ADL is not empty and wakeTime has passed */
             debugDaemon(0xe, 0xBEEF, 0xBEEF, 0xBEEF);
-            while (delayd_h && delayd_h->d_wakeTime <= now) {
+            if(delayd_h != NULL) {
+            while (delayd_h->d_wakeTime <= now) {
                 /* Unblock the U-proc */
                 debugDaemon(0x7, 0xBEEF, 0xBEEF, 0xBEEF);
                 /* Deallocate the delay event descriptor node (remove current node from the queue) */
@@ -233,6 +234,8 @@ void delayDaemon(void) {
                 freeDelay(n);
                 debugDaemon(0x8, 0xBEEF, 0xBEEF, 0xBEEF);
             }
+        }
+
             debugDaemon(0x4, 0xBEEF, 0xBEEF, 0xBEEF);
         }
         /* release mutex on ADL semaphore */
