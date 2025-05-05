@@ -235,6 +235,9 @@ void delayDaemon(void) {
             debugDaemon(0x4, 0xBEEF, 0xBEEF, 0xBEEF);
         }
         /* release mutex on ADL semaphore */
+        debugDaemon(0xd, 0xBEEF, 0xBEEF, 0xBEEF);
         SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);
+        debugDaemon(0xe, 0xBEEF, 0xBEEF, 0xBEEF);
+
     }
 }
