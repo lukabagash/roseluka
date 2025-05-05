@@ -205,8 +205,8 @@ void supLvlGenExceptionHandler() {
     {
         ph3programTrapHandler(); /* Handle the TLB modification exception by invoking the program trap handler */
     }
-    debugSys(4, savedState->s_a1, savedState->s_a0, 0xBEEF);
     int syscallNumber = savedState->s_a0; /* Extract Syscall number to handle other general exceptions */
+    debugSys(4, savedState->s_a1, syscallNumber, 0xBEEF);
 
     switch (syscallNumber) {
         case TERMINATE:            /* SYS9 */

@@ -159,6 +159,7 @@ void initADL(void) {
 /* SYS18 support‐level handler 
 Insert a delay event descriptor node to proper location on ADL from the free list */
 void delaySyscall(state_t *savedState, int secs) {
+    debugDaemon(0x9, secs, 0xDEAD, 0xDEAD);
     support_t *sPtr = (support_t *) SYSCALL(GETSUPPORTPTR, 0, 0, 0);
 
     /* terminate if invalid*/
