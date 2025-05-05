@@ -117,13 +117,13 @@ static void freeDelay(delayd_t *node) {
     delaydFree_h = node;
 }
 
-/* insert node into active list sorted by d_wakeTime */
+/* insert node into active list sorted by d_wakeTime using pointer to pointer to avoid using prev */
 static void insertDelay(delayd_t *node) {
-    delayd_t **pp = &delayd_h;
-    while (*pp != NULL && (*pp)->d_wakeTime <= node->d_wakeTime)
+    delayd_t **pp = &delayd_h; /* create pointer to the pointer of head*/
+    while (*pp != NULL && (*pp)->d_wakeTime <= node->d_wakeTime) /* terminate if found anything greater then node's time*/
         pp = &(*pp)->d_next;
-    node->d_next = *pp;
-    *pp = node;
+    node->d_next = *pp; /* because the pp has to be greater or NULL our node next will be pp*/
+    *pp = node; /* node points to pp now, and to preserve the previous order (if any) update the address directly*/
 }
 
 /* Called once at system startup (by test()) */
