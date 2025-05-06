@@ -11,8 +11,6 @@ void main() {
     char *pagePtr;
     char inputBuf[20];
 
-    print(WRITETERMINAL, "=== psychSwapstorm.c initiating 5 times===\n");
-
     for (i = 0; i < ITERATIONS; i++) {
         print(WRITETERMINAL, "Swap iteration cycle");
         print(WRITETERMINAL, "\n");
