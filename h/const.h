@@ -44,6 +44,7 @@ the Pseudo-clock */
 
 /* Interval timer set to 100 ms (100,000 microseconds) */
 #define PANDOS_CLOCKINTERVAL    100000UL
+#define MSECONDS                1000000UL
 /* Processor State--Status register constants */
 #define ALLOFF			    0x0     	/* every bit in the Status register is set to 0; for bitwise-OR operations */
 #define PANDOS_IEPBITON     0x00000004  /* Enable interrupts after LDST (IEp) */

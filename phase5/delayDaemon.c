@@ -164,7 +164,7 @@ void delaySyscall(state_t *savedState, int secs) {
     delayd_t *node = allocDelay();  /* Allocate a delay event descriptor node from the free list and store the descriptor */
     if (!node) {
         /* release ADL, then die */
-        SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);
+        mutex(&semDelay, FALSE); /* Release the ADL semaphore */
         SYSCALL(TERMINATE, 0, 0, 0);
         return;
     }
@@ -172,15 +172,15 @@ void delaySyscall(state_t *savedState, int secs) {
     /* set up wake time & link to this support struct */
     cpu_t now;
     STCK(now);
-    node->d_wakeTime   = now + (cpu_t)secs * 1000000UL;
+    node->d_wakeTime   = now + (cpu_t)secs * MSECONDS;
     node->d_supStruct  = sPtr;
 
     insertDelay(node);  /* insert the discriptor from free list into its proper location on ADL */
 
     /* V on ADL mutex, then P on this proc’s private semaphore atomically */
     disableInterrupts(); /* disable interrupts */
-    SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);               /* release ADL*/
-    SYSCALL(PASSEREN, (unsigned int)&(sPtr->sup_delaySem), 0, 0);   /* put a U-proc to sleep(block) */
+    mutex(&semDelay, FALSE); /* Release the ADL semaphore */
+    mutex(&(sPtr->sup_delaySem), TRUE); /* P on this proc's private semaphore */
     enableInterrupts();  /* re-enable interrupts */
     /* when woken, return here */
     LDST(savedState);
@@ -188,12 +188,11 @@ void delaySyscall(state_t *savedState, int secs) {
 
 /* the daemon that wakes up sleeping U‑procs */
 void delayDaemon(void) {
-    while (1) {
+    while (TRUE) {
         /* SYS7: sleep until a 100 ms interrupt */
         SYSCALL(WAITCLOCK, 0, 0, 0);
 
-        /* gain mutex on ADL semaphore */
-        SYSCALL(PASSEREN, (unsigned int)&semDelay, 0, 0);
+        mutex(&semDelay, TRUE); /* Gain mutual exclusion over the ADL semaphore */
         /* awaken from the ADL for each delay event descriptor node whose wakeTime has passed */
         cpu_t now;
         STCK(now);
@@ -203,12 +202,11 @@ void delayDaemon(void) {
             /* Deallocate the delay event descriptor node (remove current node from the queue) */
             delayd_t *n = delayd_h;
             delayd_h = n->d_next;
-            SYSCALL(VERHOGEN, (unsigned int)&(n->d_supStruct->sup_delaySem), 0, 0);
+            mutex(&n->d_supStruct->sup_delaySem, FALSE); /* Release the private semaphore */
 
             /* return the node to the free list. */
             freeDelay(n);
         }
-        /* release mutex on ADL semaphore */
-        SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);
+        mutex(&semDelay, FALSE); /* Release the ADL semaphore */
     }
 }
