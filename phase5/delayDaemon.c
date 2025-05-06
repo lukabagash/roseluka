@@ -195,20 +195,18 @@ void delayDaemon(void) {
         /* gain mutex on ADL semaphore */
         SYSCALL(PASSEREN, (unsigned int)&semDelay, 0, 0);
         /* awaken from the ADL for each delay event descriptor node whose wakeTime has passed */
-        {
-            cpu_t now;
-            STCK(now);
-            /* When ADL is not empty and wakeTime has passed */
-            while (delayd_h != NULL && delayd_h->d_wakeTime <= now) {
-                /* Unblock the U-proc */
-                /* Deallocate the delay event descriptor node (remove current node from the queue) */
-                delayd_t *n = delayd_h;
-                delayd_h = n->d_next;
-                SYSCALL(VERHOGEN, (unsigned int)&(n->d_supStruct->sup_delaySem), 0, 0);
+        cpu_t now;
+        STCK(now);
+        /* When ADL is not empty and wakeTime has passed */
+        while (delayd_h != NULL && delayd_h->d_wakeTime <= now) {
+            /* Unblock the U-proc */
+            /* Deallocate the delay event descriptor node (remove current node from the queue) */
+            delayd_t *n = delayd_h;
+            delayd_h = n->d_next;
+            SYSCALL(VERHOGEN, (unsigned int)&(n->d_supStruct->sup_delaySem), 0, 0);
 
-                /* return the node to the free list. */
-                freeDelay(n);
-            }
+            /* return the node to the free list. */
+            freeDelay(n);
         }
         /* release mutex on ADL semaphore */
         SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);
