@@ -97,12 +97,7 @@ whose wake up time has passed:
 static delayd_t delaydArray[UPROCMAX];   /* static array of delay event descriptor nodes (Active Delay List (ADL) to keep track of sleeping U-procs) */
 static delayd_t *delaydFree_h;           /* head of free list for unused delay event descriptor nodes */
 static delayd_t *delayd_h;               /* head of active (sorted) list for delay event descriptor nodes */
-int       semDelay;               /* mutex for ADL */
-
-void debugDaemon(int a, int b, int c, int d) {
-    int i =0;
-    i++;
-}
+int semDelay;               /* mutex for ADL */
 
 static delayd_t *allocDelay(void) {
     if (!delaydFree_h) return NULL; /* no delay event descriptor node if free list is empty */
@@ -134,26 +129,22 @@ void initADL(void) {
         delaydArray[i].d_next = &delaydArray[i + 1];
     }
     delaydArray[UPROCMAX - 1].d_next = NULL;    /* a dummy node at the tail */
-    delayd_h      = NULL;           /* initialize head of delaydArray to NULL */
+    delayd_h = NULL;           /* initialize head of delaydArray to NULL */
     delaydFree_h = &delaydArray[0]; /* just like delaydArray list but will hold unused delay event descriptor nodes */
-    semDelay      = 1;
+    semDelay = 1;
 
-    /* launch the Delay Daemon (kernel ASID) */
-    {
-        state_t st;
-        devregarea_t *devArea = (devregarea_t *) RAMBASEADDR;
-        memaddr ramTop = devArea->rambase + devArea->ramsize;
+    state_t st;
+    devregarea_t *devArea = (devregarea_t *) RAMBASEADDR;
+    memaddr ramTop = devArea->rambase + devArea->ramsize;
 
-        st.s_pc     = (memaddr) delayDaemon;    /* set to the function implementing the Delay Daemon */
-        st.s_t9     = (memaddr) delayDaemon;
-        st.s_sp     = ramTop - PAGESIZE;         /* an unused(penultimate) frame of RAM */
-        st.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | PANDOS_CAUSEINTMASK; /* Status register is set to kernel-mode with all interrupts enabled */
-        st.s_entryHI = ALLOFF | (0 << ASIDSHIFT);   /* how does this EntryHi.ASID is set to the kernel ASID: zero*/
-        /* no support struct, runs in kernel ASID */
-        debugDaemon(0x5, semDelay, 0xBEEF, 0xBEEF);
+    st.s_pc = (memaddr) delayDaemon;    /* set to the function implementing the Delay Daemon */
+    st.s_t9 = (memaddr) delayDaemon;
+    st.s_sp = ramTop - PAGESIZE;         /* an unused(penultimate) frame of RAM */
+    st.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | PANDOS_CAUSEINTMASK; /* Status register is set to kernel-mode with all interrupts enabled */
+    st.s_entryHI = ALLOFF | (0 << ASIDSHIFT);   /* how does this EntryHi.ASID is set to the kernel ASID: zero*/
+    /* no support struct, runs in kernel ASID */
 
-        SYSCALL(CREATEPROCESS, (unsigned int)&st, (unsigned int)(NULL), 0); /* the Support Structure SYS1 parameter should be NULL */
-    }
+    SYSCALL(CREATEPROCESS, (unsigned int)&st, (unsigned int)(NULL), 0); /* the Support Structure SYS1 parameter should be NULL */
 }
 
 /* SYS18 support‐level handler 
@@ -168,39 +159,29 @@ void delaySyscall(state_t *savedState, int secs) {
     }
 
     /* P on ADL mutex */
-    debugDaemon(0x9, 0xDEAD, semDelay, 0xDEAD);
     /*SYSCALL(PASSEREN, (unsigned int)&semDelay, 0, 0);*/
     mutex(&semDelay, TRUE); /* Gain mutual exclusion over the ADL semaphore */
     delayd_t *node = allocDelay();  /* Allocate a delay event descriptor node from the free list and store the descriptor */
-    debugDaemon(0xb, 0xDEAD, 0xDEAD, 0xDEAD);
     if (!node) {
         /* release ADL, then die */
-        debugDaemon(0x1, 0xBEEF, 0xBEEF, 0xBEEF);
         SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);
         SYSCALL(TERMINATE, 0, 0, 0);
         return;
     }
-    debugDaemon(0x2, 0xBEEF, 0xBEEF, 0xBEEF);
 
     /* set up wake time & link to this support struct */
-    {
-        cpu_t now;
-        STCK(now);
-        node->d_wakeTime   = now + (cpu_t)secs * 1000000UL;
-        node->d_supStruct  = sPtr;
-    }
-    debugDaemon(0xc, 0xDEAD, 0xDEAD, 0xDEAD);
+    cpu_t now;
+    STCK(now);
+    node->d_wakeTime   = now + (cpu_t)secs * 1000000UL;
+    node->d_supStruct  = sPtr;
 
     insertDelay(node);  /* insert the discriptor from free list into its proper location on ADL */
-    debugDaemon(0xd, semDelay, 0xDEAD, 0xDEAD);
 
     /* V on ADL mutex, then P on this proc’s private semaphore atomically */
     disableInterrupts(); /* disable interrupts */
     SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);               /* release ADL*/
     SYSCALL(PASSEREN, (unsigned int)&(sPtr->sup_delaySem), 0, 0);   /* put a U-proc to sleep(block) */
     enableInterrupts();  /* re-enable interrupts */
-    debugDaemon(0xa, 0xDEAD, 0xDEAD, 0xDEAD);
-
     /* when woken, return here */
     LDST(savedState);
 }
@@ -213,29 +194,21 @@ void delayDaemon(void) {
 
         /* gain mutex on ADL semaphore */
         SYSCALL(PASSEREN, (unsigned int)&semDelay, 0, 0);
-        debugDaemon(0x3, 0xBEEF, 0xBEEF, 0xBEEF);
-
         /* awaken from the ADL for each delay event descriptor node whose wakeTime has passed */
         {
             cpu_t now;
             STCK(now);
             /* When ADL is not empty and wakeTime has passed */
-            debugDaemon(0xe, 0xBEEF, 0xBEEF, 0xBEEF);
             while (delayd_h != NULL && delayd_h->d_wakeTime <= now) {
                 /* Unblock the U-proc */
-                debugDaemon(0x7, 0xBEEF, 0xBEEF, 0xBEEF);
                 /* Deallocate the delay event descriptor node (remove current node from the queue) */
                 delayd_t *n = delayd_h;
                 delayd_h = n->d_next;
-                debugDaemon(0x6, 0xBEEF, 0xBEEF, 0xBEEF);
                 SYSCALL(VERHOGEN, (unsigned int)&(n->d_supStruct->sup_delaySem), 0, 0);
 
                 /* return the node to the free list. */
                 freeDelay(n);
-                debugDaemon(0x8, 0xBEEF, 0xBEEF, 0xBEEF);
             }
-
-            debugDaemon(0x4, 0xBEEF, 0xBEEF, 0xBEEF);
         }
         /* release mutex on ADL semaphore */
         SYSCALL(VERHOGEN, (unsigned int)&semDelay, 0, 0);
