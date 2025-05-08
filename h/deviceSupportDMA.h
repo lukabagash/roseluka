@@ -6,7 +6,7 @@
 /* SYS14 */
 void diskPut(state_PTR savedState, char *virtAddr, int diskNo, int sectNo);
 /* SYS15 */
-int diskGet(char *virtAddr, int diskNo, int sectNo);
+void diskGet(state_PTR savedState, char *virtAddr, int diskNo, int sectNo);
 /* SYS16 */
 int flashPut(char *virtAddr, int flashNo, int blockNo);
 /* SYS17 */

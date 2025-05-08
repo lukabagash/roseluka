@@ -94,16 +94,17 @@
  void diskPut(state_PTR savedState, char *virtAddr, int diskNo, int sectNo) {
      char *buf = dmaBufs[diskNo];
      copyUserToBuf(virtAddr, buf);
-     int status = diskOperation(DISKWRITE, diskNo, sectNo, buf);
-     savedState->s_v0 = status;
+     int st = diskOperation(DISKWRITE, diskNo, sectNo, buf);
+     savedState->s_v0 = st;
      LDST(savedState);
  }
  
- int diskGet(char *virtAddr, int diskNo, int sectNo) {
+ void diskGet(state_PTR savedState, char *virtAddr, int diskNo, int sectNo) {
      char *buf = dmaBufs[diskNo];
      int st = diskOperation(DISKREAD, diskNo, sectNo, buf);
      if (st == DEVREDY) copyBufToUser(virtAddr, buf);
-     return st;
+     savedState->s_v0 = st;
+     LDST(savedState);
  }
  
  /*
