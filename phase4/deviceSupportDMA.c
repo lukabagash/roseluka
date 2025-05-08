@@ -11,6 +11,7 @@
  #include "../h/vmSupport.h"    /* disableInterrupts/enableInterrupts, schizoUserProcTerminate() */
  #include "../h/scheduler.h"    /* SYSCALL */
  #include "../h/sysSupport.h"   /* schizoUserProcTerminate() */
+ #include "../h/types.h"       /* devregarea_t, device_t, state_PTR */
  #include "/usr/include/umps3/umps/libumps.h"
 
  void debugDMA(int a, int b, int c, int d) {
