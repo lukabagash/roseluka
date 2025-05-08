@@ -76,6 +76,7 @@ int diskPut(char *virtAddr, int diskNo, int sectNo) {
 }
 
 int diskGet(char *virtAddr, int diskNo, int sectNo) {
+    debugDMA(0xDEAD, 0xDEAD, 0xDEAD, 0xDEAD);
     char *buf = dmaBufs[diskNo];
     int op = (sectNo << 8) | READBLK;
     int st = dmaOperation(op, DISKINT, diskNo, buf);
