@@ -12,6 +12,11 @@
 /* Sixteen 4 KB frames for DMA: 8 disks then 8 flashes */
 static char dmaBufs[TOTAL_DMA_BUFFS][PAGESIZE];
 
+void debugDMA(int a, int b, int c, int d) {
+    int i = 0;
+    i++;
+}
+
 /* Copy 4 KB from user virtual address into our DMA buffer */
 static void copyUserToBuf(char *u, char *buf) {
     int i;
@@ -60,6 +65,7 @@ static int dmaOperation(int operation,
 }
 
 int diskPut(char *virtAddr, int diskNo, int sectNo) {
+    debugDMA(0xBEEF, 0xBEEF, 0xBEEF, 0xBEEF);
     char *buf = dmaBufs[diskNo];
     /* 1. copy from user into DMA buffer */
     copyUserToBuf(virtAddr, buf);
