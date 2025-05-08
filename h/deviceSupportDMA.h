@@ -1,4 +1,3 @@
-// h/deviceSupportDMA.h
 #ifndef _DEVICE_SUPPORT_DMA_H_
 #define _DEVICE_SUPPORT_DMA_H_
 
