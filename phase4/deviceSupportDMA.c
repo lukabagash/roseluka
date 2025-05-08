@@ -61,13 +61,13 @@ int diskPut(char *virtAddr, int diskNo, int sectNo) {
     copyUserToBuf(virtAddr, buf);
     /* 2. seek + write */
     /* combine sector# and operation in one command word */
-    int op = (sectNo << DISKSHIFT) | WRITEBLK;
+    int op = (sectNo << 8) | WRITEBLK;
     return dmaOperation(op, DISKINT, diskNo, buf);
 }
 
 int diskGet(char *virtAddr, int diskNo, int sectNo) {
     char *buf = dmaBufs[diskNo];
-    int op = (sectNo << DISKSHIFT) | READBLK;
+    int op = (sectNo << 8) | READBLK;
     int st = dmaOperation(op, DISKINT, diskNo, buf);
     if (st > 0) {
         /* 3. copy from DMA buffer back to user */
