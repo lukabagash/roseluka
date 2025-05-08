@@ -54,7 +54,7 @@ static int dmaOperation(int operation,
     dev->d_data0 = (unsigned int)buffer;
 
     /* atomically issue the command + block ourselves */
-    debugDMA(3, 0xBEEF, 0xBEEF, 0xBEEF);
+    debugDMA(3, devLine, devNo, operation);
 
     disableInterrupts();
     dev->d_command = operation;
