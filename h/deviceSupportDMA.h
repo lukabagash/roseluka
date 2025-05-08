@@ -2,7 +2,7 @@
 #define _DEVICE_SUPPORT_DMA_H_
 
 /* SYS14 */
-int diskPut(char *virtAddr, int diskNo, int sectNo);
+void diskPut(state_PTR savedState, *virtAddr, int diskNo, int sectNo);
 /* SYS15 */
 int diskGet(char *virtAddr, int diskNo, int sectNo);
 /* SYS16 */

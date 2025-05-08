@@ -246,13 +246,12 @@ void supLvlGenExceptionHandler() {
 
         case DISK_PUT:              /* SYS15 */
         {
-            int status = diskPut(
+            diskPut(
+                savedState,
                 (char *) savedState->s_a1,
                 (int)    savedState->s_a2,
                 (int)    savedState->s_a3
             );
-            savedState->s_v0 = status;
-            LDST(savedState);
             break;
         }
         case DISK_GET:              /* SYS14 */

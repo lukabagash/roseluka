@@ -90,10 +90,12 @@
      return (st == DEVREDY ? DEVREDY : -st);
  }
  
- int diskPut(char *virtAddr, int diskNo, int sectNo) {
+ void diskPut(state_PTR savedState, char *virtAddr, int diskNo, int sectNo) {
      char *buf = dmaBufs[diskNo];
      copyUserToBuf(virtAddr, buf);
-     return diskOperation(DISKWRITE, diskNo, sectNo, buf);
+     int status = diskOperation(DISKWRITE, diskNo, sectNo, buf);
+     savedState->s_v0 = status;
+     LDST(savedState);
  }
  
  int diskGet(char *virtAddr, int diskNo, int sectNo) {
