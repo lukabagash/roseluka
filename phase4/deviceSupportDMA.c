@@ -20,6 +20,22 @@
  /* DMA buffers: 8 disks + 8 flashes = 16 × 4 KB frames */
  static char diskBuf[8][PAGESIZE];
  static char flashBuf[8][PAGESIZE];
+
+
+ /* Copy 4 KB from user virtual address into our DMA buffer */
+static void copyUserToBuf(char *u, char *buf) {
+    int i;
+    for (i = 0; i < PAGESIZE; i++) {
+        buf[i] = u[i];
+    }
+}
+/* Copy 4 KB from DMA buffer back into user virtual address */
+static void copyBufToUser(char *u, char *buf) {
+    int i;
+    for (i = 0; i < PAGESIZE; i++) {
+        u[i] = buf[i];
+    }
+}
  
  /*
   * dmaOp
