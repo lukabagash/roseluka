@@ -7,6 +7,7 @@
 #include "../h/const.h"
 #include "../h/vmSupport.h"    /* for disableInterrupts/enableInterrupts and mutex() */
 #include "../h/initProc.h"     /* for extern p3devSemaphore[] */
+#include "../h/sysSupport.h"     /* for schizoUserProcTerminate() */
 #include "/usr/include/umps3/umps/libumps.h"
 
 /* Sixteen 4 KB frames for DMA: 8 disks then 8 flashes */
@@ -39,6 +40,7 @@ static int dmaOperation(int operation,
                         char *buffer)
 {
     /* build device‐index into p3devSemaphore[] and regfile */
+    debugDMA(1, 0xBEEF, 0xBEEF, 0xBEEF);
     int idx = ((devLine - OFFSET) * DEVPERINT) + devNo;
     devregarea_t *regs = (devregarea_t *)RAMBASEADDR;
     device_t *dev = &regs->devreg[idx];
@@ -46,21 +48,29 @@ static int dmaOperation(int operation,
 
     /* mutual‐exclusion over both buffer & device registers */
     mutex(&p3devSemaphore[idx], TRUE);
+    debugDMA(2, 0xBEEF, 0xBEEF, 0xBEEF);
 
     /* tell device where our DMA buffer lives */
     dev->d_data0 = (unsigned int)buffer;
 
     /* atomically issue the command + block ourselves */
+    debugDMA(3, 0xBEEF, 0xBEEF, 0xBEEF);
+
     disableInterrupts();
     dev->d_command = operation;
     SYSCALL(WAITIO, devLine, devNo, (operation == READBLK));
     enableInterrupts();
+    debugDMA(4, 0xBEEF, 0xBEEF, 0xBEEF);
 
     /* release the mutex */
     mutex(&p3devSemaphore[idx], FALSE);
 
     /* final device status */
     status = dev->d_status;
+    if ((operation == WRITEBLK && status == WRITEERR) || (operation == READBLK  && status == READERR)) {
+        /* Release the swap pool semaphore so we don't deadlock */
+        schizoUserProcTerminate(&swapPoolSemaphore); 
+    }
     return (status == DEVREDY ? status : -status);
 }
 

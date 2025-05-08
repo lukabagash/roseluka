@@ -135,10 +135,10 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define WRITEPRINTER        11          
 #define WRITETERMINAL       12          
 #define READTERMINAL        13  
-#define DISKPUT             14
-#define DISKGET             15
-#define FLASHPUT            16
-#define FLASHGET            17  
+#define DISK_GET		14
+#define DISK_PUT		15
+#define	FLASH_GET		16
+#define FLASH_PUT		17 
 #define DELAY               18      
 
 #define PRINTERROR          4           /* Printer Device Status Code: Error during character transmission */
