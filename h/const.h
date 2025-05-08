@@ -223,6 +223,9 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define WRITEERR            5          /* Flash device status code for write error */
 #define READBLK             2          /* Copy the block located at (BLOCKNUMBER) into the RAM starting at the address in DATA0 */
 #define READERR             4          /* Flash device status code for read error */
+#define DISKSEEK            2          
+#define DISKREAD            3
+#define DISKWRITE           4          /* Disk device command code for writing to the disk */
 #define VPNMASK             0xFFFFF000 /* Mask to extract the VPN from the EntryHI field of a TLB entry */
 #define ENDOFLINE           0x0000000A /* End of line character for terminal devices (newline) */
 #define TERMSTATUSMASK      0x0000000FF /* Mask to extract the status bits from the device register's status field for terminal devices */
@@ -239,6 +242,11 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define KVSBEGIN            0x80000 
 
 #define DISKSHIFT          8 /* Shift to get the disk number from the command sent to the disk device */
+
+#define MAXSECTMASK        0x000000FF /* Mask to extract the maximum number of sectors from the device's geometry */
+#define MAXHEADMASK       0x0000FF00 /* Mask to extract the maximum number of heads from the device's geometry */
+#define DISKCYLSHIFT      16 /* Shift to get the maximum number of cylinders from the device's geometry */
+#define DISKHEADSHIFT     8 /* Shift to get the maximum number of heads from the device's geometry */
 
 /* operations */
 #define	MIN(A,B)		    ((A) < (B) ? A : B)
