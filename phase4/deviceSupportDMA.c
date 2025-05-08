@@ -50,7 +50,7 @@
      int maxHead      = (geom & MAXHEADMASK) >> DISKHEADSHIFT;
      int maxCyl       =  geom >> DISKCYLSHIFT;
      long totalSects  = (long)maxCyl * maxHead * maxSect;
-     if (sectNo < 0 || sectNo >= totalSects) {
+     if (sectNo < 0 || sectNo > totalSects) {
          schizoUserProcTerminate(NULL);
      }
  
