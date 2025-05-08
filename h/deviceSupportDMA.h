@@ -1,6 +1,8 @@
 #ifndef _DEVICE_SUPPORT_DMA_H_
 #define _DEVICE_SUPPORT_DMA_H_
 
+#include "types.h"
+
 /* SYS14 */
 void diskPut(state_PTR savedState, char *virtAddr, int diskNo, int sectNo);
 /* SYS15 */
