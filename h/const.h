@@ -238,6 +238,8 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define TRANSCHARSTATSHIFT  8 /* Shift to get the transmitted character from the terminal device's status field */
 #define KVSBEGIN            0x80000 
 
+#define DISKSHIFT          8 /* Shift to get the disk number from the command sent to the disk device */
+
 /* operations */
 #define	MIN(A,B)		    ((A) < (B) ? A : B)
 #define MAX(A,B)		    ((A) < (B) ? B : A)
