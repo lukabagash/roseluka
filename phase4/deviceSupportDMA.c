@@ -21,11 +21,13 @@
  
  /* Copy 4 KB from user into DMA buffer */
  static void copyUserToBuf(char *u, char *buf) {
-     for (int i = 0; i < PAGESIZE; i++) buf[i] = u[i];
+    int i;
+     for ( i = 0; i < PAGESIZE; i++) buf[i] = u[i];
  }
  /* Copy 4 KB from DMA buffer back to user */
  static void copyBufToUser(char *u, char *buf) {
-     for (int i = 0; i < PAGESIZE; i++) u[i] = buf[i];
+    int i;
+     for ( i = 0; i < PAGESIZE; i++) u[i] = buf[i];
  }
  
  /*
