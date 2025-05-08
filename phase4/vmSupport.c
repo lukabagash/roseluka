@@ -80,7 +80,7 @@ void enableInterrupts() {
  * Helper Function
  * Read/Write a page to/from flash.
  ************************************************************************/
-static void performRW(int asid, int pageBlock, int frameAddr, unsigned int operation)
+static int performRW(int asid, int pageBlock, int frameAddr, unsigned int operation)
 {
     /* Identify the flash device with ASID */
     int devIndex = ((FLASHINT - OFFSET) * DEVPERINT) + (asid - 1);
@@ -98,12 +98,9 @@ static void performRW(int asid, int pageBlock, int frameAddr, unsigned int opera
 
     mutex(devSem, FALSE); /* Release mutual exclusion from the device semaphore */
 
-    int status = flashDev->d_status;
+    int st = flashDev->d_status;
     /* If the device final status is an error, terminate the process */
-    if ((operation == WRITEBLK && status == WRITEERR) || (operation == READBLK  && status == READERR)) {
-        /* Release the swap pool semaphore so we don't deadlock */
-        schizoUserProcTerminate(&swapPoolSemaphore); 
-    }
+    return (st == DEVREDY ? DEVREDY : -st);
 }
 
 /************************************************************************
@@ -111,6 +108,8 @@ static void performRW(int asid, int pageBlock, int frameAddr, unsigned int opera
  * (page fault) of user process.
  ************************************************************************/
 void supLvlTlbExceptionHandler() {
+    int st;
+
     support_t *sPtr = (support_t *) SYSCALL(GETSUPPORTPTR, 0, 0, 0); /* Current process's support struct */
     state_PTR savedState = &(sPtr->sup_exceptState[0]);
 
@@ -139,20 +138,28 @@ void supLvlTlbExceptionHandler() {
         updateTLBIfCached(occPTEntry->entryHI, &occPTEntry->entryLO, occPTEntry->entryLO & VALIDOFFTLB);
 
         /* Write occupant’s page out */
-        performRW(
+        st = performRW(
             occupantAsid,       /* occupant process ID */
             occupantVPN,        /* occupant’s block number */
             frameAddr,          /* frame index in swap pool */
             WRITEBLK            /* operation = write */
         );
+        if (st != DEVREDY) {
+            /* Release the swap pool semaphore so we don't deadlock */
+            schizoUserProcTerminate(&swapPoolSemaphore); 
+        }
     }
 
-    performRW(
+    st = performRW(
         sPtr->sup_asid,   /* current process ID */
         missingPN,        /* the missing page block # */
         frameAddr,          /* chosen frame index */
         READBLK           /* operation = read */
     );
+    if (st != DEVREDY) {
+        /* Release the swap pool semaphore so we don't deadlock */
+        schizoUserProcTerminate(&swapPoolSemaphore); 
+    }
 
     swapPool[frameNo].asid = sPtr->sup_asid;
     swapPool[frameNo].VPN  = missingPN;
