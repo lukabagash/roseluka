@@ -14,6 +14,7 @@
 #include "../h/initProc.h"
 #include "../h/exceptions.h"
 #include "../h/delayDaemon.h"
+#include "../h/deviceSupportDMA.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
 void debugSys(int a, int b, int c, int d) {
@@ -242,6 +243,51 @@ void supLvlGenExceptionHandler() {
                 , dnum
             ); 
             break;
+
+        case DISKPUT:              /* SYS14 */
+        {
+            int status = diskPut(
+                (char *) savedState->s_a1,
+                (int)    savedState->s_a2,
+                (int)    savedState->s_a3
+            );
+            savedState->s_v0 = status;
+            LDST(savedState);
+            break;
+        }
+        case DISKGET:              /* SYS15 */
+        {
+            int status = diskGet(
+                (char *) savedState->s_a1,
+                (int)    savedState->s_a2,
+                (int)    savedState->s_a3
+            );
+            savedState->s_v0 = status;
+            LDST(savedState);
+            break;
+        }
+        case FLASHPUT:             /* SYS16 */
+        {
+            int status = flashPut(
+                (char *) savedState->s_a1,
+                (int)    savedState->s_a2,
+                (int)    savedState->s_a3
+            );
+            savedState->s_v0 = status;
+            LDST(savedState);
+            break;
+        }
+        case FLASHGET:             /* SYS17 */
+        {
+            int status = flashGet(
+                (char *) savedState->s_a1,
+                (int)    savedState->s_a2,
+                (int)    savedState->s_a3
+            );
+            savedState->s_v0 = status;
+            LDST(savedState);
+            break;
+        }
         
         case DELAY:                 /* SYS18 */
             delaySyscall(

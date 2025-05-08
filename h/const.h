@@ -102,6 +102,10 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 #define	DEV6INT			    0x00000040	/* setting 1 at bit 6 for device 6 interrupts */
 #define	DEV7INT			    0x00000080	/* setting 1 at bit 7 for device 7 interrupts */
 
+#define DISK_DMA_COUNT   8
+#define FLASH_DMA_COUNT  8
+#define TOTAL_DMA_BUFFS  (DISK_DMA_COUNT + FLASH_DMA_COUNT)
+
 /* Value that the processor's Local Timer (PLT) is intialized to 5 milliseconds (5,000 microseconds) */
 #define INITIALPLT		    5000
 
