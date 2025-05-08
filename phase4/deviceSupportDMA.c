@@ -1,3 +1,8 @@
+/******************************** deviceSupportDMA.c **********************************
+ * deviceSupportDMA.c
+ * Written by: Luka Bagashvili, Rosalie Lee
+ ******************************************************************************/
+           
 #include "../h/deviceSupportDMA.h"
 #include "../h/const.h"
 #include "../h/vmSupport.h"    /* for disableInterrupts/enableInterrupts and mutex() */
