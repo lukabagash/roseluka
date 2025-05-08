@@ -12,6 +12,11 @@
  #include "../h/scheduler.h"    /* SYSCALL */
  #include "../h/sysSupport.h"   /* schizoUserProcTerminate() */
  #include "/usr/include/umps3/umps/libumps.h"
+
+ void debugDMA(int a, int b, int c, int d) {
+     int i =0;
+     i++;
+ }
  
  /* head is bits 23–16, sector bits 15–8 */
  #define HEAD_SHIFT (DISKSHIFT + 8)  /* 8+8 = 16 */
@@ -43,7 +48,8 @@
      int idx  = ((DISKINT - OFFSET) * DEVPERINT) + diskNo;
      devregarea_t *regs = (devregarea_t *)RAMBASEADDR;
      device_t     *dev  = &regs->devreg[idx];
- 
+    
+     debugDMA(1, 0xBEEF, 0xBEEF, 0xBEEF);
      /* --- extract geometry & validate sectNo --- */
      unsigned geom    = regs->devreg[idx].d_data1;
      int maxSect      =  geom & MAXSECTMASK;
@@ -53,6 +59,7 @@
      if (sectNo < 0 || sectNo > totalSects) {
          schizoUserProcTerminate(NULL);
      }
+     debugDMA(2, 0xBEEF, 0xBEEF, 0xBEEF);
  
      /* lock the device & buffer */
      mutex(&p3devSemaphore[idx], TRUE);
@@ -65,6 +72,7 @@
      int sec  = tmp % maxSect;
  
      /* --- Phase 1: SEEKCYL (opcode = DISKSEEK == 2) --- */
+     debugDMA(3, 0xBEEF, 0xBEEF, 0xBEEF);
      disableInterrupts();
      dev->d_command = (cyl << DISKSHIFT) | DISKSEEK;
      int st = SYSCALL(WAITIO, DISKINT, diskNo, /* read? */ FALSE);
@@ -73,6 +81,7 @@
          mutex(&p3devSemaphore[idx], FALSE);
          return -st;
      }
+     debugDMA(4, 0xBEEF, 0xBEEF, 0xBEEF);
  
      /* --- Phase 2: READBLK (3) or WRITEBLK (4) --- */
      disableInterrupts();
@@ -81,6 +90,7 @@
                     | operation;   /* operation == DISKREAD or DISKWRITE */
      st = SYSCALL(WAITIO, DISKINT, diskNo, operation == DISKREAD);
      enableInterrupts();
+     debugDMA(5, 0xBEEF, 0xBEEF, 0xBEEF);
  
      mutex(&p3devSemaphore[idx], FALSE);
      return (st == DEVREDY ? DEVREDY : -st);
