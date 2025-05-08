@@ -44,23 +44,19 @@
   *   [31..24]=–, [23..16]=HEADNUM, [15..8]=SECTNUM, [7..0]=opcode
   * SEEKCYL: [23..8]=CYLNUM, [7..0]=2
   */
- static int diskDmaOp(int operation, int diskNo, int sectNo, char *buffer) {
+ static int diskOperation(int operation, int diskNo, int sectNo, char *buffer) {
      int idx  = ((DISKINT - OFFSET) * DEVPERINT) + diskNo;
      devregarea_t *regs = (devregarea_t *)RAMBASEADDR;
      device_t     *dev  = &regs->devreg[idx];
     
-     debugDMA(1, 0xBEEF, 0xBEEF, 0xBEEF);
-     /* --- extract geometry & validate sectNo --- */
      unsigned geom    = regs->devreg[idx].d_data1;
      int maxSect      =  geom & MAXSECTMASK;
      int maxHead      = (geom & MAXHEADMASK) >> DISKHEADSHIFT;
      int maxCyl       =  geom >> DISKCYLSHIFT;
-     debugDMA(0xBEEF, maxSect, maxHead, maxCyl);
      long totalSects  = (long)maxCyl * maxHead * maxSect;
      if (sectNo < 0 || sectNo > totalSects) {
          schizoUserProcTerminate(NULL);
      }
-     debugDMA(2, 0xBEEF, 0xBEEF, 0xBEEF);
  
      /* lock the device & buffer */
      mutex(&p3devSemaphore[idx], TRUE);
@@ -73,7 +69,6 @@
      int sec  = tmp % maxSect;
  
      /* --- Phase 1: SEEKCYL (opcode = DISKSEEK == 2) --- */
-     debugDMA(3, 0xBEEF, 0xBEEF, 0xBEEF);
      disableInterrupts();
      dev->d_command = (cyl << DISKSHIFT) | DISKSEEK;
      int st = SYSCALL(WAITIO, DISKINT, diskNo, /* read? */ FALSE);
@@ -82,7 +77,6 @@
          mutex(&p3devSemaphore[idx], FALSE);
          return -st;
      }
-     debugDMA(4, 0xBEEF, 0xBEEF, 0xBEEF);
  
      /* --- Phase 2: READBLK (3) or WRITEBLK (4) --- */
      disableInterrupts();
@@ -91,7 +85,6 @@
                     | operation;   /* operation == DISKREAD or DISKWRITE */
      st = SYSCALL(WAITIO, DISKINT, diskNo, operation == DISKREAD);
      enableInterrupts();
-     debugDMA(5, 0xBEEF, 0xBEEF, 0xBEEF);
  
      mutex(&p3devSemaphore[idx], FALSE);
      return (st == DEVREDY ? DEVREDY : -st);
@@ -100,12 +93,12 @@
  int diskPut(char *virtAddr, int diskNo, int sectNo) {
      char *buf = dmaBufs[diskNo];
      copyUserToBuf(virtAddr, buf);
-     return diskDmaOp(DISKWRITE, diskNo, sectNo, buf);
+     return diskOperation(DISKWRITE, diskNo, sectNo, buf);
  }
  
  int diskGet(char *virtAddr, int diskNo, int sectNo) {
      char *buf = dmaBufs[diskNo];
-     int st = diskDmaOp(DISKREAD, diskNo, sectNo, buf);
+     int st = diskOperation(DISKREAD, diskNo, sectNo, buf);
      if (st == DEVREDY) copyBufToUser(virtAddr, buf);
      return st;
  }
@@ -114,7 +107,7 @@
   * flashDmaOp  — single‐phase DMA
   * Bits [31..8]=BLOCKNUM, [7..0]=opcode (READBLK=2 or WRITEBLK=3)
   */
- static int flashDmaOp(int operation, int flashNo, int blockNo, char *buffer) {
+ static int flashOperation(int operation, int flashNo, int blockNo, char *buffer) {
      int idx  = ((FLASHINT - OFFSET) * DEVPERINT) + flashNo;
      devregarea_t *regs = (devregarea_t *)RAMBASEADDR;
      device_t     *dev  = &regs->devreg[idx];
