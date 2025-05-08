@@ -45,7 +45,7 @@
   * SEEKCYL: [23..8]=CYLNUM, [7..0]=2
   */
  static int diskDmaOp(int operation, int diskNo, int sectNo, char *buffer) {
-     int idx  = ((DISKINT - OFFSET) * DEVPERINT) + diskNo;
+     int idx  = diskNo;
      devregarea_t *regs = (devregarea_t *)RAMBASEADDR;
      device_t     *dev  = &regs->devreg[idx];
     
