@@ -45,7 +45,7 @@
   * SEEKCYL: [23..8]=CYLNUM, [7..0]=2
   */
  static int diskDmaOp(int operation, int diskNo, int sectNo, char *buffer) {
-     int idx  = diskNo;
+     int idx  = ((DISKINT - OFFSET) * DEVPERINT) + diskNo;
      devregarea_t *regs = (devregarea_t *)RAMBASEADDR;
      device_t     *dev  = &regs->devreg[idx];
     
@@ -55,7 +55,7 @@
      int maxSect      =  geom & MAXSECTMASK;
      int maxHead      = (geom & MAXHEADMASK) >> DISKHEADSHIFT;
      int maxCyl       =  geom >> DISKCYLSHIFT;
-     debugDMA(0xBEEF, regs->devreg[diskNo].d_data1, maxHead, maxCyl);
+     debugDMA(0xBEEF, maxSect, maxHead, maxCyl);
      long totalSects  = (long)maxCyl * maxHead * maxSect;
      if (sectNo < 0 || sectNo > totalSects) {
          schizoUserProcTerminate(NULL);

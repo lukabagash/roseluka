@@ -39,6 +39,7 @@ AS = mipsel-linux-gnu-as -KPIC
 
 EF = umps3-elf2umps
 UDEV = umps3-mkdev
+DISKS := $(addprefix disk,$(addsuffix .umps,$(shell seq 0 7)))
 
 #main target
 all: kernel.core.umps 
@@ -48,6 +49,9 @@ kernel.core.umps: kernel
 
 kernel: $(OBJS)
 	$(LD) $(LDCOREFLAGS) $(LIBDIR)/crtso.o $(OBJS) $(LIBDIR)/libumps.o -o kernel
+
+$(DISKS):
+    $(UDEV) -d $@
 
 %.o: %.c $(DEFS)
 	$(CC) $(CFLAGS) $<
