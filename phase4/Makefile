@@ -44,7 +44,7 @@ DISKS := disk0.umps disk1.umps
 
 
 #main target
-all: kernel.core.umps $(TERMINALS) $(PRINTERS) $(DISKS)
+all: kernel.core.umps $(DISKS)
 
 kernel.core.umps: kernel
 	$(EF) -k kernel
