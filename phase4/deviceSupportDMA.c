@@ -69,7 +69,7 @@ static int dmaOperation(int operation,
     status = dev->d_status;
     if ((operation == WRITEBLK && status == WRITEERR) || (operation == READBLK  && status == READERR)) {
         /* Release the swap pool semaphore so we don't deadlock */
-        schizoUserProcTerminate(&swapPoolSemaphore); 
+        SYSCALL(TERMINATE, 0, 0, 0); /* terminate the process */
     }
     return (status == DEVREDY ? status : -status);
 }
