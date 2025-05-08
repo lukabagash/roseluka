@@ -55,7 +55,7 @@
      int maxSect      =  geom & MAXSECTMASK;
      int maxHead      = (geom & MAXHEADMASK) >> DISKHEADSHIFT;
      int maxCyl       =  geom >> DISKCYLSHIFT;
-     debugDMA(0xBEEF, maxSect, maxHead, maxCyl);
+     debugDMA(0xBEEF, regs->devreg[diskNo].d_data1, maxHead, maxCyl);
      long totalSects  = (long)maxCyl * maxHead * maxSect;
      if (sectNo < 0 || sectNo > totalSects) {
          schizoUserProcTerminate(NULL);
