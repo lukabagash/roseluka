@@ -1,4 +1,3 @@
-// deviceSupportDMA.c
 #include "../h/deviceSupportDMA.h"
 #include "../h/const.h"
 #include "../h/vmSupport.h"    /* for disableInterrupts/enableInterrupts and mutex() */
