@@ -345,6 +345,7 @@ void syscallExceptionHandler() {
     debugExc(4, savedExceptState->s_pc, 0, 0);
     /* Update the Current Process's PCB to reflect the saved state */
     updateCurrentProcessState();
+    debugExc(5, syscallNumber, 0, 0);
 
     switch (syscallNumber) {
         case CREATEPROCESS:    /* SYS1 */
