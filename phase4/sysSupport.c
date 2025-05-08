@@ -263,7 +263,7 @@ void supLvlGenExceptionHandler() {
             break;
 
         case FLASH_PUT:             /* SYS17 */
-            int status = flashPut(
+            flashPut(
                 (char *) savedState->s_a1,
                 (int)    savedState->s_a2,
                 (int)    savedState->s_a3
@@ -271,7 +271,7 @@ void supLvlGenExceptionHandler() {
             break;
 
         case FLASH_GET:             /* SYS16 */
-            int status = flashGet(
+            flashGet(
                 (char *) savedState->s_a1,
                 (int)    savedState->s_a2,
                 (int)    savedState->s_a3
