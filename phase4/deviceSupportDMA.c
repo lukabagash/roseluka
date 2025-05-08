@@ -127,12 +127,12 @@
  int flashPut(char *virtAddr, int flashNo, int blockNo) {
      char *buf = dmaBufs[DISK_DMA_COUNT + flashNo];
      copyUserToBuf(virtAddr, buf);
-     return flashDmaOp(WRITEBLK, flashNo, blockNo, buf);
+     return flashOperation(WRITEBLK, flashNo, blockNo, buf);
  }
  
  int flashGet(char *virtAddr, int flashNo, int blockNo) {
      char *buf = dmaBufs[DISK_DMA_COUNT + flashNo];
-     int st = flashDmaOp(READBLK, flashNo, blockNo, buf);
+     int st = flashOperation(READBLK, flashNo, blockNo, buf);
      if (st == DEVREDY) copyBufToUser(virtAddr, buf);
      return st;
  }
