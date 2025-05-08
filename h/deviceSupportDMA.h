@@ -8,8 +8,10 @@ void diskPut(state_PTR savedState, char *virtAddr, int diskNo, int sectNo);
 /* SYS15 */
 void diskGet(state_PTR savedState, char *virtAddr, int diskNo, int sectNo);
 /* SYS16 */
-int flashPut(char *virtAddr, int flashNo, int blockNo);
+void flashPut(state_PTR savedState, char *virtAddr, int flashNo, int blockNo);
 /* SYS17 */
-int flashGet(char *virtAddr, int flashNo, int blockNo);
+void flashGet(state_PTR savedState, char *virtAddr, int flashNo, int blockNo);
+
+extern int flashOperation(int operation, int flashNo, int blockNo, char *buffer);
 
 #endif /* _DEVICE_SUPPORT_DMA_H_ */

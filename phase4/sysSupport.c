@@ -252,6 +252,7 @@ void supLvlGenExceptionHandler() {
                 (int)    savedState->s_a3
             );
             break;
+
         case DISK_GET:              /* SYS14 */
             diskGet(
                 savedState,
@@ -260,29 +261,23 @@ void supLvlGenExceptionHandler() {
                 (int)    savedState->s_a3
             );
             break;
+
         case FLASH_PUT:             /* SYS17 */
-        {
             int status = flashPut(
                 (char *) savedState->s_a1,
                 (int)    savedState->s_a2,
                 (int)    savedState->s_a3
             );
-            savedState->s_v0 = status;
-            LDST(savedState);
             break;
-        }
+
         case FLASH_GET:             /* SYS16 */
-        {
             int status = flashGet(
                 (char *) savedState->s_a1,
                 (int)    savedState->s_a2,
                 (int)    savedState->s_a3
             );
-            savedState->s_v0 = status;
-            LDST(savedState);
             break;
-        }
-        
+
         case DELAY:                 /* SYS18 */
             delaySyscall(
                 savedState,

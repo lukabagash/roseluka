@@ -111,7 +111,7 @@
   * flashDmaOp  — single‐phase DMA
   * Bits [31..8]=BLOCKNUM, [7..0]=opcode (READBLK=2 or WRITEBLK=3)
   */
- static int flashOperation(int operation, int flashNo, int blockNo, char *buffer) {
+int flashOperation(int operation, int flashNo, int blockNo, char *buffer) {
      int idx  = ((FLASHINT - OFFSET) * DEVPERINT) + flashNo;
      devregarea_t *regs = (devregarea_t *)RAMBASEADDR;
      device_t     *dev  = &regs->devreg[idx];
@@ -128,16 +128,19 @@
      return (st == DEVREDY ? DEVREDY : -st);
  }
  
- int flashPut(char *virtAddr, int flashNo, int blockNo) {
+ void flashPut(state_PTR savedState, char *virtAddr, int flashNo, int blockNo) {
      char *buf = dmaBufs[DISK_DMA_COUNT + flashNo];
      copyUserToBuf(virtAddr, buf);
-     return flashOperation(WRITEBLK, flashNo, blockNo, buf);
+     int st = flashOperation(WRITEBLK, flashNo, blockNo, buf);
+     savedState->s_v0 = st;
+     LDST(savedState);
  }
  
- int flashGet(char *virtAddr, int flashNo, int blockNo) {
+ void flashGet(state_PTR savedState, char *virtAddr, int flashNo, int blockNo) {
      char *buf = dmaBufs[DISK_DMA_COUNT + flashNo];
      int st = flashOperation(READBLK, flashNo, blockNo, buf);
      if (st == DEVREDY) copyBufToUser(virtAddr, buf);
-     return st;
+     savedState->s_v0 = st;
+     LDST(savedState);
  }
  
