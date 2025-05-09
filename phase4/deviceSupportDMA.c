@@ -161,10 +161,6 @@ int flashOperation(int asid, int pageBlock, int frameAddr, unsigned int operatio
 
     /* If the operation ends with a status other than “Device Ready”, 
     the negative of the completion status is returned. */
-    if (st != DEVREDY) {
-        mutex(&p3devSemaphore[idx], FALSE);
-        return -st;
-    }
 
     int st = flashDev->d_status;
 
