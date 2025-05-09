@@ -182,7 +182,7 @@ void flashPut(state_PTR savedState, char *virtAddr, int flashNo, int blockNo) {
     unsigned int maxblock = flashDev->d_data1 && 0x00000fff;
     
     /* terminate if write to (read from) a block outside of [32..(MAXBLOCK- 1)] */
-    if (pageBlock < 32 || pageBlock > maxblock) {
+    if (blockNo < 32 || blockNo > maxblock) {
         schizoUserProcTerminate(NULL);
     }
     char *buf = dmaBufs[DISK_DMA_COUNT + flashNo];
@@ -216,7 +216,7 @@ void flashGet(state_PTR savedState, char *virtAddr, int flashNo, int blockNo) {
     unsigned int maxblock = flashDev->d_data1 && 0x00000fff;
     
     /* terminate if write to (read from) a block outside of [32..(MAXBLOCK- 1)] */
-    if (pageBlock < 32 || pageBlock > maxblock) {
+    if (blockNo < 32 || blockNo > maxblock) {
         schizoUserProcTerminate(NULL);
     }
     char *buf = dmaBufs[DISK_DMA_COUNT + flashNo];
