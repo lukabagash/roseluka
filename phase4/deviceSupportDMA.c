@@ -134,9 +134,9 @@ void diskGet(state_PTR savedState, char *virtAddr, int diskNo, int sectNo) {
 int flashOperation(int asid, int pageBlock, int frameAddr, unsigned int operation)
 {
     /* Identify the flash device with ASID */
-    int devIndex = ((FLASHINT - OFFSET) * DEVPERINT) + (asid - 1);
+    int idx = ((FLASHINT - OFFSET) * DEVPERINT) + (asid - 1);
     devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;    /* Pointer to device register base */
-    device_t *flashDev = &(devReg->devreg[devIndex]);   /* Pointer to flash device register */
+    device_t *flashDev = &(devReg->devreg[idx]);   /* Pointer to flash device register */
 
     unsigned int maxblock = flashDev->d_data1 && 0x00000fff;
     
