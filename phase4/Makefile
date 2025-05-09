@@ -40,7 +40,7 @@ AS = mipsel-linux-gnu-as -KPIC
 EF = umps3-elf2umps
 UDEV = umps3-mkdev
 
-DISKS := disk0.umps disk1.umps
+DISKS := disk0.umps disk1.umps # Create empty disks to serve as the single backing store device for all U-procs
 
 
 #main target
