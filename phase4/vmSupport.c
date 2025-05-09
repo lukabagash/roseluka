@@ -13,6 +13,7 @@
 #include "../h/types.h"
 #include "../h/sysSupport.h"
 #include "../h/initProc.h"
+#include "../h/deviceSupportDMA.h" /* flashOperation() */
 #include "/usr/include/umps3/umps/libumps.h"
 
 /* Each swap_t structure can hold info about a frame, who owns it, and which page number it corresponds to. */
@@ -77,33 +78,6 @@ void enableInterrupts() {
 }
 
 /************************************************************************
- * Helper Function
- * Read/Write a page to/from flash.
- ************************************************************************/
-static int performRW(int asid, int pageBlock, int frameAddr, unsigned int operation)
-{
-    /* Identify the flash device with ASID */
-    int devIndex = ((FLASHINT - OFFSET) * DEVPERINT) + (asid - 1);
-    int *devSem  = &p3devSemaphore[devIndex];
-    devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;
-    device_t *flashDev = &(devReg->devreg[devIndex]);
-
-    mutex(devSem, TRUE); /* Gain mutual exclusion from the device semaphore */
-
-    flashDev->d_data0 = frameAddr; /* Write the frame address to d_data0 */
-    disableInterrupts(); /* Disable interrupts to atomically write the command field, and call SYS5 */
-    flashDev->d_command = (pageBlock << FLASCOMHSHIFT) | operation;
-    SYSCALL(WAITIO, FLASHINT, (asid - 1), (operation == READBLK));
-    enableInterrupts();
-
-    mutex(devSem, FALSE); /* Release mutual exclusion from the device semaphore */
-
-    int st = flashDev->d_status;
-    /* If the device final status is an error, terminate the process */
-    return (st == DEVREDY ? DEVREDY : -st);
-}
-
-/************************************************************************
  * TLB exception handler – the Pager: handles TLB Invalid exceptions 
  * (page fault) of user process.
  ************************************************************************/
@@ -138,7 +112,7 @@ void supLvlTlbExceptionHandler() {
         updateTLBIfCached(occPTEntry->entryHI, &occPTEntry->entryLO, occPTEntry->entryLO & VALIDOFFTLB);
 
         /* Write occupant’s page out */
-        st = performRW(
+        st = flashOperation(
             occupantAsid,       /* occupant process ID */
             occupantVPN,        /* occupant’s block number */
             frameAddr,          /* frame index in swap pool */
@@ -150,7 +124,7 @@ void supLvlTlbExceptionHandler() {
         }
     }
 
-    st = performRW(
+    st = flashOperation(
         sPtr->sup_asid,   /* current process ID */
         missingPN,        /* the missing page block # */
         frameAddr,          /* chosen frame index */

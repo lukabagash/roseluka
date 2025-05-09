@@ -107,38 +107,44 @@
      LDST(savedState);
  }
  
- /*
-  * flashDmaOp  — single‐phase DMA
-  * Bits [31..8]=BLOCKNUM, [7..0]=opcode (READBLK=2 or WRITEBLK=3)
-  */
-int flashOperation(int operation, int flashNo, int blockNo, char *buffer) {
-     int idx  = ((FLASHINT - OFFSET) * DEVPERINT) + flashNo;
-     devregarea_t *regs = (devregarea_t *)RAMBASEADDR;
-     device_t     *dev  = &regs->devreg[idx];
- 
-     mutex(&p3devSemaphore[idx], TRUE);
-     dev->d_data0 = (unsigned) buffer;
- 
-     disableInterrupts();
-     dev->d_command = (blockNo << FLASCOMHSHIFT) | operation;
-     int st = SYSCALL(WAITIO, FLASHINT, flashNo, operation == READBLK);
-     enableInterrupts();
- 
-     mutex(&p3devSemaphore[idx], FALSE);
-     return (st == DEVREDY ? DEVREDY : -st);
- }
+ /************************************************************************
+ * Helper Function
+ * Read/Write a page to/from flash.
+ ************************************************************************/
+int flashOperation(int asid, int pageBlock, int frameAddr, unsigned int operation)
+{
+    /* Identify the flash device with ASID */
+    int devIndex = ((FLASHINT - OFFSET) * DEVPERINT) + (asid - 1);
+    int *devSem  = &p3devSemaphore[devIndex];
+    devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;
+    device_t *flashDev = &(devReg->devreg[devIndex]);
+
+    mutex(devSem, TRUE); /* Gain mutual exclusion from the device semaphore */
+
+    flashDev->d_data0 = frameAddr; /* Write the frame address to d_data0 */
+    disableInterrupts(); /* Disable interrupts to atomically write the command field, and call SYS5 */
+    flashDev->d_command = (pageBlock << FLASCOMHSHIFT) | operation;
+    SYSCALL(WAITIO, FLASHINT, (asid - 1), (operation == READBLK));
+    enableInterrupts();
+
+    mutex(devSem, FALSE); /* Release mutual exclusion from the device semaphore */
+
+    int st = flashDev->d_status;
+    /* If the device final status is an error, terminate the process */
+    return (st == DEVREDY ? DEVREDY : -st);
+}
  
  void flashPut(state_PTR savedState, char *virtAddr, int flashNo, int blockNo) {
      char *buf = dmaBufs[DISK_DMA_COUNT + flashNo];
      copyUserToBuf(virtAddr, buf);
-     int st = flashOperation(WRITEBLK, flashNo, blockNo, buf);
+     int st = flashOperation(flashNo + 1, blockNo, (int)buf, WRITEBLK);
      savedState->s_v0 = st;
      LDST(savedState);
  }
  
  void flashGet(state_PTR savedState, char *virtAddr, int flashNo, int blockNo) {
      char *buf = dmaBufs[DISK_DMA_COUNT + flashNo];
-     int st = flashOperation(READBLK, flashNo, blockNo, buf);
+     int st = flashOperation(flashNo + 1, blockNo, (int)buf, READBLK);
      if (st == DEVREDY) copyBufToUser(virtAddr, buf);
      savedState->s_v0 = st;
      LDST(savedState);
