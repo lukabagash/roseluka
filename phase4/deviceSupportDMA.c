@@ -138,13 +138,6 @@ int flashOperation(int asid, int pageBlock, int frameAddr, unsigned int operatio
     devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;    /* Pointer to device register base */
     device_t *flashDev = &(devReg->devreg[idx]);   /* Pointer to flash device register */
 
-    unsigned int maxblock = flashDev->d_data1 && 0x00000fff;
-    
-    /* terminate if write to (read from) a block outside of [32..(MAXBLOCK- 1)] */
-    if (pageBlock < 32 || pageBlock > maxblock) {
-        schizoUserProcTerminate(NULL);
-    }
-
     mutex(&p3devSemaphore[idx], TRUE); /* Gain mutual exclusion from the device semaphore */
 
     flashDev->d_data0 = frameAddr; /* Write the frame address to d_data0 */
@@ -181,6 +174,16 @@ void flashPut(state_PTR savedState, char *virtAddr, int flashNo, int blockNo) {
     if ((unsigned int)virtAddr < KUSEG || (unsigned int)virtAddr >= STCKTOPEND) {
         schizoUserProcTerminate(NULL); 
     }
+    
+    devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;    /* Pointer to device register base */
+    device_t *flashDev = &(devReg->devreg[idx]);   /* Pointer to flash device register */
+
+    unsigned int maxblock = flashDev->d_data1 && 0x00000fff;
+    
+    /* terminate if write to (read from) a block outside of [32..(MAXBLOCK- 1)] */
+    if (pageBlock < 32 || pageBlock > maxblock) {
+        schizoUserProcTerminate(NULL);
+    }
     char *buf = dmaBufs[DISK_DMA_COUNT + flashNo];
 
     copyUserToBuf(virtAddr, buf);
@@ -203,6 +206,15 @@ void flashGet(state_PTR savedState, char *virtAddr, int flashNo, int blockNo) {
     requesting U-proc’s logical address space is an error */
     if ((unsigned int)virtAddr < KUSEG || (unsigned int)virtAddr >= STCKTOPEND) {
         schizoUserProcTerminate(NULL); 
+    }
+    devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;    /* Pointer to device register base */
+    device_t *flashDev = &(devReg->devreg[idx]);   /* Pointer to flash device register */
+
+    unsigned int maxblock = flashDev->d_data1 && 0x00000fff;
+    
+    /* terminate if write to (read from) a block outside of [32..(MAXBLOCK- 1)] */
+    if (pageBlock < 32 || pageBlock > maxblock) {
+        schizoUserProcTerminate(NULL);
     }
     char *buf = dmaBufs[DISK_DMA_COUNT + flashNo];
 
