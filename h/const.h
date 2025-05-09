@@ -208,7 +208,7 @@ This constant is subtracted from the line number (or 4, in the case of backing s
 
 #define TEXTAREASTART       0x800000B0
 #define STCKPGVPN           0xBFFFF000
-#define STCKTOPEND           
+#define STCKTOPEND          0xC0000000 
 
 #define FRAMEPOOLSTART      0x20001040  /* In RAM, the top of kernel stack (0x2000.1000) + OS area (64) */
 
