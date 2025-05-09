@@ -12,6 +12,6 @@ void flashPut(state_PTR savedState, char *virtAddr, int flashNo, int blockNo);
 /* SYS17 */
 void flashGet(state_PTR savedState, char *virtAddr, int flashNo, int blockNo);
 
-extern int flashOperation(int operation, int flashNo, int blockNo, char *buffer);
+extern int flashOperation(int asid, int pageBlock, int frameAddr, unsigned int operation);
 
 #endif /* _DEVICE_SUPPORT_DMA_H_ */
