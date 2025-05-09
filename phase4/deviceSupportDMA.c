@@ -174,7 +174,7 @@ void flashPut(state_PTR savedState, char *virtAddr, int flashNo, int blockNo) {
     if ((unsigned int)virtAddr < KUSEG || (unsigned int)virtAddr >= STCKTOPEND) {
         schizoUserProcTerminate(NULL); 
     }
-    int idx = ((FLASHINT - OFFSET) * DEVPERINT) + (asid - 1);
+    int idx = ((FLASHINT - OFFSET) * DEVPERINT) + (flashNo);   /* Get device index from diskNo */
     
     devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;    /* Pointer to device register base */
     device_t *flashDev = &(devReg->devreg[idx]);   /* Pointer to flash device register */
@@ -208,7 +208,7 @@ void flashGet(state_PTR savedState, char *virtAddr, int flashNo, int blockNo) {
     if ((unsigned int)virtAddr < KUSEG || (unsigned int)virtAddr >= STCKTOPEND) {
         schizoUserProcTerminate(NULL); 
     }
-    int idx = ((FLASHINT - OFFSET) * DEVPERINT) + (asid - 1);
+    int idx = ((FLASHINT - OFFSET) * DEVPERINT) + (flashNo);
 
     devregarea_t *devReg = (devregarea_t *) RAMBASEADDR;    /* Pointer to device register base */
     device_t *flashDev = &(devReg->devreg[idx]);   /* Pointer to flash device register */
