@@ -1,5 +1,11 @@
 /************************ deviceSupportDMA.c ************************
  * Phase 4 / Level 5 DMA support with correct bit‐fields for SEEK/READ/WRITE
+ * To perform a disk/flash read operation:
+ *  1. The requested disk sector/flash block is read into the device’s DMA buffer.
+ *  2. The data is copied from the DMA buffer into the requesting U-proc’s address space starting from the provided start address.
+ * A write operation is isomorphic, only the two steps are reversed:
+ *  1. The data is copied from the requesting U-proc’s address space into the device’s DMA buffer.
+ *  2. The targeted disk sector/flash block is overwritten with the contents of theDMA buffer.
  * Luka Bagashvili, Rosalie Lee
  **************************************************************************/
 
@@ -11,11 +17,6 @@
 #include "../h/sysSupport.h"   /* schizoUserProcTerminate() */
 #include "../h/types.h"       /* devregarea_t, device_t, state_PTR */
 #include "/usr/include/umps3/umps/libumps.h"
-
-void debugDMA(int a, int b, int c, int d) {
-    int i =0;
-    i++;
-}
 
 /* Sixteen 4 KB frames: [0..7]=disks, [8..15]=flash */
 static char dmaBufs[TOTAL_DMA_BUFFS][PAGESIZE];
