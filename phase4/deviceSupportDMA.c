@@ -33,8 +33,12 @@ int i;
 }
 
 /*
- * A disk device with x cylinders, y surfaces, and z sectors can be thought of being a (one dimensional) device with sectorCnt = x ∗ y ∗ z sectors.
- */
+    * This function performs the actual disk operation (read/write) on the specified disk.
+    * First obtains the max number of sectors, heads, and cylinders from the data 1.
+    * It then calculates the exact cylinder, head, and sector number for the requested sector sectNo.
+    * The function takes the operation type (read/write), disk number, sector number, and buffer as parameters.
+    * It returns the status of the operation.
+    */
 static int diskOperation(int operation, int diskNo, int sectNo, char *buffer) {
 
     int idx  = ((DISKINT - OFFSET) * DEVPERINT) + diskNo;   /* Get device index from diskNo */
