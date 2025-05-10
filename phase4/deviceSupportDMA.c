@@ -59,7 +59,7 @@ static int diskOperation(int operation, int diskNo, int sectNo, char *buffer) {
 
     /* break linear sector into (cyl, head, sec) */
     int cyl  = sectNo / (maxHead * maxSect); /* Since each cylinder contains maxHead * maxSect sectors, integer division gives the cylinder index */
-    int tmp  = sectNo % (maxHead * maxSect); /* Obtain the number of sects within our cyl*/
+    int tmp  = sectNo % (maxHead * maxSect); /* Obtain num of sect within our current cyl*/
     int head = tmp / maxSect; /* Obtain which head within our sect*/
     int sec  = tmp % maxSect; /* Obtain the sect within head*/
 
