@@ -1,5 +1,5 @@
 /************************ deviceSupportDMA.c ************************
- * Phase 4 / Level 5 DMA support with correct bit‐fields for SEEK/READ/WRITE
+ * Phase 4 / Level 5 DMA Sys14, Sys15, Sys16, Sys17
  * To perform a disk/flash read operation:
  *  1. The requested disk sector/flash block is read into the device’s DMA buffer.
  *  2. The data is copied from the DMA buffer into the requesting U-proc’s address space starting from the provided start address.
