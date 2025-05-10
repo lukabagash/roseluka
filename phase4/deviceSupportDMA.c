@@ -33,12 +33,15 @@ int i;
 }
 
 /*
-    * This function performs the actual disk operation (read/write) on the specified disk.
-    * First obtains the max number of sectors, heads, and cylinders from the data 1.
-    * It then calculates the exact cylinder, head, and sector number for the requested sector sectNo.
-    * The function takes the operation type (read/write), disk number, sector number, and buffer as parameters.
-    * It returns the status of the operation.
-    */
+* This function performs the actual disk operation (read/write) on the specified disk.
+* First obtains the max number of sectors, heads, and cylinders from the data 1.
+* It then calculates the exact cylinder, head, and sector number for the requested sector sectNo.
+*
+* operation: DISKREAD or DISKWRITE
+* diskNo: the disk number (0-7)
+* sectNo: the disk sector number to be read from or written to
+* buffer: the buffer to read from or write to
+*/
 static int diskOperation(int operation, int diskNo, int sectNo, char *buffer) {
 
     int idx  = ((DISKINT - OFFSET) * DEVPERINT) + diskNo;   /* Get device index from diskNo */
@@ -136,6 +139,7 @@ void diskGet(state_PTR savedState, char *virtAddr, int diskNo, int sectNo) {
 /* Migrated from vmSupport, modified to return DEVEREDY or negative status for dma compatibility.
  * To accomodate the modification and migration, vmSupport has been updated to capture anything besides DEVREDY and terminate.
  * Flash operation function to perform read/write operations on flash devices.
+ * 
  * asid: the ASID of the requesting U-proc
  * pageBlock: the block number to be read/written
  * frameAddr: the address of the 4KB area in RAM
