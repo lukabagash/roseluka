@@ -55,7 +55,7 @@ static int diskOperation(int operation, int diskNo, int sectNo, char *buffer) {
 
     /* lock the device & buffer */
     mutex(&p3devSemaphore[idx], TRUE);
-    dev->d_data0 = (unsigned) buffer;   /* Provide DMA buffer address to device?? */
+    dev->d_data0 = (unsigned) buffer;   /* Provide DMA buffer address to device?? yes pandos:5.5.1*/
 
     /* break linear sector into (cyl, head, sec) */
     int cyl  = sectNo / (maxHead * maxSect); /* Since each cylinder contains maxHead * maxSect sectors, integer division gives the cylinder index */
