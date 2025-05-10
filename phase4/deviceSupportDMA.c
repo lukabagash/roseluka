@@ -153,12 +153,9 @@ int flashOperation(int asid, int pageBlock, int frameAddr, unsigned int operatio
 
     mutex(&p3devSemaphore[idx], FALSE); /* Release mutual exclusion from the device semaphore */
 
-    /* If the operation ends with a status other than “Device Ready”, 
-    the negative of the completion status is returned.*/
-
     int st = flashDev->d_status;
 
-    return (st == DEVREDY ? DEVREDY : -st);     /* if the device finished successfully, return 1. Otherwise, return the negative of the completion status */
+    return (st == DEVREDY ? DEVREDY : -st); /* if the device finished successfully, return 1. Otherwise, return the negative of the completion status */
 }
 
 /* SYS 16 - This service causes the requesting U-proc to be suspended until 
