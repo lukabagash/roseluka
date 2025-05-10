@@ -186,6 +186,7 @@ void flashPut(state_PTR savedState, char *virtAddr, int flashNo, int blockNo) {
     }
     char *buf = dmaBufs[DISK_DMA_COUNT + flashNo];
 
+    /* First copy user memory into DMA buffer and then perform flash write */
     copyUserToBuf(virtAddr, buf);
     int st = flashOperation(flashNo + 1, blockNo, (int)buf, WRITEBLK);
 
@@ -220,6 +221,7 @@ void flashGet(state_PTR savedState, char *virtAddr, int flashNo, int blockNo) {
     }
     char *buf = dmaBufs[DISK_DMA_COUNT + flashNo];
 
+    /* First perform flash read and then copy to user memory if successful */
     int st = flashOperation(flashNo + 1, blockNo, (int)buf, READBLK);
     if (st == DEVREDY) copyBufToUser(virtAddr, buf);
 
