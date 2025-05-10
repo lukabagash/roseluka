@@ -7,7 +7,7 @@
 #include "../h/const.h"        
 #include "../h/initProc.h"     /* p3devSemaphore[] */
 #include "../h/vmSupport.h"    /* disableInterrupts/enableInterrupts, schizoUserProcTerminate() */
-#include "../h/scheduler.h"    /* SYSCALL */
+#include "../h/scheduler.h"    
 #include "../h/sysSupport.h"   /* schizoUserProcTerminate() */
 #include "../h/types.h"       /* devregarea_t, device_t, state_PTR */
 #include "/usr/include/umps3/umps/libumps.h"
@@ -43,9 +43,9 @@ static int diskOperation(int operation, int diskNo, int sectNo, char *buffer) {
     /* For a given disk, the number of sectors = disk’s maxcyl ∗ maxhead ∗ maxsect, 
     which are found in the device’s DATA1 device register field. */
     unsigned geom    = regs->devreg[idx].d_data1;
-    int maxSect      =  geom & MAXSECTMASK;
-    int maxHead      = (geom & MAXHEADMASK) >> DISKHEADSHIFT;
-    int maxCyl       =  geom >> DISKCYLSHIFT;
+    int maxSect      =  geom & MAXSECTMASK;                     /* obatin max sect bits from 0 to 7*/
+    int maxHead      = (geom & MAXHEADMASK) >> DISKHEADSHIFT;   /* obtain max head bits from 8 to 15*/
+    int maxCyl       =  geom >> DISKCYLSHIFT;                   /* obtain max cyl bits from 16 to 31*/
     long totalSects  = (long)maxCyl * maxHead * maxSect;
 
     /* Validate the number sectors */
@@ -58,28 +58,26 @@ static int diskOperation(int operation, int diskNo, int sectNo, char *buffer) {
     dev->d_data0 = (unsigned) buffer;   /* Provide DMA buffer address to device?? */
 
     /* break linear sector into (cyl, head, sec) */
-    int cyl  = sectNo / (maxHead * maxSect);
-    int tmp  = sectNo % (maxHead * maxSect);
-    int head = tmp / maxSect;
-    int sec  = tmp % maxSect;
+    int cyl  = sectNo / (maxHead * maxSect); /* Since each cylinder contains maxHead * maxSect sectors, integer division gives the cylinder index */
+    int tmp  = sectNo % (maxHead * maxSect); /* Obtain the number of sects within our cyl*/
+    int head = tmp / maxSect; /* Obtain which head within our sect*/
+    int sec  = tmp % maxSect; /* Obtain the sect within head*/
 
-    /* --- Phase 1: SEEKCYL (opcode = DISKSEEK == 2) --- */
-    /* Disable interrupts to atomically write the command field, and call SYS5 */
+    /* A disk seek operation, and corresponding SYS5, done atomically. */
     disableInterrupts();
 
     dev->d_command = (cyl << DISKSHIFT) | DISKSEEK;
-    int st = SYSCALL(WAITIO, DISKINT, diskNo, /* read? */ FALSE);
+    int st = SYSCALL(WAITIO, DISKINT, diskNo, FALSE);
 
     enableInterrupts();
 
-    /* If the operation ends with a status other than “Device Ready”, 
-    the negative of the completion status is returned. */
+    /* Check status from seek */
     if (st != DEVREDY) {
         mutex(&p3devSemaphore[idx], FALSE);
         return -st;
     }
 
-    /* --- Phase 2: READBLK (3) or WRITEBLK (4) --- */
+    /* Disk read (or write) and its corresponding SYS5, also done atomically.*/
     disableInterrupts();
     dev->d_command = (head << HEAD_SHIFT)
                 | (sec  << DISKSHIFT)
@@ -102,7 +100,7 @@ static int diskOperation(int operation, int diskNo, int sectNo, char *buffer) {
 void diskPut(state_PTR savedState, char *virtAddr, int diskNo, int sectNo) {
     char *buf = dmaBufs[diskNo];
 
-    /* Copy user memory into DMA buffer and perform disk write */
+    /* Firat copy user memory into DMA buffer and then perform disk write */
     copyUserToBuf(virtAddr, buf);   
     int st = diskOperation(DISKWRITE, diskNo, sectNo, buf); 
 
@@ -122,7 +120,7 @@ void diskPut(state_PTR savedState, char *virtAddr, int diskNo, int sectNo) {
 void diskGet(state_PTR savedState, char *virtAddr, int diskNo, int sectNo) {
     char *buf = dmaBufs[diskNo];    
 
-    /* Perform disk read and copy to user memory if successful */
+    /* First perform disk read and then copy to user memory if successful */
     int st = diskOperation(DISKREAD, diskNo, sectNo, buf);  
     if (st == DEVREDY) copyBufToUser(virtAddr, buf);    
 
@@ -130,7 +128,14 @@ void diskGet(state_PTR savedState, char *virtAddr, int diskNo, int sectNo) {
     LDST(savedState);
 }
  
-
+/* Migrated from vmSupport, modified to return DEVEREDY or negative status for dma compatibility.
+ * To accomodate the modification and migration, vmSupport has been updated to capture anything besides DEVREDY and terminate.
+ * Flash operation function to perform read/write operations on flash devices.
+ * asid: the ASID of the requesting U-proc
+ * pageBlock: the block number to be read/written
+ * frameAddr: the address of the 4KB area in RAM
+ * operation: READBLK (2) or WRITEBLK (3)
+ */
 int flashOperation(int asid, int pageBlock, int frameAddr, unsigned int operation)
 {
     /* Identify the flash device with ASID */
@@ -148,12 +153,8 @@ int flashOperation(int asid, int pageBlock, int frameAddr, unsigned int operatio
 
     mutex(&p3devSemaphore[idx], FALSE); /* Release mutual exclusion from the device semaphore */
 
-    /* request should fail (SYS9 - termination) for a U-proc to access (read or write) any portion of a flash device being used as a backing store 
-    1. An attempt to write to (read from) a flash device from (into) an address outside of the requesting U-proc’s logical address space.
-    2. An attempt to write to (read from) a block outside of [32..(MAXBLOCK- 1)] */
-
     /* If the operation ends with a status other than “Device Ready”, 
-    the negative of the completion status is returned. */
+    the negative of the completion status is returned.*/
 
     int st = flashDev->d_status;
 

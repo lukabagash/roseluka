@@ -118,7 +118,7 @@ void supLvlTlbExceptionHandler() {
             frameAddr,          /* frame index in swap pool */
             WRITEBLK            /* operation = write */
         );
-        if (st != DEVREDY) {
+        if (st != DEVREDY) { /* Added status check here due to flashOperation modification */
             /* Release the swap pool semaphore so we don't deadlock */
             schizoUserProcTerminate(&swapPoolSemaphore); 
         }
@@ -130,7 +130,7 @@ void supLvlTlbExceptionHandler() {
         frameAddr,          /* chosen frame index */
         READBLK           /* operation = read */
     );
-    if (st != DEVREDY) {
+    if (st != DEVREDY) { /* Added status check here due to flashOperation modification */
         /* Release the swap pool semaphore so we don't deadlock */
         schizoUserProcTerminate(&swapPoolSemaphore); 
     }
@@ -141,7 +141,7 @@ void supLvlTlbExceptionHandler() {
 
     updateTLBIfCached(
         sPtr->sup_privatePgTbl[missingPN].entryHI,
-        &sPtr->sup_privatePgTbl[missingPN].entryLO,
+        &sPtr->sup_privatePgTbl[missingPN].entryLO, /* pass by reference update of page table*/
         frameAddr | VALIDON | DIRTYON
     );
 
